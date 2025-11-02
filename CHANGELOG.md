@@ -7,6 +7,197 @@
 
 ## [Unreleased]
 
+## [0.15.0] - 2025-11-02
+
+### Добавлено
+
+**Production-развёртывание на VPS**
+
+- **VPS Deployment** — успешное развёртывание проекта на production сервере:
+  - Сервер: VPS 185.135.82.109 (Ubuntu 22.04.5 LTS)
+  - Домен: https://ai-bot-media.mix4.ru
+  - Docker Compose orchestration для всех 7 сервисов
+  - Полная настройка production окружения
+
+- **Исправления Docker конфигурации**:
+  - `docker-compose.prod.yml` — исправлена конфигурация telegram_bot сервиса:
+    - Изменён build context с `./telegram_bot` на `.` (корень проекта)
+    - Изменён dockerfile с `Dockerfile` на `Dockerfile.telegram`
+    - Убрана команда `command: python run_bot.py` (переопределение CMD)
+  - `Dockerfile.telegram` — создан новый Dockerfile для telegram bot:
+    - WORKDIR: `/app`
+    - Копирование: `telegram_bot` директория в контейнер
+    - CMD: `python -m telegram_bot.run_bot` (модульный запуск)
+    - Пользователь: `botuser` (uid 1000) для безопасности
+
+- **Healthcheck для Backend**:
+  - `backend/Dockerfile` — добавлен пакет `curl` в системные зависимости:
+    - Строка 13: `curl \` добавлен в список apt-get install
+    - Теперь healthcheck в docker-compose работает корректно
+    - Backend показывает статус "healthy" вместо "unhealthy"
+
+### Изменено
+
+- **Backend Dockerfile**:
+  - `backend/Dockerfile` (строка 9-14):
+    ```dockerfile
+    RUN apt-get update && apt-get install -y \
+        gcc \
+        libpq-dev \
+        libmagic1 \
+        curl \
+        && rm -rf /var/lib/apt/lists/*
+    ```
+  - Добавлен curl для работы healthcheck endpoint'а
+
+- **Docker Compose Production**:
+  - `docker-compose.prod.yml` — telegram_bot service:
+    ```yaml
+    telegram_bot:
+      build:
+        context: .
+        dockerfile: Dockerfile.telegram
+    ```
+  - Убрана строка `command: python run_bot.py` для использования CMD из Dockerfile
+
+### Исправлено
+
+- **Telegram Bot Import Errors**:
+  - Проблема: `ModuleNotFoundError: No module named 'telegram_bot'`
+  - Причина: Неправильный build context копировал только содержимое telegram_bot/
+  - Решение: Изменён context на корень проекта, создан Dockerfile.telegram
+  - Результат: Бот успешно импортирует модуль `telegram_bot.bot`
+
+- **Backend Healthcheck Failures**:
+  - Проблема: Backend показывал "unhealthy" статус
+  - Причина: Отсутствие curl в контейнере для выполнения healthcheck команды
+  - Решение: Добавлен curl в apt-get install
+  - Результат: Backend показывает "healthy", healthcheck работает
+
+- **Docker Compose Command Override**:
+  - Проблема: `python: can't open file '/app/run_bot.py': [Errno 2] No such file or directory`
+  - Причина: docker-compose command переопределял CMD из Dockerfile
+  - Решение: Удалена строка `command:` из telegram_bot сервиса
+  - Результат: Используется CMD из Dockerfile (`python -m telegram_bot.run_bot`)
+
+### Развёрнутые сервисы
+
+**Production Services Status:**
+
+| Сервис | Статус | Порт | Версия/Образ |
+|--------|--------|------|--------------|
+| PostgreSQL | ✅ Healthy | 127.0.0.1:5432 | postgres:15-alpine |
+| Redis | ✅ Healthy | 127.0.0.1:6379 | redis:7-alpine |
+| Backend (FastAPI) | ✅ Healthy | 127.0.0.1:8000 | custom (python:3.11-slim) |
+| Celery Worker | ✅ Healthy | - | custom (python:3.11-slim) |
+| Celery Beat | ✅ Running | - | custom (python:3.11-slim) |
+| Frontend (Nginx) | ✅ Healthy | 127.0.0.1:3000 | custom (nginx:alpine) |
+| Telegram Bot | ✅ Running | - | custom (python:3.11-slim) |
+
+**Health Endpoint Response:**
+```json
+{
+  "status": "healthy",
+  "version": "0.11.0",
+  "database": "connected",
+  "redis": "connected"
+}
+```
+
+### Технические детали
+
+**Процесс развёртывания:**
+
+1. **Подготовка VPS**:
+   - SSH подключение: `ssh root@185.135.82.109`
+   - Проверка установленных зависимостей: Docker, docker-compose, git, python3
+   - Все необходимые зависимости уже установлены
+
+2. **Загрузка проекта**:
+   - Изначальная попытка: `git clone https://github.com/cherus80/ai-image-bot.git`
+   - Проблема: GitHub репозиторий содержал только структуру (файлы по 1 байту)
+   - Решение: Создан tar архив локального проекта и загружен через scp
+   - Команда: `tar -czf ai-image-bot.tar.gz -C /path/to/project .`
+   - Распаковка на VPS: `tar -xzf ai-image-bot.tar.gz -C /root/ai-image-bot`
+
+3. **Настройка окружения**:
+   - Создан файл `/root/ai-image-bot/.env` с production credentials
+   - Переменные окружения:
+     - TELEGRAM_BOT_TOKEN: 7839276221:AAGKrD111r7zetwta5uTastmzbm5DY-wJ8c
+     - Database: PostgreSQL (postgres:D6TJlqBpoSjUqeIn25nk7gbbn@postgres:5432/ai_image_bot)
+     - Redis: redis://redis:6379/0
+     - Domain: https://ai-bot-media.mix4.ru
+     - API Keys: KIE_AI, OPENROUTER настроены
+
+4. **Исправление Docker конфигурации**:
+   - Создан `Dockerfile.telegram` для корректной сборки telegram bot
+   - Исправлен `docker-compose.prod.yml` (backend и telegram_bot services)
+   - Добавлен curl в `backend/Dockerfile`
+
+5. **Сборка и запуск**:
+   - Команда сборки: `docker-compose -f docker-compose.prod.yml build --no-cache`
+   - Команда запуска: `docker-compose -f docker-compose.prod.yml up -d`
+   - Проверка статуса: `docker-compose -f docker-compose.prod.yml ps`
+
+**Решённые проблемы:**
+
+1. **GitHub Repository Empty Files**:
+   - Симптом: Все файлы в клонированном репозитории имели размер 1 байт
+   - Решение: Загрузка через tar архив с локальной машины
+
+2. **Telegram Bot Module Import**:
+   - Ошибка: `ModuleNotFoundError: No module named 'telegram_bot'`
+   - Попытки исправления: 3+ итерации с разными конфигурациями
+   - Финальное решение: Новый Dockerfile.telegram с правильным context
+
+3. **Docker Compose ContainerConfig Error**:
+   - Ошибка: `KeyError: 'ContainerConfig'` при --force-recreate
+   - Версия: docker-compose 1.29.2
+   - Workaround: Использование `docker stop/rm` + `docker-compose up -d`
+
+4. **Backend Unhealthy Status**:
+   - Причина: healthcheck использовал curl, которого не было в образе
+   - Решение: Добавление curl в apt-get install
+   - Время исправления: ~5 минут (rebuild + restart)
+
+**Файлы, созданные/изменённые:**
+
+- ✅ `Dockerfile.telegram` — создан новый файл (28 строк)
+- ✅ `backend/Dockerfile` — добавлен curl (строка 13)
+- ✅ `docker-compose.prod.yml` — исправлены backend и telegram_bot конфигурации
+- ✅ `.env` — создан на VPS с production credentials
+
+**Метрики развёртывания:**
+
+- Общее время развёртывания: ~45 минут
+- Количество итераций исправлений: 5
+- Количество rebuild образов: 3
+- Количество restart контейнеров: 4
+- Финальный результат: 7/7 сервисов работают корректно
+
+**Logs & Monitoring:**
+
+- Backend logs: `docker logs ai_image_bot_backend_prod`
+- Telegram bot logs: `docker logs ai_image_bot_telegram_prod`
+- All services: `docker-compose -f docker-compose.prod.yml logs -f`
+- Healthcheck: `curl http://localhost:8000/health`
+
+**Security:**
+
+- Все сервисы привязаны к 127.0.0.1 (только localhost доступ)
+- Nginx будет проксировать внешние запросы
+- Используются отдельные пользователи в контейнерах (botuser uid 1000)
+- Secrets хранятся в .env файле (не в git)
+
+### Следующие шаги
+
+- [ ] Настройка Nginx reverse proxy для внешнего доступа
+- [ ] Настройка SSL сертификата (Let's Encrypt)
+- [ ] Настройка автоматического резервного копирования БД
+- [ ] Настройка мониторинга (Prometheus/Grafana или Sentry)
+- [ ] Тестирование всех функций бота в production
+- [ ] Проверка webhook'ов Telegram
+
 ## [0.14.0] - 2025-10-31
 
 ### Добавлено
