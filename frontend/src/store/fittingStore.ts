@@ -206,8 +206,6 @@ export const useFittingStore = create<FittingState>((set, get) => ({
 
       // Обновляем профиль пользователя (баланс кредитов)
       await useAuthStore.getState().refreshProfile();
-
-      return result;
     } catch (error: any) {
       const errorMessage = error.response?.data?.detail || error.message || 'Ошибка генерации';
       set({

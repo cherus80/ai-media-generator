@@ -435,11 +435,11 @@ export const ProfilePage: React.FC = () => {
                 {formatDate(user.created_at)}
               </span>
             </div>
-            {user.last_activity && (
+            {user.last_activity_at && (
               <div className="flex justify-between py-2">
                 <span className="text-gray-600">Последняя активность:</span>
                 <span className="font-medium text-gray-900">
-                  {formatDate(user.last_activity)}
+                  {formatDate(user.last_activity_at)}
                 </span>
               </div>
             )}

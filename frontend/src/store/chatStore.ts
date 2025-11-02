@@ -8,9 +8,8 @@ import { v4 as uuidv4 } from 'uuid';
 import type {
   ChatMessage,
   BaseImageUpload,
-  ChatHistoryResponse,
 } from '../types/editing';
-import type { FittingStatusResponse, FittingResult } from '../types/fitting';
+import type { FittingStatusResponse } from '../types/fitting';
 import {
   uploadBaseImage,
   createChatSession,
@@ -280,8 +279,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       // Обновляем профиль пользователя (списан 1 кредит)
       await useAuthStore.getState().refreshProfile();
-
-      return result;
     } catch (error: any) {
       const errorMessage = error.response?.data?.detail || error.message || 'Ошибка генерации изображения';
       set({
