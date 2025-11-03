@@ -16,7 +16,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   icon?: React.ReactNode;
   iconPosition?: 'left' | 'right';
   fullWidth?: boolean;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 const variantClasses: Record<ButtonVariant, string> = {
@@ -46,6 +46,7 @@ export const Button: React.FC<ButtonProps> = ({
   className,
   disabled,
   children,
+  onClick,
   ...props
 }) => {
   const buttonClasses = clsx(
@@ -64,8 +65,12 @@ export const Button: React.FC<ButtonProps> = ({
     <motion.button
       className={buttonClasses}
       disabled={disabled || isLoading}
+      onClick={onClick}
+      type={props.type}
+      name={props.name}
+      value={props.value}
+      form={props.form}
       whileTap={{ scale: disabled || isLoading ? 1 : 0.98 }}
-      {...props}
     >
       {isLoading ? (
         <>

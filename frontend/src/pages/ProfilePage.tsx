@@ -562,7 +562,8 @@ export const ProfilePage: React.FC = () => {
               Не удалось загрузить информацию о рефералах
             </div>
           )}
-        </div>
+        </Card>
+      </motion.div>
 
         {/* Информация о пользователе */}
         <div className="bg-white rounded-xl shadow-lg p-6">

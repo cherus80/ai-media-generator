@@ -5,7 +5,7 @@
 import React from 'react';
 import clsx from 'clsx';
 
-export type BadgeVariant = 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'info' | 'neutral';
+export type BadgeVariant = 'primary' | 'secondary' | 'accent' | 'success' | 'warning' | 'danger' | 'info' | 'neutral';
 export type BadgeSize = 'sm' | 'md' | 'lg';
 
 interface BadgeProps {
@@ -20,6 +20,7 @@ interface BadgeProps {
 const variantClasses: Record<BadgeVariant, string> = {
   primary: 'bg-primary-100 text-primary-700 border-primary-200',
   secondary: 'bg-secondary-100 text-secondary-700 border-secondary-200',
+  accent: 'bg-accent-100 text-accent-700 border-accent-200',
   success: 'bg-success-100 text-success-700 border-success-200',
   warning: 'bg-warning-100 text-warning-700 border-warning-200',
   danger: 'bg-danger-100 text-danger-700 border-danger-200',
@@ -36,6 +37,7 @@ const sizeClasses: Record<BadgeSize, string> = {
 const dotColorClasses: Record<BadgeVariant, string> = {
   primary: 'bg-primary-500',
   secondary: 'bg-secondary-500',
+  accent: 'bg-accent-500',
   success: 'bg-success-500',
   warning: 'bg-warning-500',
   danger: 'bg-danger-500',
