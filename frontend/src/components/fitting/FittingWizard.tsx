@@ -4,12 +4,14 @@
  */
 
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Step1UserPhoto } from './Step1UserPhoto';
 import { Step2ItemPhoto } from './Step2ItemPhoto';
 import { Step3Zone } from './Step3Zone';
 import { GenerationProgress } from './GenerationProgress';
 import { FittingResult } from './FittingResult';
 import { useFittingStore } from '../../store/fittingStore';
+import { Card } from '../ui/Card';
 import toast from 'react-hot-toast';
 
 type WizardStep = 'user_photo' | 'item_photo' | 'zone' | 'generating' | 'result';
@@ -54,55 +56,112 @@ export const FittingWizard: React.FC = () => {
 
   const totalSteps = 3;
 
+  const stepTitles = {
+    user_photo: 'Загрузите ваше фото',
+    item_photo: 'Загрузите фото одежды',
+    zone: 'Выберите зону примерки',
+    generating: 'Генерация...',
+    result: 'Результат',
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Progress indicator */}
-      {currentStep !== 'generating' && currentStep !== 'result' && (
-        <div className="bg-white border-b border-gray-200 py-4 px-4">
-          <div className="max-w-2xl mx-auto">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-700">
-                Шаг {getStepNumber()} из {totalSteps}
-              </span>
-              <span className="text-xs text-gray-500">
-                {Math.round((getStepNumber() / totalSteps) * 100)}%
-              </span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${(getStepNumber() / totalSteps) * 100}%` }}
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50 py-6 px-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Progress indicator */}
+        {currentStep !== 'generating' && currentStep !== 'result' && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <Card variant="glass" padding="lg">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-lg font-bold gradient-text">
+                    {stepTitles[currentStep]}
+                  </h2>
+                  <p className="text-sm text-dark-600">
+                    Шаг {getStepNumber()} из {totalSteps}
+                  </p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  {[1, 2, 3].map((step) => (
+                    <div
+                      key={step}
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold transition-all duration-300 ${
+                        step === getStepNumber()
+                          ? 'bg-gradient-to-br from-primary-500 to-secondary-500 text-white shadow-lg scale-110'
+                          : step < getStepNumber()
+                          ? 'bg-success-500 text-white'
+                          : 'bg-dark-200 text-dark-500'
+                      }`}
+                    >
+                      {step < getStepNumber() ? (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        step
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Progress bar */}
+              <div className="relative w-full bg-dark-200 rounded-full h-3 overflow-hidden">
+                <motion.div
+                  className="h-full rounded-full bg-gradient-to-r from-primary-500 via-secondary-500 to-accent-500"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${(getStepNumber() / totalSteps) * 100}%` }}
+                  transition={{ duration: 0.5, ease: "easeOut" }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+              </div>
+
+              <div className="mt-2 text-right">
+                <span className="text-sm font-semibold text-primary-600">
+                  {Math.round((getStepNumber() / totalSteps) * 100)}% завершено
+                </span>
+              </div>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* Main content with animations */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentStep}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            {currentStep === 'user_photo' && (
+              <Step1UserPhoto onNext={() => setCurrentStep('item_photo')} />
+            )}
+
+            {currentStep === 'item_photo' && (
+              <Step2ItemPhoto
+                onNext={() => setCurrentStep('zone')}
+                onBack={() => setCurrentStep('user_photo')}
               />
-            </div>
-          </div>
-        </div>
-      )}
+            )}
 
-      {/* Main content */}
-      <div className="py-6">
-        {currentStep === 'user_photo' && (
-          <Step1UserPhoto onNext={() => setCurrentStep('item_photo')} />
-        )}
+            {currentStep === 'zone' && (
+              <Step3Zone
+                onBack={() => setCurrentStep('item_photo')}
+                onGenerate={handleGenerateClick}
+              />
+            )}
 
-        {currentStep === 'item_photo' && (
-          <Step2ItemPhoto
-            onNext={() => setCurrentStep('zone')}
-            onBack={() => setCurrentStep('user_photo')}
-          />
-        )}
+            {currentStep === 'generating' && <GenerationProgress />}
 
-        {currentStep === 'zone' && (
-          <Step3Zone
-            onBack={() => setCurrentStep('item_photo')}
-            onGenerate={handleGenerateClick}
-          />
-        )}
-
-        {currentStep === 'generating' && <GenerationProgress />}
-
-        {currentStep === 'result' && (
-          <FittingResult onNewFitting={handleRestart} />
-        )}
+            {currentStep === 'result' && (
+              <FittingResult onNewFitting={handleRestart} />
+            )}
+          </motion.div>
+        </AnimatePresence>
       </div>
     </div>
   );

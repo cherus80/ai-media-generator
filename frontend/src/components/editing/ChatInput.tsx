@@ -4,7 +4,10 @@
  */
 
 import React from 'react';
+import { motion } from 'framer-motion';
 import { useAuthStore } from '../../store/authStore';
+import { Button } from '../ui/Button';
+import { Badge } from '../ui/Badge';
 
 interface ChatInputProps {
   onSend: (message: string) => void;
@@ -53,99 +56,84 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   return (
-    <div className="border-t border-gray-200 bg-white px-4 py-4">
-      <div className="max-w-4xl mx-auto flex items-end space-x-3">
-        {/* Textarea */}
-        <div className="flex-1 relative">
-          <textarea
-            ref={textareaRef}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholder}
-            disabled={disabled}
-            rows={1}
-            className="w-full px-4 py-3 border border-gray-300 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed transition-all"
-            style={{ maxHeight: '200px' }}
-          />
-          {/* Hint text */}
-          <div className="absolute right-3 bottom-2 text-xs text-gray-400">
-            Enter для отправки
+    <div className="border-t border-white/20 backdrop-blur-md bg-white/70 px-4 py-4 shadow-soft">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex items-end space-x-3">
+          {/* Textarea */}
+          <div className="flex-1 relative">
+            <textarea
+              ref={textareaRef}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={placeholder}
+              disabled={disabled}
+              rows={1}
+              className="w-full px-5 py-4 glass border-2 border-primary-200 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-dark-900 placeholder-dark-400 font-medium"
+              style={{ maxHeight: '200px' }}
+            />
+            {/* Hint text */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: message.length === 0 ? 1 : 0 }}
+              className="absolute right-4 bottom-3 text-xs text-dark-400 font-medium pointer-events-none"
+            >
+              Enter для отправки
+            </motion.div>
           </div>
+
+          {/* Send button */}
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              onClick={handleSubmit}
+              disabled={!message.trim() || disabled}
+              variant="primary"
+              size="lg"
+              className="!rounded-full !p-4 shadow-glow-primary"
+              isLoading={disabled}
+              icon={
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+              }
+            />
+          </motion.div>
         </div>
 
-        {/* Send button */}
-        <button
-          onClick={handleSubmit}
-          disabled={!message.trim() || disabled}
-          className="flex-shrink-0 p-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-          title="Отправить сообщение"
-        >
-          {disabled ? (
-            // Loading spinner
-            <svg
-              className="w-6 h-6 animate-spin"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              ></circle>
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-          ) : (
-            // Send icon
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-              />
-            </svg>
-          )}
-        </button>
-      </div>
-
-      {/* Balance and Freemium info */}
-      {user && (
-        <div className="max-w-4xl mx-auto mt-2 flex items-center justify-between text-xs">
-          <div className="flex items-center space-x-4 text-gray-600">
-            <span>
-              Баланс: <span className="font-semibold">{user.balance_credits}</span> кредитов
-            </span>
-            {user.subscription_type && user.subscription_type !== 'none' && (
-              <span className="text-blue-600">
-                + подписка ({user.subscription_type})
-              </span>
-            )}
-            {user.freemium_actions_remaining && user.freemium_actions_remaining > 0 && (
-              <span className="text-green-600">
-                + {user.freemium_actions_remaining} бесплатных
-              </span>
-            )}
-          </div>
-          {message.length > 1500 && (
-            <div className="text-gray-500">
-              {message.length} / 2000 символов
+        {/* Balance and Freemium info */}
+        {user && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="mt-3 flex items-center justify-between text-xs"
+          >
+            <div className="flex items-center flex-wrap gap-2">
+              <Badge variant="neutral" size="sm">
+                💎 {user.balance_credits} кредитов
+              </Badge>
+              {user.subscription_type && user.subscription_type !== 'none' && (
+                <Badge variant="primary" size="sm" dot>
+                  {user.subscription_type}
+                </Badge>
+              )}
+              {user.freemium_actions_remaining && user.freemium_actions_remaining > 0 && (
+                <Badge variant="success" size="sm" dot>
+                  {user.freemium_actions_remaining} бесплатных
+                </Badge>
+              )}
             </div>
-          )}
-        </div>
-      )}
+            {message.length > 1500 && (
+              <Badge
+                variant={message.length > 1900 ? "danger" : "warning"}
+                size="sm"
+              >
+                {message.length} / 2000
+              </Badge>
+            )}
+          </motion.div>
+        )}
+      </div>
     </div>
   );
 };

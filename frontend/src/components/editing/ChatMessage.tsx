@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { motion } from 'framer-motion';
 import type { ChatMessage as ChatMessageType } from '../../types/editing';
 
 interface ChatMessageProps {
@@ -23,20 +24,23 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   };
 
   return (
-    <div
-      className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4 animate-fade-in`}
+    <motion.div
+      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.3 }}
+      className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}
     >
       <div
-        className={`max-w-[80%] ${
+        className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-medium ${
           isUser
-            ? 'bg-blue-600 text-white'
-            : 'bg-gray-100 text-gray-900 border border-gray-200'
-        } rounded-2xl px-4 py-3 shadow-sm`}
+            ? 'bg-gradient-to-br from-primary-500 to-secondary-500 text-white'
+            : 'glass border border-white/20 text-dark-900'
+        }`}
       >
         {/* Иконка ассистента */}
         {isAssistant && (
           <div className="flex items-center mb-2">
-            <div className="w-6 h-6 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center mr-2">
+            <div className="w-7 h-7 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center shadow-lg mr-2">
               <svg
                 className="w-4 h-4 text-white"
                 fill="none"
@@ -51,14 +55,14 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
                 />
               </svg>
             </div>
-            <span className="text-xs font-semibold text-gray-600">AI Assistant</span>
+            <span className="text-xs font-bold gradient-text bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-600">AI Assistant</span>
           </div>
         )}
 
         {/* Текст сообщения */}
         <p
           className={`text-sm whitespace-pre-wrap break-words ${
-            isUser ? 'text-white' : 'text-gray-800'
+            isUser ? 'text-white' : 'text-dark-800'
           }`}
         >
           {message.content}
@@ -66,22 +70,34 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
 
         {/* Индикатор загрузки */}
         {message.isLoading && (
-          <div className="mt-2 flex items-center space-x-1">
-            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+          <div className="mt-3 flex items-center space-x-1.5">
+            <motion.div
+              animate={{ y: [0, -6, 0] }}
+              transition={{ duration: 0.6, repeat: Infinity, repeatDelay: 0 }}
+              className="w-2 h-2 bg-primary-400 rounded-full"
+            />
+            <motion.div
+              animate={{ y: [0, -6, 0] }}
+              transition={{ duration: 0.6, repeat: Infinity, repeatDelay: 0, delay: 0.15 }}
+              className="w-2 h-2 bg-secondary-400 rounded-full"
+            />
+            <motion.div
+              animate={{ y: [0, -6, 0] }}
+              transition={{ duration: 0.6, repeat: Infinity, repeatDelay: 0, delay: 0.3 }}
+              className="w-2 h-2 bg-accent-400 rounded-full"
+            />
           </div>
         )}
 
         {/* Timestamp */}
         <p
-          className={`text-xs mt-2 ${
-            isUser ? 'text-blue-100' : 'text-gray-500'
+          className={`text-xs mt-2 font-medium ${
+            isUser ? 'text-white/70' : 'text-dark-500'
           }`}
         >
           {formatTime(message.timestamp)}
         </p>
       </div>
-    </div>
+    </motion.div>
   );
 };

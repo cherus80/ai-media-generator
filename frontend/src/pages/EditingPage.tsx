@@ -4,12 +4,16 @@
  */
 
 import React, { useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { ChatWindow } from '../components/editing/ChatWindow';
 import { ChatInput } from '../components/editing/ChatInput';
 import { FileUpload } from '../components/common/FileUpload';
 import { useAuthStore } from '../store/authStore';
 import { useChatStore } from '../store/chatStore';
 import { AuthGuard } from '../components/auth/AuthGuard';
+import { Card } from '../components/ui/Card';
+import { Badge } from '../components/ui/Badge';
+import { Button } from '../components/ui/Button';
 import toast from 'react-hot-toast';
 
 export const EditingPage: React.FC = () => {
@@ -96,42 +100,66 @@ export const EditingPage: React.FC = () => {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50 flex flex-col">
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <header className="sticky top-0 z-20 backdrop-blur-md bg-white/70 border-b border-white/20 shadow-sm">
           <div className="max-w-4xl mx-auto px-4 py-4">
             <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">
-                  Редактирование изображений
-                </h1>
-                <p className="text-sm text-gray-600">
-                  AI-ассистент для редактирования фото
-                </p>
-              </div>
-              <div className="flex items-center space-x-4">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="flex items-center space-x-3"
+              >
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center shadow-lg">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
+                  </svg>
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold gradient-text">
+                    AI Редактор
+                  </h1>
+                  <p className="text-sm text-dark-600">
+                    Умный ассистент для фото
+                  </p>
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="flex items-center space-x-3"
+              >
                 {user && (
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-gray-700">
-                      {user.balance_credits} кредитов
-                    </p>
+                  <Card variant="gradient" padding="sm" className="border border-primary-200">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-primary-700">
+                        {user.balance_credits}
+                      </p>
+                      <p className="text-xs text-primary-600 font-semibold">кредитов</p>
+                    </div>
                     {user.subscription_type && user.subscription_type !== 'none' && (
-                      <span className="text-xs text-blue-600">
+                      <Badge variant="primary" size="sm" className="mt-1">
                         {user.subscription_type}
-                      </span>
+                      </Badge>
                     )}
-                  </div>
+                  </Card>
                 )}
                 {hasActiveSession && (
-                  <button
+                  <Button
+                    variant="danger"
+                    size="sm"
                     onClick={() => setShowResetConfirm(true)}
-                    className="text-sm text-red-600 hover:text-red-700 font-medium"
-                    title="Сбросить чат и начать заново"
+                    icon={
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                    }
                   >
-                    Сбросить чат
-                  </button>
+                    Сбросить
+                  </Button>
                 )}
-              </div>
+              </motion.div>
             </div>
           </div>
         </header>
@@ -140,98 +168,105 @@ export const EditingPage: React.FC = () => {
         {!hasActiveSession ? (
           // Upload screen
           <main className="flex-1 flex items-center justify-center px-4 py-12">
-            <div className="max-w-2xl w-full">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="max-w-2xl w-full"
+            >
               <div className="mb-8 text-center">
-                <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full mb-4">
-                  <svg
-                    className="w-10 h-10 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
-                  </svg>
-                </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  Загрузите изображение
-                </h2>
-                <p className="text-gray-600">
-                  Выберите фотографию, которую хотите отредактировать с помощью AI
-                </p>
-              </div>
-
-              <FileUpload
-                onFileSelect={handleFileSelect}
-                isLoading={isUploadingImage}
-                error={uploadError}
-                label="Базовое изображение"
-                hint="JPEG или PNG, до 5MB"
-              />
-
-              {/* Info cards */}
-              <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-white p-4 rounded-lg border border-gray-200">
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0">
-                      <svg
-                        className="w-6 h-6 text-blue-600"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-                        />
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", duration: 0.6, delay: 0.1 }}
+                  className="inline-block mb-6"
+                >
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-blue-500 rounded-3xl blur-2xl opacity-50 animate-pulse-slow" />
+                    <div className="relative bg-white rounded-3xl p-6 shadow-large">
+                      <svg className="w-20 h-20 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                     </div>
-                    <div className="ml-3">
-                      <h3 className="text-sm font-semibold text-gray-900 mb-1">
-                        AI-ассистент
-                      </h3>
-                      <p className="text-sm text-gray-600">
+                  </div>
+                </motion.div>
+
+                <motion.h2
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="text-3xl font-bold gradient-text mb-3"
+                >
+                  Загрузите изображение
+                </motion.h2>
+                <motion.p
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="text-dark-600 text-lg"
+                >
+                  Выберите фотографию, которую хотите отредактировать с помощью AI
+                </motion.p>
+              </div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                <FileUpload
+                  onFileSelect={handleFileSelect}
+                  isLoading={isUploadingImage}
+                  error={uploadError}
+                  label="Базовое изображение"
+                  hint="JPEG или PNG, до 5MB"
+                />
+              </motion.div>
+
+              {/* Info cards */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4"
+              >
+                <Card variant="glass" hover padding="lg">
+                  <div className="flex items-start space-x-4">
+                    <div className="flex-shrink-0">
+                      <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center shadow-lg">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-base font-bold text-dark-900 mb-2">AI-ассистент</h3>
+                      <p className="text-sm text-dark-600">
                         Опишите изменения естественным языком. AI предложит варианты промптов.
                       </p>
                     </div>
                   </div>
-                </div>
+                </Card>
 
-                <div className="bg-white p-4 rounded-lg border border-gray-200">
-                  <div className="flex items-start">
+                <Card variant="glass" hover padding="lg">
+                  <div className="flex items-start space-x-4">
                     <div className="flex-shrink-0">
-                      <svg
-                        className="w-6 h-6 text-green-600"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
+                      <div className="w-12 h-12 bg-gradient-to-br from-success-500 to-secondary-500 rounded-xl flex items-center justify-center shadow-lg">
+                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
                     </div>
-                    <div className="ml-3">
-                      <h3 className="text-sm font-semibold text-gray-900 mb-1">
-                        Прозрачная оплата
-                      </h3>
-                      <p className="text-sm text-gray-600">
+                    <div className="flex-1">
+                      <h3 className="text-base font-bold text-dark-900 mb-2">Прозрачная оплата</h3>
+                      <p className="text-sm text-dark-600">
                         1 кредит за сообщение AI, 1 кредит за генерацию изображения.
                       </p>
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
+                </Card>
+              </motion.div>
+            </motion.div>
           </main>
         ) : (
           // Chat screen
@@ -254,36 +289,60 @@ export const EditingPage: React.FC = () => {
 
         {/* Reset confirmation modal */}
         {showResetConfirm && (
-          <div
-            className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4"
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
             onClick={() => setShowResetConfirm(false)}
           >
-            <div
-              className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl"
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", duration: 0.3 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-lg font-bold text-gray-900 mb-2">
-                Сбросить чат?
-              </h3>
-              <p className="text-sm text-gray-600 mb-6">
-                Вся история беседы будет удалена. Это действие нельзя отменить.
-              </p>
-              <div className="flex space-x-3">
-                <button
-                  onClick={() => setShowResetConfirm(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Отмена
-                </button>
-                <button
-                  onClick={handleResetSession}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  Сбросить
-                </button>
-              </div>
-            </div>
-          </div>
+              <Card variant="glass" padding="lg" className="max-w-sm w-full shadow-glow-primary">
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-danger-500 to-warning-500 rounded-xl flex items-center justify-center shadow-lg">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-dark-900 ml-3">
+                    Сбросить чат?
+                  </h3>
+                </div>
+                <p className="text-dark-600 mb-6">
+                  Вся история беседы будет удалена. Это действие нельзя отменить.
+                </p>
+                <div className="flex space-x-3">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() => setShowResetConfirm(false)}
+                    fullWidth
+                  >
+                    Отмена
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="lg"
+                    onClick={handleResetSession}
+                    fullWidth
+                    icon={
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    }
+                  >
+                    Сбросить
+                  </Button>
+                </div>
+              </Card>
+            </motion.div>
+          </motion.div>
         )}
       </div>
     </AuthGuard>
