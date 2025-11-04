@@ -35,7 +35,7 @@ AI Image Generator Bot — Telegram Web App для виртуальной при
 Администратор: Мониторинг статистики (доход минус расходы/налоги).
 
 2.3. Общая архитектура
-Frontend: React.js + Telegram WebApp SDK + react-step-wizard для квиза (примерка); чат-компонент (как в AI Studio) для редактирования. Хостинг: Beget shared или VPS (Docker/Portainer).
+Frontend: React.js + Telegram WebApp SDK + react-step-wizard для квиза (примерка); чат-компонент (как в AI Studio) для редактирования. Хостинг:  VPS (Docker/Portainer).
 
 Backend: FastAPI (Python 3.11) + SQLAlchemy/PostgreSQL. Хостинг: Beget VPS (Docker/Portainer).
 

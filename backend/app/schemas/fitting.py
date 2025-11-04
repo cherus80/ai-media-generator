@@ -24,7 +24,7 @@ class FittingRequest(BaseModel):
     item_photo_id: UUID = Field(..., description="UUID фото одежды/аксессуара")
     accessory_zone: Optional[str] = Field(
         None,
-        description="Зона для аксессуара: head, neck, hands, legs"
+        description="Зона для аксессуара: head, face, neck, hands, legs, body"
     )
 
     @field_validator("accessory_zone")
@@ -34,7 +34,7 @@ class FittingRequest(BaseModel):
         if v is None:
             return None
 
-        valid_zones = {"head", "neck", "hands", "legs"}
+        valid_zones = {"head", "face", "neck", "hands", "legs", "body"}
         if v.lower() not in valid_zones:
             raise ValueError(
                 f"Invalid accessory_zone. Must be one of: {', '.join(valid_zones)}"

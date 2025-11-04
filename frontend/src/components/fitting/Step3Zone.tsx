@@ -14,10 +14,12 @@ interface Step3ZoneProps {
 }
 
 const ZONES = [
-  { id: 'head' as AccessoryZone, label: 'Голова', icon: '👒', description: 'Шляпы, очки, серьги' },
+  { id: 'head' as AccessoryZone, label: 'Голова', icon: '👒', description: 'Шляпы, шапки' },
+  { id: 'face' as AccessoryZone, label: 'Лицо', icon: '👓', description: 'Очки, маски' },
   { id: 'neck' as AccessoryZone, label: 'Шея', icon: '📿', description: 'Колье, шарфы' },
   { id: 'hands' as AccessoryZone, label: 'Руки', icon: '💍', description: 'Часы, браслеты, кольца' },
   { id: 'legs' as AccessoryZone, label: 'Ноги', icon: '👟', description: 'Обувь' },
+  { id: 'body' as AccessoryZone, label: 'Всё тело', icon: '👔', description: 'Одежда, костюмы' },
 ];
 
 export const Step3Zone: React.FC<Step3ZoneProps> = ({ onBack, onGenerate }) => {

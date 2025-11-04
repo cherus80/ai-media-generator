@@ -141,6 +141,13 @@ export const AdminPage: React.FC = () => {
           icon: '✏️',
           color: 'purple',
         },
+        {
+          title: 'Рефералы',
+          value: formatNumber(stats.total_referrals),
+          change: stats.active_referrals > 0 ? ((stats.active_referrals / stats.total_referrals) * 100) : 0,
+          icon: '🤝',
+          color: 'green',
+        },
       ]
     : [];
 
@@ -244,7 +251,7 @@ export const AdminPage: React.FC = () => {
           </div>
 
           {/* Detailed Stats */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6 mb-6">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Пользователи</h3>
               <div className="space-y-3">
@@ -307,6 +314,33 @@ export const AdminPage: React.FC = () => {
                 <div className="flex justify-between">
                   <span className="text-gray-600">Успешных:</span>
                   <span className="font-medium">{formatNumber(stats.successful_payments)} / {formatNumber(stats.total_payments)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Рефералы</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Всего:</span>
+                  <span className="font-medium">{formatNumber(stats.total_referrals)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Активных:</span>
+                  <span className="font-medium">{formatNumber(stats.active_referrals)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">% активных:</span>
+                  <span className="font-medium">
+                    {stats.total_referrals > 0
+                      ? ((stats.active_referrals / stats.total_referrals) * 100).toFixed(1)
+                      : '0.0'}%
+                  </span>
+                </div>
+                <div className="mt-4 pt-3 border-t border-gray-200">
+                  <p className="text-xs text-gray-500">
+                    Активные рефералы - пользователи, совершившие хотя бы одно действие после регистрации
+                  </p>
                 </div>
               </div>
             </div>

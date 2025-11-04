@@ -4,7 +4,7 @@
  */
 
 // Зоны для аксессуаров
-export type AccessoryZone = 'head' | 'neck' | 'hands' | 'legs' | null;
+export type AccessoryZone = 'head' | 'face' | 'neck' | 'hands' | 'legs' | 'body' | null;
 
 // Статусы генерации
 export type GenerationStatus = 'pending' | 'processing' | 'completed' | 'failed';

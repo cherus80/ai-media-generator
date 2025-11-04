@@ -31,6 +31,11 @@ FITTING_PROMPTS = {
         "Clear focus on the accessory, natural lighting, realistic placement. "
         "High detail, photorealistic, 8k quality."
     ),
+    "accessory_face": (
+        "A professional close-up portrait showing a person wearing the accessory on their face. "
+        "Clear focus on glasses/mask, natural lighting, realistic fit and placement. "
+        "High detail, photorealistic, 8k quality."
+    ),
     "accessory_neck": (
         "A fashion portrait focusing on the neck area with the accessory. "
         "Professional lighting, elegant pose, realistic jewelry placement. "
@@ -46,6 +51,11 @@ FITTING_PROMPTS = {
         "Professional lighting, natural pose, realistic placement. "
         "Photorealistic, high detail, 8k quality."
     ),
+    "accessory_body": (
+        "A full-body fashion photoshoot showing a person wearing the clothing item. "
+        "Professional studio lighting, clean background, realistic fit and draping. "
+        "Photorealistic, 8k, detailed fabric texture, full body view."
+    ),
 }
 
 
@@ -54,7 +64,7 @@ def _get_prompt_for_zone(zone: Optional[str]) -> str:
     Получить промпт в зависимости от зоны аксессуара.
 
     Args:
-        zone: Зона аксессуара (head, neck, hands, legs) или None для одежды
+        zone: Зона аксессуара (head, face, neck, hands, legs, body) или None для одежды
 
     Returns:
         str: Промпт для генерации
