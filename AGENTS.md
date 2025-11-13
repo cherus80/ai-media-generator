@@ -127,3 +127,16 @@ docker-compose -f docker-compose.dev.yml up    # Docker dev
 3. **Smart Routing** — правильные агенты для каждой задачи
 4. **Protected Files** — не трогай конфиги и деплой скрипты
 5. **Auto-Update Index** — обновляй проект-индекс при изменениях
+
+
+---
+
+## READ FIRST: CODE QUALITY RULES
+
+**BEFORE writing any code, please read: [`CODE_RULES.md`](./CODE_RULES.md)**
+
+These rules define how Claude Code must behave when fixing bugs:
+- FORBIDDEN: Delete code, create stubs, or ignore errors
+- MANDATORY: Fix root causes, test changes, show full code
+
+No exceptions - these apply to ALL tasks!
