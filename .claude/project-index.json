@@ -1,0 +1,138 @@
+{
+  "projectName": "AI Image Bot - Virtual Try-On",
+  "description": "Telegram Web App для виртуальной примерки одежды/украшений/аксессуаров",
+  "version": "0.16.0",
+  "lastUpdated": "2025-11-13",
+  
+  "structure": {
+    "frontend": {
+      "path": "frontend/src",
+      "tech": "React 18 + TypeScript + Vite + Tailwind",
+      "keyFiles": {
+        "app": "frontend/src/App.tsx",
+        "tryOnCamera": "frontend/src/components/TryOnCamera/index.tsx",
+        "uploadPhoto": "frontend/src/components/UploadPhoto/index.tsx",
+        "resultPreview": "frontend/src/components/ResultPreview/index.tsx",
+        "adminPanel": "frontend/src/pages/AdminPage.tsx",
+        "api": "frontend/src/services/api.ts",
+        "store": "frontend/src/store/index.ts"
+      }
+    },
+    "backend": {
+      "path": "backend/app",
+      "tech": "FastAPI + SQLAlchemy + PostgreSQL",
+      "keyFiles": {
+        "main": "backend/app/main.py",
+        "users_api": "backend/app/api/v1/users.py",
+        "photos_api": "backend/app/api/v1/photos.py",
+        "admin_api": "backend/app/api/v1/admin.py",
+        "payments_api": "backend/app/api/v1/payments.py",
+        "models": "backend/app/models",
+        "schemas": "backend/app/schemas",
+        "services": "backend/app/services",
+        "kie_ai": "backend/app/services/kie_ai.py"
+      }
+    },
+    "telegram_bot": {
+      "path": "telegram_bot",
+      "tech": "Telegram Bot API + WebApp",
+      "keyFiles": {
+        "main": "telegram_bot/main.py",
+        "handlers": "telegram_bot/handlers"
+      }
+    },
+    "deployment": {
+      "path": "scripts",
+      "tech": "Docker + Docker Compose + Portainer",
+      "keyFiles": {
+        "dev": "docker-compose.dev.yml",
+        "prod": "docker-compose.prod.yml",
+        "vps_deploy": "vps-deploy-script.sh",
+        "quick_guide": "QUICK_DEPLOY_GUIDE.md"
+      }
+    }
+  },
+
+  "apiEndpoints": {
+    "users": {
+      "path": "backend/app/api/v1/users.py",
+      "methods": ["GET /users", "POST /users", "GET /users/{id}", "PUT /users/{id}"]
+    },
+    "photos": {
+      "path": "backend/app/api/v1/photos.py",
+      "methods": ["POST /photos/upload", "GET /photos/{id}", "DELETE /photos/{id}"]
+    },
+    "admin": {
+      "path": "backend/app/api/v1/admin.py",
+      "methods": ["GET /admin/stats", "GET /admin/referrals"]
+    },
+    "payments": {
+      "path": "backend/app/api/v1/payments.py",
+      "methods": ["POST /payments/create", "POST /payments/webhook"]
+    }
+  },
+
+  "databaseModels": {
+    "User": "backend/app/models/user.py",
+    "Generation": "backend/app/models/generation.py",
+    "ChatHistory": "backend/app/models/chat_history.py",
+    "Payment": "backend/app/models/payment.py",
+    "Referral": "backend/app/models/referral.py"
+  },
+
+  "components": {
+    "TryOnCamera": {
+      "path": "frontend/src/components/TryOnCamera",
+      "description": "Основной компонент для примерки"
+    },
+    "UploadPhoto": {
+      "path": "frontend/src/components/UploadPhoto",
+      "description": "Загрузка фото пользователя"
+    },
+    "ResultPreview": {
+      "path": "frontend/src/components/ResultPreview",
+      "description": "Превью результатов примерки"
+    },
+    "AdminPanel": {
+      "path": "frontend/src/pages/AdminPage.tsx",
+      "description": "Панель администратора со статистикой"
+    }
+  },
+
+  "externalServices": {
+    "kie_ai": {
+      "name": "kie.ai (Nano Banana)",
+      "purpose": "Генерация и обработка изображений примерки",
+      "integration": "backend/app/services/kie_ai.py"
+    },
+    "telegram_api": {
+      "name": "Telegram Bot API",
+      "purpose": "Авторизация, WebApp интеграция",
+      "integration": "telegram_bot/main.py"
+    },
+    "ukassa": {
+      "name": "UKassa",
+      "purpose": "Платежи и монетизация",
+      "integration": "backend/app/api/v1/payments.py"
+    }
+  },
+
+  "protectedFiles": [
+    "docker-compose.yml",
+    "docker-compose.prod.yml",
+    "docker-compose.dev.yml",
+    ".env",
+    ".env.example",
+    "vps-deploy-script.sh"
+  ],
+
+  "quickCommands": {
+    "dev_start": "./start-dev.sh",
+    "dev_stop": "./stop-dev.sh",
+    "deploy_vps": "./vps-deploy-script.sh",
+    "docker_dev": "docker-compose -f docker-compose.dev.yml up",
+    "docker_prod": "docker-compose -f docker-compose.prod.yml up",
+    "test": "pytest backend/",
+    "lint": "eslint frontend/src"
+  }
+}
