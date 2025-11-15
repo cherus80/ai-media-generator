@@ -12,7 +12,8 @@ RUN apk add --no-cache python3 make g++
 COPY package*.json ./
 
 # Установка зависимостей (включая devDependencies для сборки)
-RUN npm ci
+# Добавлены retry и увеличен timeout для обработки сетевых проблем
+RUN npm ci --loglevel=error --fetch-timeout=60000 --fetch-retries=5 --fetch-retry-mintimeout=20000 --fetch-retry-maxtimeout=120000
 
 # Копирование исходного кода
 COPY . .
