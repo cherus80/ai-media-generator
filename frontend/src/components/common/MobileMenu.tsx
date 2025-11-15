@@ -1,0 +1,167 @@
+/**
+ * Компонент MobileMenu - выдвижное боковое меню
+ * Используется для навигации по приложению
+ */
+
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAuthStore } from '../../store/authStore';
+
+interface MobileMenuProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
+  const navigate = useNavigate();
+  const { user, logout } = useAuthStore();
+
+  // Закрытие при нажатии Escape
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      // Блокируем скролл body когда меню открыто
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen, onClose]);
+
+  const handleNavigate = (path: string) => {
+    navigate(path);
+    onClose();
+  };
+
+  const handleLogout = () => {
+    logout();
+    onClose();
+  };
+
+  const menuItems = [
+    {
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+      ),
+      label: 'Профиль',
+      onClick: () => handleNavigate('/profile'),
+    },
+    {
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+      label: 'История генераций',
+      onClick: () => handleNavigate('/profile'),
+    },
+    {
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      ),
+      label: 'Реферальная программа',
+      onClick: () => handleNavigate('/profile'),
+    },
+    {
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      ),
+      label: 'О приложении',
+      onClick: () => {
+        // TODO: Открыть модальное окно "О приложении"
+        alert('Информация о приложении будет добавлена');
+        onClose();
+      },
+    },
+  ];
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Overlay (затемнение фона) */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+          />
+
+          {/* Само меню */}
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="fixed top-0 right-0 bottom-0 w-80 max-w-[85vw] bg-white dark:bg-dark-800 shadow-2xl z-50 flex flex-col"
+          >
+            {/* Header меню */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-dark-700">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                  {user?.first_name || user?.username || 'Пользователь'}
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  @{user?.username || 'user'}
+                </p>
+              </div>
+              <button
+                onClick={onClose}
+                className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                aria-label="Закрыть меню"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Пункты меню */}
+            <nav className="flex-1 overflow-y-auto p-4">
+              <ul className="space-y-2">
+                {menuItems.map((item, index) => (
+                  <li key={index}>
+                    <button
+                      onClick={item.onClick}
+                      className="w-full flex items-center space-x-3 p-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors"
+                    >
+                      {item.icon}
+                      <span className="text-base font-medium">{item.label}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+
+            {/* Footer меню (Выход) */}
+            <div className="p-4 border-t border-gray-200 dark:border-dark-700">
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center space-x-2 p-3 rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                <span className="text-base font-medium">Выйти</span>
+              </button>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+};
