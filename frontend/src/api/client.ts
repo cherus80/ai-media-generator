@@ -19,8 +19,20 @@ export const apiClient = axios.create({
 // Request interceptor - add JWT token to requests
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Get token from localStorage
-    const token = localStorage.getItem('auth_token');
+    // Get token from Zustand persist storage
+    // Zustand persist stores auth state in localStorage with key 'auth-storage'
+    const authStorage = localStorage.getItem('auth-storage');
+
+    let token: string | null = null;
+
+    if (authStorage) {
+      try {
+        const parsed = JSON.parse(authStorage);
+        token = parsed?.state?.token || null;
+      } catch (error) {
+        console.error('Failed to parse auth storage:', error);
+      }
+    }
 
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;

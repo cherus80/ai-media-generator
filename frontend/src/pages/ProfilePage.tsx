@@ -10,6 +10,7 @@ import { usePayment } from '../store/paymentStore';
 import { PaymentWizard } from '../components/payment/PaymentWizard';
 import { handlePaymentReturn, pollPaymentStatus } from '../api/payment';
 import { getReferralStats, copyReferralLink, shareReferralLink, type ReferralStatsResponse } from '../api/referral';
+import { Layout } from '../components/common/Layout';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
@@ -137,30 +138,37 @@ export const ProfilePage: React.FC = () => {
   // Модальное окно с PaymentWizard
   if (showPaymentWizard) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50 p-6">
-        <div className="max-w-6xl mx-auto">
-          <Button
-            variant="ghost"
-            onClick={() => setShowPaymentWizard(false)}
-            icon={
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            }
-            className="mb-4"
-          >
-            Назад в профиль
-          </Button>
+      <Layout
+        title="Покупка кредитов"
+        subtitle="Выберите подходящий тариф"
+        backTo="/profile"
+        showBackButton={true}
+        icon={
+          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        }
+      >
+        <div className="max-w-6xl mx-auto p-6">
           <PaymentWizard />
         </div>
-      </div>
+      </Layout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50 p-4 md:p-6">
-      <div className="max-w-5xl mx-auto space-y-6">
-        {/* Заголовок с анимацией */}
+    <Layout
+      title="Мой профиль"
+      subtitle={`@${user?.username || 'unknown'}`}
+      backTo="/"
+      icon={
+        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+      }
+    >
+      <div className="max-w-5xl mx-auto p-4 md:p-6 space-y-6">
+        {/* Welcome card */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -170,22 +178,17 @@ export const ProfilePage: React.FC = () => {
             {/* Декоративный фон */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary-400 to-secondary-400 rounded-full filter blur-3xl opacity-20 -mr-32 -mt-32" />
 
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-4">
-                  <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-2xl flex items-center justify-center shadow-lg">
-                    <span className="text-2xl font-bold text-white">
-                      {user.username ? user.username.charAt(0).toUpperCase() : 'U'}
-                    </span>
-                  </div>
-                  <div>
-                    <h1 className="text-3xl font-bold gradient-text">Мой профиль</h1>
-                    <p className="text-dark-600 flex items-center space-x-2">
-                      <span>@{user.username || 'unknown'}</span>
-                      <Badge variant="success" size="sm" dot>Активен</Badge>
-                    </p>
-                  </div>
-                </div>
+            <div className="relative z-10 flex items-center space-x-4">
+              <div className="w-16 h-16 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-2xl flex items-center justify-center shadow-lg">
+                <span className="text-2xl font-bold text-white">
+                  {user.username ? user.username.charAt(0).toUpperCase() : 'U'}
+                </span>
+              </div>
+              <div>
+                <p className="text-dark-600 flex items-center space-x-2">
+                  <span>{user.first_name} {user.last_name}</span>
+                  <Badge variant="success" size="sm" dot>Активен</Badge>
+                </p>
               </div>
             </div>
           </Card>
@@ -598,6 +601,6 @@ export const ProfilePage: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 };

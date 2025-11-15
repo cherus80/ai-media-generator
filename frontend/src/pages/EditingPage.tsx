@@ -8,16 +8,14 @@ import { motion } from 'framer-motion';
 import { ChatWindow } from '../components/editing/ChatWindow';
 import { ChatInput } from '../components/editing/ChatInput';
 import { FileUpload } from '../components/common/FileUpload';
-import { useAuthStore } from '../store/authStore';
 import { useChatStore } from '../store/chatStore';
 import { AuthGuard } from '../components/auth/AuthGuard';
+import { Layout } from '../components/common/Layout';
 import { Card } from '../components/ui/Card';
-import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import toast from 'react-hot-toast';
 
 export const EditingPage: React.FC = () => {
-  const { user } = useAuthStore();
   const {
     sessionId,
     baseImage,
@@ -100,74 +98,42 @@ export const EditingPage: React.FC = () => {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50 flex flex-col">
-        {/* Header */}
-        <header className="sticky top-0 z-20 backdrop-blur-md bg-white/70 border-b border-white/20 shadow-sm">
-          <div className="max-w-4xl mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="flex items-center space-x-3"
-              >
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center shadow-lg">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
-                  </svg>
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold gradient-text">
-                    AI Редактор
-                  </h1>
-                  <p className="text-sm text-dark-600">
-                    Умный ассистент для фото
-                  </p>
-                </div>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="flex items-center space-x-3"
-              >
-                {user && (
-                  <Card variant="gradient" padding="sm" className="border border-primary-200">
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-primary-700">
-                        {user.balance_credits}
-                      </p>
-                      <p className="text-xs text-primary-600 font-semibold">кредитов</p>
-                    </div>
-                    {user.subscription_type && user.subscription_type !== 'none' && (
-                      <Badge variant="primary" size="sm" className="mt-1">
-                        {user.subscription_type}
-                      </Badge>
-                    )}
-                  </Card>
-                )}
-                {hasActiveSession && (
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => setShowResetConfirm(true)}
-                    icon={
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                    }
-                  >
-                    Сбросить
-                  </Button>
-                )}
-              </motion.div>
+      <Layout
+        title="AI Редактор"
+        subtitle="Умный ассистент для фото"
+        backTo="/"
+        gradient="from-pink-500 to-orange-500"
+        icon={
+          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
+          </svg>
+        }
+      >
+        <div className="flex flex-col" style={{ minHeight: 'calc(100vh - 80px)' }}>
+          {/* Reset button in header area (only when session active) */}
+          {hasActiveSession && (
+            <div className="max-w-4xl mx-auto px-4 py-2 w-full">
+              <div className="flex justify-end">
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => setShowResetConfirm(true)}
+                  icon={
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  }
+                >
+                  Сбросить чат
+                </Button>
+              </div>
             </div>
-          </div>
-        </header>
+          )}
 
-        {/* Main content */}
-        {!hasActiveSession ? (
-          // Upload screen
-          <main className="flex-1 flex items-center justify-center px-4 py-12">
+          {/* Main content */}
+          {!hasActiveSession ? (
+            // Upload screen
+            <main className="flex-1 flex items-center justify-center px-4 py-12">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -267,25 +233,25 @@ export const EditingPage: React.FC = () => {
                 </Card>
               </motion.div>
             </motion.div>
-          </main>
-        ) : (
-          // Chat screen
-          <>
-            <ChatWindow
-              messages={messages}
-              currentPrompts={currentPrompts}
-              onSelectPrompt={handleSelectPrompt}
-              isGenerating={isGenerating}
-              baseImageUrl={baseImage?.url}
-            />
+            </main>
+          ) : (
+            // Chat screen
+            <>
+              <ChatWindow
+                messages={messages}
+                currentPrompts={currentPrompts}
+                onSelectPrompt={handleSelectPrompt}
+                isGenerating={isGenerating}
+                baseImageUrl={baseImage?.url}
+              />
 
-            <ChatInput
-              onSend={handleSendMessage}
-              disabled={isSendingMessage || isGenerating}
-              placeholder="Опишите, как хотите изменить изображение..."
-            />
-          </>
-        )}
+              <ChatInput
+                onSend={handleSendMessage}
+                disabled={isSendingMessage || isGenerating}
+                placeholder="Опишите, как хотите изменить изображение..."
+              />
+            </>
+          )}
 
         {/* Reset confirmation modal */}
         {showResetConfirm && (
@@ -344,7 +310,8 @@ export const EditingPage: React.FC = () => {
             </motion.div>
           </motion.div>
         )}
-      </div>
+        </div>
+      </Layout>
     </AuthGuard>
   );
 };
