@@ -26,10 +26,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   accept = {
     'image/jpeg': ['.jpg', '.jpeg'],
     'image/png': ['.png'],
+    'image/webp': ['.webp'],
   },
-  maxSize = 5 * 1024 * 1024, // 5MB
+  maxSize = 10 * 1024 * 1024, // 10MB
   label = 'Загрузите фото',
-  hint = 'JPEG или PNG, до 5MB',
+  hint = 'JPEG, PNG или WebP, до 10MB',
 }) => {
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {

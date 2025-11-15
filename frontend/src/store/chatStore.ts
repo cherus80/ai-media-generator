@@ -86,12 +86,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     try {
       // Валидация на клиенте
-      if (!file.type.match(/^image\/(jpeg|png)$/)) {
-        throw new Error('Поддерживаются только JPEG и PNG форматы');
+      if (!file.type.match(/^image\/(jpeg|png|webp)$/)) {
+        throw new Error('Поддерживаются только JPEG, PNG и WebP форматы');
       }
 
-      if (file.size > 5 * 1024 * 1024) {
-        throw new Error('Размер файла не должен превышать 5MB');
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error('Размер файла не должен превышать 10MB');
       }
 
       // Создаём preview
