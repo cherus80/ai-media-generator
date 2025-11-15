@@ -5,21 +5,20 @@ FROM node:20-alpine AS build
 
 WORKDIR /app
 
-# Установка зависимостей для сборки
-RUN apk add --no-cache python3 make g++
-
 # Копирование package.json и package-lock.json
 COPY package*.json ./
 
 # Установка зависимостей (включая devDependencies для сборки)
 # Используем BuildKit cache mount для ускорения и стабильности
+# Пробуем без native компиляторов - большинство пакетов имеют pre-built бинарники
 RUN --mount=type=cache,target=/root/.npm \
     npm set maxsockets 3 && \
     npm set fetch-retries 10 && \
     npm set fetch-retry-mintimeout 20000 && \
     npm set fetch-retry-maxtimeout 120000 && \
     npm set fetch-timeout 300000 && \
-    npm ci --prefer-offline --loglevel=error
+    npm ci --prefer-offline --loglevel=error || \
+    (apk add --no-cache python3 make g++ && npm ci --prefer-offline --loglevel=error)
 
 # Копирование исходного кода
 COPY . .
