@@ -186,8 +186,8 @@ services:
   # Telegram Bot
   telegram_bot:
     build:
-      context: ./telegram_bot
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: telegram_bot/Dockerfile
     container_name: ai_image_bot_telegram_prod
     restart: always
     env_file:
@@ -196,11 +196,11 @@ services:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - WEB_APP_URL=${WEB_APP_URL}
       - FRONTEND_URL=${FRONTEND_URL}
+      - ENVIRONMENT=production
     depends_on:
       - backend
     networks:
       - ai_image_bot_network
-    command: python run_bot.py
     logging:
       driver: "json-file"
       options:
