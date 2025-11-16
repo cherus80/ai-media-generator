@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.11.2] - 2025-11-16
+
+### Fixed
+- **Critical:** Telegram Bot container crash resolved
+  - **Problem:** Container `ai_image_bot_telegram_prod` constantly restarting with `ModuleNotFoundError: No module named 'telegram_bot'`
+  - **Root causes:**
+    1. Docker build context was `./telegram_bot`, but Dockerfile copied files with `COPY . .`, breaking package structure
+    2. `.env` file not copied to container (was in project root, not in telegram_bot/)
+    3. `run_bot.py` tried to import `telegram_bot.bot` but package structure was lost
+  - **Solution:**
+    1. Changed build context in docker-compose.prod.yml from `./telegram_bot` to `.` (project root)
+    2. Updated Dockerfile to copy files preserving package structure:
+       - `telegram_bot/__init__.py → /app/telegram_bot/__init__.py`
+       - `telegram_bot/bot.py → /app/telegram_bot/bot.py`
+       - `telegram_bot/run_bot.py → /app/telegram_bot/run_bot.py`
+    3. Changed CMD from `python run_bot.py` to `python telegram_bot/run_bot.py`
+    4. Added `curl` installation for health checks
+  - **Result:** Import works correctly, `.env` accessible via docker-compose env_file
+
+### Changed
+- `telegram_bot/Dockerfile`: Complete rewrite to preserve package structure
+- `docker-compose.prod.yml`: Changed telegram_bot service build context to project root
+- Added `ENVIRONMENT=production` to telegram_bot service
+
+### Testing
+- ✅ Local Docker build successful (test-telegram-bot image)
+- ✅ Package structure verified: `/app/telegram_bot/__init__.py`, `bot.py`, `run_bot.py`
+- ✅ Import test passed: `import telegram_bot` works in container
+- ✅ `run_bot.py` correctly looks for `.env` in `/app/.env`
+
+### Next Steps
+- Deploy to production VPS to verify fix
+- Monitor container logs to ensure no restart loops
+- Test bot functionality with real Telegram API
+
+---
+
 ## [0.11.1] - 2025-11-16
 
 ### Fixed
@@ -40,7 +77,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated documentation (CLAUDE.md, AGENTS.md) with MCP Playwright testing guidelines
 
 ### Known Issues
-- ⚠️ Telegram Bot container restarting due to `ModuleNotFoundError: No module named 'telegram_bot'` (non-critical)
 - ⚠️ Nginx proxy not configured for `/api/*` prefix (API accessible via `/health` without prefix)
 
 ---
