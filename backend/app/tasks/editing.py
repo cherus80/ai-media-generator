@@ -234,5 +234,14 @@ def generate_editing_task(
                     }
 
     # Запуск async функции
-    loop = asyncio.get_event_loop()
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+    if loop.is_closed():
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
     return loop.run_until_complete(_run_generation())

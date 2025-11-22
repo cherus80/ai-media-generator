@@ -261,5 +261,15 @@ def generate_fitting_task(
 
                 raise
 
-    # Запуск async функции
-    return asyncio.run(_run_generation())
+    # Запуск async функции на одном event loop, чтобы избежать "Future attached to a different loop"
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+    if loop.is_closed():
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+    return loop.run_until_complete(_run_generation())
