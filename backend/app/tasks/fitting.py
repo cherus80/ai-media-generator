@@ -209,10 +209,10 @@ def generate_fitting_task(
                 if generated_image_url.startswith("data:image"):
                     import re
 
-                    match = re.match(r"data:image/(\w+);base64,(.+)", generated_image_url)
+                    match = re.match(r"data:image/(?P<fmt>[^;]+);base64,(?P<data>.+)", generated_image_url)
                     if match:
-                        image_format = match.group(1)
-                        base64_data = match.group(2)
+                        image_format = match.group("fmt")
+                        base64_data = match.group("data")
                         image_bytes = base64.b64decode(base64_data)
 
                         _, saved_file_url, _ = await save_upload_file_by_content(
@@ -222,6 +222,10 @@ def generate_fitting_task(
                         )
                         final_image_url = saved_file_url
                         logger.info(f"Saved OpenRouter result to local storage: {saved_file_url}")
+
+                # Нормализуем URL для фронтенда (добавляем backend host если путь относительный)
+                if final_image_url and final_image_url.startswith("/"):
+                    final_image_url = f"{settings.BACKEND_URL}{final_image_url}"
 
                 generation = await session.get(Generation, generation_id)
                 if generation:

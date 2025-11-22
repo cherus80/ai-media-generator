@@ -146,12 +146,12 @@ def generate_editing_task(
                     if result_url.startswith("data:image"):
                         import re
 
-                        match = re.match(r"data:image/(\\w+);base64,(.+)", result_url)
+                        match = re.match(r"data:image/(?P<fmt>[^;]+);base64,(?P<data>.+)", result_url)
                         if not match:
                             raise ValueError("Invalid data URL from OpenRouter")
 
-                        image_format = match.group(1)
-                        base64_data = match.group(2)
+                        image_format = match.group("fmt")
+                        base64_data = match.group("data")
                         image_bytes = base64.b64decode(base64_data)
 
                         file_id, image_url, file_size = await save_upload_file_by_content(
@@ -162,6 +162,9 @@ def generate_editing_task(
                     else:
                         image_url = result_url
                         file_size = 0
+
+                    if image_url and image_url.startswith("/"):
+                        image_url = f"{settings.BACKEND_URL}{image_url}"
 
                     logger.info(
                         f"Saved edited image: {image_url} "
