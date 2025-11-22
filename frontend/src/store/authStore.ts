@@ -56,6 +56,17 @@ export const useAuthStore = create<AuthState>()(
 
       // Register with Email/Password
       registerWithEmail: async (data: RegisterRequest) => {
+        // Если профиль уже есть и не запрашивали принудительно — избегаем лишнего спиннера
+        if (get().user) {
+          try {
+            const user = await getCurrentUser();
+            set({ user, isLoading: false, error: null });
+            return;
+          } catch {
+            // просто падаем к обычной логике
+          }
+        }
+
         set({ isLoading: true, error: null });
 
         try {
