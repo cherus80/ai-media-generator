@@ -29,7 +29,7 @@ services:
     container_name: ai_image_bot_redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "6378:6379"  # avoid conflict with host Redis
     networks:
       - ai_image_bot_network
     healthcheck:
