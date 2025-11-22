@@ -187,23 +187,6 @@ async def send_message(
             require_active=True,
         )
 
-        # Добавляем фактический промпт в историю чата (важно для сценариев без AI-ассистента)
-        await add_message(
-            db=db,
-            session_id=request.session_id,
-            user_id=current_user.id,
-            role="user",
-            content=request.prompt,
-        )
-
-        # Списание 1 кредита
-        await deduct_credits(
-            db=db,
-            user=current_user,
-            cost=1,
-            generation_id=None,  # Не привязано к генерации
-        )
-
         # Добавление сообщения пользователя в историю
         await add_message(
             db=db,
@@ -241,6 +224,14 @@ async def send_message(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=f"AI service error: {str(e)}"
             )
+
+        # Списание 1 кредита (ПОСЛЕ успешного получения промптов)
+        await deduct_credits(
+            db=db,
+            user=current_user,
+            cost=1,
+            generation_id=None,  # Не привязано к генерации
+        )
 
         # Формируем ответ assistant с промптами
         assistant_content = (
