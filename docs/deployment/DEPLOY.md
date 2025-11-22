@@ -29,7 +29,6 @@
 - ✅ nginx установлен
 - ✅ Доменное имя (например: `your-domain.com`)
 - ✅ API ключи:
-  - kie.ai API Key
   - OpenRouter API Key
   - ЮKassa Shop ID и Secret Key
   - JWT/SECRET ключи, параметры антиабуза
@@ -156,10 +155,6 @@ POSTGRES_PORT=5432
 REDIS_URL=redis://redis:6379/0
 
 # External APIs
-KIE_AI_API_KEY=<ВАШ_KIE_AI_КЛЮЧ>
-KIE_AI_BASE_URL=https://api.kie.ai
-KIE_AI_MODEL=nano-banana
-
 OPENROUTER_API_KEY=<ВАШ_OPENROUTER_КЛЮЧ>
 OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 OPENROUTER_MODEL=anthropic/claude-3-haiku-20240307

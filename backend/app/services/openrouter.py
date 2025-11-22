@@ -365,22 +365,48 @@ Do not include any additional text, explanations, or markdown formatting. Return
 
             # Извлекаем сгенерированное изображение
             choice = data.get("choices", [{}])[0]
-            message = choice.get("message", {})
-            images = message.get("images", [])
+            message = choice.get("message", {}) or {}
+
+            # OpenRouter может возвращать изображения либо в message["images"],
+            # либо как элементы в message["content"] с type=image_url. Собираем оба варианта.
+            images = message.get("images") or []
+            if not images:
+                content = message.get("content") or []
+                images = [
+                    part for part in content
+                    if isinstance(part, dict) and part.get("type") == "image_url"
+                ]
 
             if not images:
-                raise OpenRouterError("No image returned from Nano Banana")
-
-            # Логируем структуру для отладки
-            logger.info(f"Images response structure: {type(images[0])}, content: {str(images[0])[:200]}")
+                raise OpenRouterError(
+                    f"No image returned from Nano Banana. Message keys: {list(message.keys())}"
+                )
 
             # Возвращаем первое изображение (data:image/png;base64,...)
-            # images[0] может быть либо строкой, либо dict с полем 'url'
             first_image = images[0]
+            image_url = None
+
             if isinstance(first_image, dict):
-                # Если это dict, пробуем разные возможные поля
-                image_url = first_image.get("url") or first_image.get("data") or first_image.get("image")
-                logger.info(f"Dict image, extracted URL length: {len(image_url) if image_url else 0}")
+                # Стандартная схема: {"type": "image_url", "image_url": {"url": "..."}}
+                image_data = first_image.get("image_url")
+                if isinstance(image_data, dict):
+                    image_url = (
+                        image_data.get("url")
+                        or image_data.get("data")
+                        or image_data.get("image")
+                    )
+
+                # Фолбэк на старую схему: {"url": "..."} или {"data": "..."}
+                if not image_url:
+                    image_url = (
+                        first_image.get("url")
+                        or first_image.get("data")
+                        or first_image.get("image")
+                    )
+
+                logger.info(
+                    f"Dict image, extracted URL length: {len(image_url) if image_url else 0}"
+                )
             else:
                 image_url = first_image
 
@@ -402,6 +428,125 @@ Do not include any additional text, explanations, or markdown formatting. Return
             raise OpenRouterError(f"Network error: {e}")
         except Exception as e:
             logger.error(f"Unexpected error in OpenRouter virtual try-on: {e}")
+            raise OpenRouterError(f"Unexpected error: {e}")
+
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception_type((httpx.TimeoutException, httpx.NetworkError)),
+        reraise=True,
+    )
+    async def generate_image_edit(
+        self,
+        base_image_data: str,
+        prompt: str,
+        aspect_ratio: str = "1:1",
+    ) -> str:
+        """
+        Редактирование одного изображения по промпту через Gemini image model.
+
+        Args:
+            base_image_data: Base64 data URL of the source image.
+            prompt: Text prompt describing the edit.
+            aspect_ratio: Desired aspect ratio.
+
+        Returns:
+            Base64 data URL of the generated image or a direct URL.
+        """
+        try:
+            messages = [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {"type": "image_url", "image_url": {"url": base_image_data}},
+                    ],
+                }
+            ]
+
+            payload = {
+                "model": self.NANO_BANANA_MODEL,
+                "messages": messages,
+                "modalities": ["image", "text"],
+                "image_config": {"aspect_ratio": aspect_ratio},
+            }
+
+            response = await self.client.post(
+                f"{self.base_url}{self.CHAT_ENDPOINT}",
+                json=payload,
+            )
+
+            if response.status_code == 401:
+                raise OpenRouterAuthError("Invalid API key")
+            elif response.status_code == 429:
+                raise OpenRouterRateLimitError("Rate limit exceeded")
+            elif response.status_code >= 500:
+                raise OpenRouterError(f"OpenRouter server error: {response.status_code}")
+            elif response.status_code != 200:
+                error_data = response.json() if response.content else {}
+                raise OpenRouterError(
+                    f"OpenRouter API error: {response.status_code}, "
+                    f"details: {error_data}"
+                )
+
+            data = response.json()
+            usage = data.get("usage", {})
+            logger.info(f"OpenRouter image edit response received (usage: {usage})")
+
+            choice = data.get("choices", [{}])[0]
+            message = choice.get("message", {}) or {}
+
+            images = message.get("images") or []
+            if not images:
+                content = message.get("content") or []
+                images = [
+                    part for part in content
+                    if isinstance(part, dict) and part.get("type") == "image_url"
+                ]
+
+            if not images:
+                raise OpenRouterError(
+                    f"No image returned from OpenRouter. Message keys: {list(message.keys())}"
+                )
+
+            first_image = images[0]
+            image_url = None
+
+            if isinstance(first_image, dict):
+                image_data = first_image.get("image_url")
+                if isinstance(image_data, dict):
+                    image_url = (
+                        image_data.get("url")
+                        or image_data.get("data")
+                        or image_data.get("image")
+                    )
+
+                if not image_url:
+                    image_url = (
+                        first_image.get("url")
+                        or first_image.get("data")
+                        or first_image.get("image")
+                    )
+            else:
+                image_url = first_image
+
+            if not image_url:
+                raise OpenRouterError(
+                    f"Empty image URL returned from OpenRouter. First image type: {type(first_image)}, keys: {first_image.keys() if isinstance(first_image, dict) else 'N/A'}"
+                )
+
+            return image_url
+
+        except (OpenRouterAuthError, OpenRouterRateLimitError, OpenRouterError):
+            raise
+        except httpx.TimeoutException as e:
+            logger.error(f"OpenRouter request timeout: {e}")
+            raise OpenRouterError(f"Request timeout: {e}")
+        except httpx.NetworkError as e:
+            logger.error(f"OpenRouter network error: {e}")
+            raise OpenRouterError(f"Network error: {e}")
+        except Exception as e:
+            logger.error(f"Unexpected error in OpenRouter image edit: {e}")
             raise OpenRouterError(f"Unexpected error: {e}")
 
     async def __aenter__(self):

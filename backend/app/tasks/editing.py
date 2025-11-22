@@ -4,82 +4,25 @@ Celery задачи для генерации редактирования из�
 
 import asyncio
 import logging
-from datetime import datetime
-from typing import Optional
+import base64
 
 from celery import Task
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
 from app.db.session import async_session
-from app.models.generation import Generation
 from app.models.user import User
 from app.models.chat import ChatHistory
-from app.services.file_storage import save_upload_file_by_content
-from app.services.kie_ai import KieAIClient
+from app.services.file_storage import save_upload_file_by_content, get_file_by_id
+from app.services.openrouter import OpenRouterClient, OpenRouterError
 from app.tasks.celery_app import celery_app
+from app.tasks.utils import (
+    should_add_watermark,
+    update_generation_status,
+    extract_file_id_from_url,
+    image_to_base64_data_url,
+)
 
 logger = logging.getLogger(__name__)
-
-
-async def _update_generation_status(
-    session: AsyncSession,
-    generation_id: int,
-    status: str,
-    progress: Optional[int] = None,
-    image_url: Optional[str] = None,
-    error_message: Optional[str] = None,
-):
-    """
-    Обновление статуса генерации в БД.
-
-    Args:
-        session: Async DB session
-        generation_id: ID генерации
-        status: Новый статус (processing, completed, failed)
-        progress: Прогресс (0-100)
-        image_url: URL результата (для completed)
-        error_message: Сообщение об ошибке (для failed)
-    """
-    generation = await session.get(Generation, generation_id)
-    if not generation:
-        logger.error(f"Generation {generation_id} not found")
-        return
-
-    generation.status = status
-
-    if progress is not None:
-        generation.progress = progress
-
-    if image_url:
-        generation.image_url = image_url
-
-    if error_message:
-        generation.error_message = error_message
-
-    await session.commit()
-    logger.info(
-        f"Updated generation {generation_id}: status={status}, progress={progress}"
-    )
-
-
-def _should_add_watermark(user: User) -> bool:
-    """
-    Проверка, нужен ли водяной знак.
-
-    Args:
-        user: User модель
-
-    Returns:
-        True, если нужен водяной знак (Freemium пользователь)
-    """
-    # Если у пользователя нет кредитов и нет активной подписки
-    # и он использует Freemium — добавляем водяной знак
-    has_credits = user.balance_credits > 0
-    has_subscription = user.has_active_subscription
-
-    return not has_credits and not has_subscription
 
 
 class EditingTask(Task):
@@ -134,7 +77,7 @@ def generate_editing_task(
         async with async_session() as session:
             try:
                 # Обновление статуса: processing
-                await _update_generation_status(
+                await update_generation_status(
                     session,
                     generation_id,
                     "processing",
@@ -147,21 +90,23 @@ def generate_editing_task(
                     raise ValueError(f"User {user_id} not found")
 
                 # Определение, нужен ли водяной знак
-                has_watermark = _should_add_watermark(user)
+                has_watermark = should_add_watermark(user)
 
                 # Обновление прогресса
-                await _update_generation_status(
+                await update_generation_status(
                     session,
                     generation_id,
                     "processing",
                     progress=30
                 )
 
-                # Вызов kie.ai API для редактирования изображения
-                kie_client = KieAIClient(
-                    api_key=settings.KIE_AI_API_KEY,
-                    base_url=settings.KIE_AI_BASE_URL
-                )
+                # Подготовка исходного изображения
+                base_image_id = extract_file_id_from_url(base_image_url)
+                base_image_path = get_file_by_id(base_image_id)
+                if not base_image_path:
+                    raise ValueError("Base image not found for editing")
+
+                base_image_data = image_to_base64_data_url(base_image_path)
 
                 logger.info(
                     f"Starting image editing for generation {generation_id}, "
@@ -169,42 +114,54 @@ def generate_editing_task(
                 )
 
                 # Обновление прогресса
-                await _update_generation_status(
+                await update_generation_status(
                     session,
                     generation_id,
                     "processing",
                     progress=50
                 )
 
-                # Генерация через kie.ai API (image editing)
-                # Примечание: Реальный API endpoint может отличаться
-                # Здесь используется упрощённая логика для демонстрации
+                # Генерация через OpenRouter (Gemini image model)
                 try:
-                    result = await kie_client.edit_image(
-                        base_image_url=base_image_url,
+                    openrouter_client = OpenRouterClient()
+                    result_url = await openrouter_client.generate_image_edit(
+                        base_image_data=base_image_data,
                         prompt=prompt,
-                        add_watermark=has_watermark,
-                        watermark_text=settings.FREEMIUM_WATERMARK_TEXT if has_watermark else None,
+                        aspect_ratio="1:1",
                     )
+                    await openrouter_client.close()
 
-                    image_data = result.get("image_data")
-                    if not image_data:
-                        raise ValueError("No image data in kie.ai response")
+                    if not result_url:
+                        raise ValueError("OpenRouter returned empty image URL")
 
                     # Обновление прогресса
-                    await _update_generation_status(
+                    await update_generation_status(
                         session,
                         generation_id,
                         "processing",
                         progress=80
                     )
 
-                    # Сохранение результата
-                    file_id, image_url, file_size = await save_upload_file_by_content(
-                        file_content=image_data,
-                        user_id=user_id,
-                        filename=f"editing_{generation_id}.png",
-                    )
+                    # Сохранение результата локально
+                    if result_url.startswith("data:image"):
+                        import re
+
+                        match = re.match(r"data:image/(\\w+);base64,(.+)", result_url)
+                        if not match:
+                            raise ValueError("Invalid data URL from OpenRouter")
+
+                        image_format = match.group(1)
+                        base64_data = match.group(2)
+                        image_bytes = base64.b64decode(base64_data)
+
+                        file_id, image_url, file_size = await save_upload_file_by_content(
+                            content=image_bytes,
+                            user_id=user_id,
+                            filename=f"editing_{generation_id}.{image_format}",
+                        )
+                    else:
+                        image_url = result_url
+                        file_size = 0
 
                     logger.info(
                         f"Saved edited image: {image_url} "
@@ -212,7 +169,7 @@ def generate_editing_task(
                     )
 
                     # Обновление Generation с результатом
-                    await _update_generation_status(
+                    await update_generation_status(
                         session,
                         generation_id,
                         "completed",
@@ -245,8 +202,8 @@ def generate_editing_task(
                         "generation_id": generation_id,
                     }
 
-                except Exception as api_error:
-                    logger.error(f"kie.ai API error: {api_error}")
+                except OpenRouterError as api_error:
+                    logger.error(f"OpenRouter API error: {api_error}")
                     raise
 
             except Exception as e:
@@ -256,7 +213,7 @@ def generate_editing_task(
                 )
 
                 # Обновление статуса: failed
-                await _update_generation_status(
+                await update_generation_status(
                     session,
                     generation_id,
                     "failed",

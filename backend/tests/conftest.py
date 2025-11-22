@@ -20,7 +20,6 @@ os.environ["SECRET_KEY"] = "test-secret-key-for-testing-only"
 os.environ["JWT_SECRET_KEY"] = "test-jwt-secret-key"
 os.environ["TELEGRAM_BOT_TOKEN"] = "123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
 os.environ["TELEGRAM_BOT_SECRET"] = "test-bot-secret"
-os.environ["KIE_AI_API_KEY"] = "test-kie-ai-key"
 os.environ["OPENROUTER_API_KEY"] = "test-openrouter-key"
 os.environ["YUKASSA_SHOP_ID"] = "test-shop-id"
 os.environ["YUKASSA_SECRET_KEY"] = "test-yukassa-secret"
@@ -78,19 +77,6 @@ def mock_openrouter_client():
             "Medium prompt: enhance brightness and contrast of the image",
             "Detailed prompt: significantly increase the brightness levels and improve contrast ratio to make the image more vibrant"
         ]
-    )
-    return client
-
-
-@pytest.fixture
-def mock_kie_ai_client():
-    """Mock kie.ai API client"""
-    client = Mock()
-    client.generate_image = AsyncMock(
-        return_value={
-            "image_url": "https://example.com/generated.jpg",
-            "task_id": "test-task-123"
-        }
     )
     return client
 

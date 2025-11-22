@@ -140,7 +140,7 @@ class TestChatSessionWorkflow:
         """
         Генерация изображения по выбранному промпту должна:
         1. Списать 1 кредит
-        2. Вызвать kie.ai API
+        2. Вызвать OpenRouter API
         3. Сохранить результат в БД
         """
         # Create session
@@ -167,8 +167,8 @@ class TestChatSessionWorkflow:
 
         initial_credits = test_user_with_credits.balance_credits
 
-        # Mock kie.ai API
-        with patch("app.services.kie_ai_client.KieAIClient.generate_image") as mock_generate:
+        # Mock OpenRouter API
+        with patch("app.services.openrouter.OpenRouterClient.generate_image_edit") as mock_generate:
             mock_generate.return_value = {
                 "image_url": "https://example.com/edited.jpg",
                 "task_id": "edit-task-123"
@@ -413,7 +413,7 @@ class TestEditingCreditsAndPayments:
         assert test_user_with_credits.balance_credits == initial_credits - 1
 
         # Step 2: Generate image (1 credit)
-        with patch("app.services.kie_ai_client.KieAIClient.generate_image") as mock_gen:
+        with patch("app.services.openrouter.OpenRouterClient.generate_image_edit") as mock_gen:
             mock_gen.return_value = {
                 "image_url": "https://example.com/result.jpg",
                 "task_id": "task-123"

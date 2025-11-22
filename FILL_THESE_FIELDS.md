@@ -10,12 +10,7 @@ GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 ```
 
-### 2. kie.ai API (строка 37)
-```bash
-KIE_AI_API_KEY=your-kie-ai-api-key-here
-```
-
-### 3. OpenRouter API (строка 42)
+### 2. OpenRouter API
 ```bash
 OPENROUTER_API_KEY=your-openrouter-api-key-here
 ```
@@ -42,10 +37,6 @@ VITE_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 2. Или перейдите на https://console.cloud.google.com/
 3. Создайте проект → OAuth consent screen → Credentials
 4. Скопируйте Client ID и Client Secret
-
-### kie.ai API
-1. Зарегистрируйтесь на https://kie.ai
-2. Получите API ключ в личном кабинете
 
 ### OpenRouter API
 1. Зарегистрируйтесь на https://openrouter.ai

@@ -39,8 +39,8 @@ class TestFittingWorkflow:
         4. Check credits deducted
         5. Check generation saved
         """
-        # Mock kie.ai API
-        with patch("app.services.kie_ai_client.KieAIClient.generate_fitting") as mock_generate:
+        # Mock OpenRouter API
+        with patch("app.services.openrouter.OpenRouterClient.generate_virtual_tryon") as mock_generate:
             mock_generate.return_value = {
                 "image_url": "https://example.com/result.jpg",
                 "task_id": "test-task-123"
@@ -182,7 +182,7 @@ class TestFittingWorkflow:
 
         test_client.headers["Authorization"] = f"Bearer {token}"
 
-        with patch("app.services.kie_ai_client.KieAIClient.generate_fitting") as mock_generate:
+        with patch("app.services.openrouter.OpenRouterClient.generate_virtual_tryon") as mock_generate:
             mock_generate.return_value = {
                 "image_url": "https://example.com/result.jpg",
                 "task_id": "test-task-freemium"
@@ -231,7 +231,7 @@ class TestFittingWorkflow:
 
         initial_actions = test_user_premium.subscription_actions_left
 
-        with patch("app.services.kie_ai_client.KieAIClient.generate_fitting") as mock_generate:
+        with patch("app.services.openrouter.OpenRouterClient.generate_virtual_tryon") as mock_generate:
             mock_generate.return_value = {
                 "image_url": "https://example.com/premium_result.jpg",
                 "task_id": "premium-task-123"
@@ -340,7 +340,7 @@ class TestGarmentTypes:
         """
         Примерка должна работать для разных типов одежды/аксессуаров
         """
-        with patch("app.services.kie_ai_client.KieAIClient.generate_fitting") as mock_generate:
+        with patch("app.services.openrouter.OpenRouterClient.generate_virtual_tryon") as mock_generate:
             mock_generate.return_value = {
                 "image_url": f"https://example.com/{garment_type}_result.jpg",
                 "task_id": f"task-{garment_type}"
@@ -366,18 +366,18 @@ class TestGarmentTypes:
 class TestErrorHandling:
     """Тесты обработки ошибок"""
 
-    async def test_fitting_handles_kie_ai_api_failure(
+    async def test_fitting_handles_openrouter_api_failure(
         self,
         authenticated_test_client: AsyncClient,
         test_user_with_credits: User,
         test_db: AsyncSession,
     ):
         """
-        Если kie.ai API падает, должна сохраниться ошибка в generation
+        Если OpenRouter API падает, должна сохраниться ошибка в generation
         """
-        # Mock kie.ai API failure
-        with patch("app.services.kie_ai_client.KieAIClient.generate_fitting") as mock_generate:
-            mock_generate.side_effect = Exception("kie.ai API error")
+        # Mock OpenRouter API failure
+        with patch("app.services.openrouter.OpenRouterClient.generate_virtual_tryon") as mock_generate:
+            mock_generate.side_effect = Exception("OpenRouter API error")
 
             initial_credits = test_user_with_credits.balance_credits
 

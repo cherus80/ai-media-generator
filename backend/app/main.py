@@ -15,7 +15,6 @@ from pathlib import Path
 
 from app.core.config import settings
 from app.db import init_db, close_db
-from app.services.kie_ai import close_kie_client
 from app.services.openrouter import close_openrouter_client
 from app.services.yukassa import close_yukassa_client
 
@@ -62,7 +61,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
     await close_db()
 
     # Закрытие HTTP клиентов
-    await close_kie_client()
     await close_openrouter_client()
     await close_yukassa_client()
 

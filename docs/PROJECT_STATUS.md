@@ -32,8 +32,7 @@
   - Chat History
 
 - **External Services**:
-  - kie.ai (Nano Banana) - image generation
-  - OpenRouter (Claude Haiku) - AI prompts
+  - OpenRouter (Gemini image preview + Claude Haiku) - image generation & prompts
   - YuKassa - payments
 
 ### ✅ Frontend (React + TypeScript)
@@ -102,7 +101,7 @@
 
 | # | Проблема | Решение | Файл |
 |---|----------|---------|------|
-| 1 | kie.ai не получал фотографии для try-on | Добавлен параметр `image_urls` с обеими фото | fitting.py:186 |
+| 1 | kie.ai не получал фотографии для try-on | Перешли на OpenRouter, передаём обе фото в base64 | fitting.py |
 | 2 | Файлы недоступны по HTTP | Добавлен static file serving `/uploads` | main.py:107 |
 | 3 | Отсутствует BACKEND_URL | Добавлена настройка (default: localhost:8000) | config.py:30 |
 | 4 | Database constraint violation | Добавлен placeholder для `prompt` поля | fitting.py:149 |
@@ -114,7 +113,7 @@
 **Требования для запуска**:
 ```bash
 redis-server --daemonize yes
-celery -A app.tasks.celery_app worker --loglevel=info
+celery -A app.tasks.celery_app worker --loglevel=info -Q fitting,editing,maintenance
 ```
 
 ### v0.12.1 (2025-11-18)

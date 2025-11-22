@@ -214,7 +214,7 @@ def test_something(mock_db_session, mock_redis_client):
 - `mock_db_session` — Mock async database session
 - `mock_redis_client` — Mock Redis client
 - `mock_openrouter_client` — Mock OpenRouter API
-- `mock_kie_ai_client` — Mock kie.ai API
+- `mock_openrouter_client` — Mock OpenRouter API
 - `mock_yukassa_client` — Mock YuKassa API
 
 ### Real DB (для integration тестов)

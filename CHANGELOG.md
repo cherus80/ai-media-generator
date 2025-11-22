@@ -7,82 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.12.2] - 2025-11-18
+## [0.12.3] - 2025-11-20
 
-### Fixed - Virtual Try-On Critical Bug
+### Fixed - Virtual Try-On Queue Stall
 
-#### Problem
-The virtual try-on feature was not working because the kie.ai API was being called with only a text prompt, without the actual user and item photos. This caused the system to generate random images instead of performing actual virtual try-on.
-
-#### Solution
-
-**Backend**:
-- **Fixed kie.ai API call** in [fitting.py:180-213](backend/app/tasks/fitting.py#L180-L213):
-  - Now passes both user photo and item photo URLs via `image_urls` parameter
-  - Added proper handling for async task completion from kie.ai
-  - Supports both immediate results and polling-based results
-- **Added static file serving** in [main.py:104-109](backend/app/main.py#L104-L109):
-  - Mounted `/uploads` endpoint to serve uploaded files
-  - Required for kie.ai to access user and item photos via HTTP
-- **Added BACKEND_URL setting** in [config.py:30](backend/app/core/config.py#L30):
-  - Defaults to `http://localhost:8000`
-  - Used to construct full URLs for uploaded files
-- **Fixed database constraint** in [fitting.py:149](backend/app/api/v1/endpoints/fitting.py#L149):
-  - Added placeholder `prompt` field to Generation model to prevent NULL constraint violation
-
-#### Additional Fixes During Testing
-
-- **Fixed proxy issues**: Added `NO_PROXY=localhost,127.0.0.1` for local backend testing
-- **Redis & Celery setup**:
-  - Documented requirement to run Redis server: `redis-server --daemonize yes`
-  - Documented requirement to run Celery worker: `celery -A app.tasks.celery_app worker --loglevel=info`
-
-#### Technical Details
-
-**Before**:
-```python
-result = await kie_client.generate_image(
-    prompt=prompt,
-    model=settings.KIE_AI_MODEL,  # ❌ Wrong parameters
-    num_images=1,
-    width=1024,
-    height=1024,
-)
-```
-
-**After**:
-```python
-user_photo_full_url = f"{settings.BACKEND_URL}{user_photo_url}"
-item_photo_full_url = f"{settings.BACKEND_URL}{item_photo_url}"
-image_urls = [user_photo_full_url, item_photo_full_url]
-
-result = await kie_client.generate_image(
-    prompt=prompt,
-    image_urls=image_urls,  # ✅ Passes both photos for virtual try-on
-    output_format="png",
-    aspect_ratio="1:1",
-)
-```
-
-#### Impact
-- ✅ Virtual try-on now works correctly with actual user and clothing photos
-- ✅ kie.ai receives both images and can perform proper virtual fitting
-- ✅ Results show the user wearing the clothing item instead of random generated images
-
-#### Testing (Playwright MCP)
-E2E тестирование подтвердило работоспособность:
-- ✅ Регистрация пользователя (получение 10 кредитов)
-- ✅ Загрузка фото пользователя (Step 1)
-- ✅ Загрузка фото одежды (Step 2)
-- ✅ Выбор зоны и запуск генерации (Step 3)
-- ✅ API запрос успешно доходит до backend
-- ✅ Celery задача создается и готова к обработке
-- ✅ Static file serving работает корректно
-
-**Требования для production**:
-1. Redis server должен быть запущен
-2. Celery worker должен быть запущен
-3. kie.ai API ключ должен быть настроен
+- **Celery worker queue binding**: the worker was consuming only the default `celery` queue, while all virtual try-on tasks were routed to the named queues `fitting`, `editing`, and `maintenance`. This left try-on tasks stuck in `pending` forever and the UI spinner never finished. All startup scripts, Docker Compose services, and documentation now launch Celery with `-Q fitting,editing,maintenance` so the worker actually processes those queues. Without this flag the try-on endpoint appeared broken even though the API request succeeded.
 
 ---
 

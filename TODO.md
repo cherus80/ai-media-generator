@@ -24,7 +24,7 @@
 - ✅ Настроен SQLAlchemy (async) + PostgreSQL
 - ✅ Созданы модели БД: User, Generation, ChatHistory, Payment, Referral
 - ✅ Настроен Alembic для миграций
-- ✅ Создан клиент kie.ai API (app/services/kie_ai.py)
+- ✅ Настроен OpenRouter для генерации изображений (kie.ai отключён)
 - ✅ Настроены Docker и docker-compose
 - ✅ Создан .env.example и requirements.txt
 
@@ -96,7 +96,6 @@
 - ✅ Создать `app/tasks/fitting.py` — генерация примерки
   - [x] Задача `generate_fitting_task()`
   - [x] Формирование фиксированного промпта (с учётом зоны аксессуара)
-  - [x] Вызов kie.ai API (model: nano-banana)
   - [x] Retry логика (3 попытки, exponential backoff)
   - [x] Обновление статуса Generation в БД (pending → processing → completed/failed)
   - [x] Поддержка водяного знака для Freemium пользователей
@@ -142,7 +141,6 @@
 - ⏳ Unit-тесты для `file_validator`, `file_storage`, `credits`
 - ⏳ Integration тесты для API endpoints
 - ⏳ E2E тест: загрузка файлов → генерация → получение результата
-- ⏳ Проверка Celery задач (с mock kie.ai API)
 
 ### Итого по Этапу 3
 - ✅ **Backend полностью реализован** (8 модулей создано)
@@ -305,7 +303,6 @@
 - ✅ Создать `app/tasks/editing.py`
   - [x] Задача `generate_editing_task()` — генерация редактирования
   - [x] Параметры: generation_id, user_id, session_id, base_image_url, prompt
-  - [x] Вызов kie.ai API для image editing
   - [x] Retry логика (3 попытки, exponential backoff)
   - [x] Обновление ChatHistory (добавление результата как сообщение assistant)
   - [x] Добавление водяного знака для Freemium

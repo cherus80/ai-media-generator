@@ -53,8 +53,7 @@ cp .env.example .env
 
 **Обязательные переменные:**
 - `TELEGRAM_BOT_TOKEN` — токен бота от [@BotFather](https://t.me/BotFather)
-- `KIE_AI_API_KEY` — API ключ [kie.ai](https://kie.ai)
-- `OPENROUTER_API_KEY` — API ключ [OpenRouter](https://openrouter.ai)
+- `OPENROUTER_API_KEY` — API ключ [OpenRouter](https://openrouter.ai) (используется для примерки и AI ассистента)
 - `YUKASSA_SHOP_ID`, `YUKASSA_SECRET_KEY` — ЮKassa credentials
 - `JWT_SECRET_KEY`, `SECRET_KEY` — случайные секретные ключи
 
@@ -100,8 +99,7 @@ docker-compose exec backend alembic upgrade head
 - **Telegram WebApp SDK** — интеграция с Telegram
 
 ### Внешние API
-- **kie.ai** (Nano Banana) — генерация/редактирование изображений
-- **OpenRouter** (Claude Haiku) — AI-ассистент для промптов
+- **OpenRouter** (Gemini image preview + Claude Haiku) — виртуальная примерка и AI-ассистент для промптов
 - **ЮKassa** — платёжная система
 
 ---
@@ -311,7 +309,7 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 
 # Celery worker (в отдельном терминале)
-celery -A app.tasks.celery_app worker --loglevel=info
+celery -A app.tasks.celery_app worker --loglevel=info -Q fitting,editing,maintenance
 ```
 
 **Frontend:**
@@ -357,7 +355,7 @@ Swagger UI доступен после запуска backend:
 
 ## 🙏 Благодарности
 
-- [kie.ai](https://kie.ai) — API для генерации изображений
+- [OpenRouter](https://openrouter.ai) — API для генерации изображений и AI ассистента
 - [OpenRouter](https://openrouter.ai) — доступ к Claude Haiku
 - [Anthropic](https://anthropic.com) — Claude Code
 

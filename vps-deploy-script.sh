@@ -40,7 +40,6 @@ GITHUB_REPO="https://github.com/cherus80/ai-image-bot.git"
 INSTALL_DIR="/opt/ai-image-bot"
 
 # API Keys
-KIE_AI_API_KEY="YOUR_KIE_AI_API_KEY"
 OPENROUTER_API_KEY="YOUR_OPENROUTER_API_KEY"
 
 # Payment (для начала используем mock режим)
@@ -187,10 +186,6 @@ REDIS_URL=redis://redis:6379/0
 # -----------------------------------------------------------------------------
 # External APIs
 # -----------------------------------------------------------------------------
-KIE_AI_API_KEY=${KIE_AI_API_KEY}
-KIE_AI_BASE_URL=https://api.kie.ai
-KIE_AI_MODEL=nano-banana
-
 OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
 OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 OPENROUTER_MODEL=anthropic/claude-3-haiku-20240307

@@ -191,8 +191,7 @@ app.conf.task_routes = {
 
 #### Rate limiting для внешних API
 
-```python
-# Ограничение количества запросов к kie.ai
+# Ограничение количества запросов к OpenRouter
 @app.task(rate_limit='10/m')  # 10 запросов в минуту
 async def generate_fitting_task(generation_id: int):
     # ...
@@ -557,7 +556,7 @@ services:
 
   celery_worker:
     image: ai-image-bot-backend
-    command: celery -A app.tasks.celery_app worker
+    command: celery -A app.tasks.celery_app worker -Q fitting,editing,maintenance
     deploy:
       replicas: 5  # 5 воркеров Celery
 ```
@@ -596,7 +595,7 @@ server {
 
 - **Average response time**: ~50ms для простых запросов
 - **Database queries**: <10ms при правильных индексах
-- **Celery tasks**: 5-30 секунд для генерации (зависит от kie.ai API)
+- **Celery tasks**: 5-30 секунд для генерации (зависит от OpenRouter API)
 
 ### Frontend
 

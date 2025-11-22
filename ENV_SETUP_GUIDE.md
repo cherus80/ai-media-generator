@@ -19,16 +19,7 @@ GOOGLE_CLIENT_SECRET=your-google-client-secret
 - Создайте проект в [Google Cloud Console](https://console.cloud.google.com/)
 - Получите Client ID и Client Secret
 
-#### 2. **kie.ai API** (для генерации изображений)
-```bash
-KIE_AI_API_KEY=your-kie-ai-api-key-here
-```
-
-**Как получить:**
-- Зарегистрируйтесь на [kie.ai](https://kie.ai)
-- Получите API ключ в личном кабинете
-
-#### 3. **OpenRouter API** (для AI-промптов с Claude Haiku)
+#### 2. **OpenRouter API** (для виртуальной примерки и AI-промптов)
 ```bash
 OPENROUTER_API_KEY=your-openrouter-api-key-here
 ```
@@ -106,7 +97,6 @@ BOT_USERNAME=YourBotUsername
 ### Полная конфигурация (с генерацией изображений):
 - [ ] `GOOGLE_CLIENT_ID` (backend + frontend)
 - [ ] `GOOGLE_CLIENT_SECRET` (backend)
-- [ ] `KIE_AI_API_KEY`
 - [ ] `OPENROUTER_API_KEY`
 - [ ] PostgreSQL запущен
 - [ ] Redis запущен (для фоновых задач)
@@ -119,7 +109,6 @@ BOT_USERNAME=YourBotUsername
 Откройте `backend/.env` и `frontend/.env` и замените:
 - `your-google-client-id.apps.googleusercontent.com`
 - `your-google-client-secret`
-- `your-kie-ai-api-key-here`
 - `your-openrouter-api-key-here`
 
 ### 2. Запустите инфраструктуру

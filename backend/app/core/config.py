@@ -62,11 +62,6 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = Field(default="HS256")
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=60)
 
-    # kie.ai API (опционально - только для генерации изображений)
-    KIE_AI_API_KEY: Optional[str] = Field(default=None, description="API key for kie.ai (optional)")
-    KIE_AI_BASE_URL: str = Field(default="https://api.kie.ai")
-    KIE_AI_MODEL: str = Field(default="nano-banana")
-
     # OpenRouter API (Claude Haiku) (опционально - только для AI промптов)
     OPENROUTER_API_KEY: Optional[str] = Field(default=None, description="API key for OpenRouter (optional)")
     OPENROUTER_BASE_URL: str = Field(default="https://openrouter.ai/api/v1")

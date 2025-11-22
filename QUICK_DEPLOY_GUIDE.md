@@ -73,7 +73,6 @@ nano vps-deploy-script.sh
 Найдите секцию **"КОНФИГУРАЦИЯ"** и заполните:
 ```bash
 # API Keys
-KIE_AI_API_KEY="ваш_ключ_от_kie_ai"
 OPENROUTER_API_KEY="ваш_ключ_от_openrouter"
 YUKASSA_SHOP_ID="ваш_shop_id"
 YUKASSA_SECRET_KEY="ваш_secret_key"
@@ -284,7 +283,6 @@ docker exec -it ai_image_bot_postgres_prod pg_dump -U postgres ai_image_bot > /o
 
 1. **API ключи:** Обязательно заполните в `.env` файле:
    - `TELEGRAM_BOT_TOKEN`
-   - `KIE_AI_API_KEY`
    - `OPENROUTER_API_KEY`
 
 2. **Платежи:** По умолчанию включен mock режим (`PAYMENT_MOCK_MODE=true`)
