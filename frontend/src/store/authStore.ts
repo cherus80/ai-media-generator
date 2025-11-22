@@ -211,14 +211,11 @@ export const useAuthStore = create<AuthState>()(
           return;
         }
 
-        set({ isLoading: true, error: null });
-
         try {
           const user = await getCurrentUser();
 
           set({
             user,
-            isLoading: false,
             error: null,
           });
 
@@ -226,7 +223,6 @@ export const useAuthStore = create<AuthState>()(
         } catch (error: any) {
           const errorMessage = error.detail || 'Не удалось обновить профиль';
           set({
-            isLoading: false,
             error: errorMessage,
           });
 
