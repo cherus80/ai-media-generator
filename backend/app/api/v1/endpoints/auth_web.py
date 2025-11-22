@@ -151,6 +151,12 @@ async def register_with_email(
     await db.commit()
     await db.refresh(user)
 
+    # Гарантируем бонус 100 кредитов (на случай сбоя установки значения по умолчанию)
+    if user.balance_credits < 100:
+        user.balance_credits = 100
+        await db.commit()
+        await db.refresh(user)
+
     # Создаём JWT токен
     access_token = create_user_access_token(
         user_id=user.id,
@@ -341,6 +347,11 @@ async def login_with_google(
         db.add(user)
         await db.commit()
         await db.refresh(user)
+
+        if user.balance_credits < 100:
+            user.balance_credits = 100
+            await db.commit()
+            await db.refresh(user)
 
     # Проверка, что пользователь не забанен
     if user.is_banned:
