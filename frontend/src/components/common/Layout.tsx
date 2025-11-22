@@ -34,8 +34,16 @@ export const Layout: React.FC<LayoutProps> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuthStore();
+  const { user, refreshProfile } = useAuthStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // Обновляем профиль при монтировании, чтобы баланс был актуален на любой странице
+  React.useEffect(() => {
+    refreshProfile().catch(() => {
+      /* игнорируем ошибки автообновления */
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleBack = () => {
     if (backTo) {
