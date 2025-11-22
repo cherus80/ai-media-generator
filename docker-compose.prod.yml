@@ -113,7 +113,7 @@ services:
       - postgres
     networks:
       - ai_image_bot_network
-    command: celery -A app.tasks.celery_app worker --loglevel=info --concurrency=4 --max-tasks-per-child=1000
+    command: celery -A app.tasks.celery_app worker --loglevel=info --concurrency=4 --max-tasks-per-child=1000 -Q fitting,editing,maintenance
     healthcheck:
       test: ["CMD-SHELL", "celery -A app.tasks.celery_app inspect ping"]
       interval: 30s

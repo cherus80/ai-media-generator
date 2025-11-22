@@ -9,6 +9,7 @@ import base64
 from celery import Task
 from sqlalchemy import select
 
+from app.core.config import settings
 from app.db.session import async_session
 from app.models.user import User
 from app.models.chat import ChatHistory
