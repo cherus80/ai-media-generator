@@ -56,7 +56,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   return (
-    <div className="border-t border-white/20 backdrop-blur-md bg-white/70 px-4 py-4 shadow-soft">
+    <div className="border border-primary-100 backdrop-blur-md bg-white/80 px-4 py-4 shadow-soft rounded-2xl mb-10">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-end space-x-3">
           {/* Textarea */}

@@ -24,6 +24,20 @@ export const useAuth = () => {
     clearError,
   } = useAuthStore();
 
+  // Если есть токен, но профиль ещё не загружен — подтягиваем его тихо
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (token && !user && !isLoading) {
+        try {
+          await refreshProfile();
+        } catch {
+          /* ignore refresh errors */
+        }
+      }
+    };
+    fetchProfile();
+  }, [token, user, isLoading, refreshProfile]);
+
   // Auto-login on mount if not authenticated
   useEffect(() => {
     const attemptAutoLogin = async () => {
