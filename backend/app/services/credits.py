@@ -49,8 +49,9 @@ async def check_user_can_perform_action(
     Raises:
         HTTPException: Если пользователь не может выполнить действие
     """
-    # 0. Админы имеют безлимитный доступ
-    if user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
+    # 0. Админы имеют безлимитный доступ (учитываем возможное отсутствие SUPER_ADMIN в старых сборках)
+    super_admin_role = getattr(UserRole, "SUPER_ADMIN", None)
+    if user.role in [UserRole.ADMIN, super_admin_role]:
         logger.info(f"✅ Admin bypass for user {user.id} (role={user.role.value})")
         return True, "admin"
 

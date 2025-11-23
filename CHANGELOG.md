@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.12.5] - 2025-11-23
+
+### Fixed - Google OAuth Authentication
+
+#### Backend
+- **Critical fix: Missing UserRole import**: Added missing `UserRole` import in `auth_web.py:24`
+  - Previously caused `NameError: name 'UserRole' is not defined` during user registration and login
+  - This error resulted in 500 Internal Server Error when attempting Google OAuth or email registration
+  - Auto-assignment of ADMIN role was failing silently
+  - File: [backend/app/api/v1/endpoints/auth_web.py:24](backend/app/api/v1/endpoints/auth_web.py#L24)
+
+### Changed - Admin Configuration
+
+#### Backend
+- **Admin email whitelist**: Updated `ADMIN_EMAIL_WHITELIST` to include both super-admin accounts
+  - Added support for multiple admin emails: `cherus09@mail.ru,cherus09@gmail.com`
+  - Auto-assignment of ADMIN role now works correctly for both accounts
+  - File: [backend/.env:78](backend/.env#L78)
+
+### Notes
+- Backend container was restarted to apply environment variable changes
+- Users with whitelisted emails will automatically receive ADMIN role upon next login
+- Google Cloud Console origins have been verified and configured correctly
+
+---
+
 ## [0.12.4] - 2025-11-22
 
 ### Changed - Editing Flow & UX
@@ -18,6 +44,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **OpenRouter ретраи**: для генерации редактирования отключены автоповторы Celery (max_retries=0), чтобы не слать запросы каждые 60с и не сжигать токены при ошибках.
 - **refreshProfile**: фронт теперь берёт профиль из `response.user`, убирая циклические 401 и некорректное состояние баланса после логина/регистрации.
 - **Новый E2E**: добавлен `e2e_editing_test.py` — полный сценарий редактирования (регистрация, загрузка фото, улучшение промпта, генерация, скриншот артефакта в `.playwright-mcp/`).
+- **Auth hardening**: добавлен whitelist доменов (`ALLOWED_EMAIL_DOMAINS`) и rate-limit на регистрацию (`REGISTER_RATE_LIMIT_PER_MINUTE`), автоприсвоение роли ADMIN при Google-логине для email из whitelist.
+- **CORS dev**: добавлены origin `127.0.0.1:5173/5174` для локального Vite.
+- **Fitting prompts**: ужесточены промты для рук и обуви (запрет лишних конечностей, совпадение масштаба/фона, без белых полей).
 
 ### Notes
 - После обновлений фронт нужно перезапустить dev-сервер; на некоторых окружениях может потребоваться ручной запуск Vite.

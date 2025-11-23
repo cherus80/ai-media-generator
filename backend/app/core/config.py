@@ -112,6 +112,18 @@ class Settings(BaseSettings):
 
     # Admin
     ADMIN_SECRET_KEY: Optional[str] = Field(default=None, description="Secret key for admin access (optional)")
+    ADMIN_EMAIL_WHITELIST: str = Field(
+        default="",
+        description="Список email через запятую, которым автоматически присваивается роль ADMIN",
+    )
+    ALLOWED_EMAIL_DOMAINS: str = Field(
+        default="",
+        description="Список разрешённых доменов через запятую для регистрации (пусто — разрешены все)",
+    )
+    REGISTER_RATE_LIMIT_PER_MINUTE: int = Field(
+        default=10,
+        description="Сколько регистраций в минуту разрешено с одного IP",
+    )
 
     @field_validator("ENVIRONMENT")
     @classmethod
@@ -129,6 +141,16 @@ class Settings(BaseSettings):
         if not 0 <= v <= 1:
             raise ValueError("Rate must be between 0 and 1")
         return v
+
+    @property
+    def admin_email_list(self) -> list[str]:
+        """Список админских email в нижнем регистре."""
+        return [email.strip().lower() for email in self.ADMIN_EMAIL_WHITELIST.split(",") if email.strip()]
+
+    @property
+    def allowed_email_domains(self) -> list[str]:
+        """Список разрешённых доменов (в нижнем регистре). Пусто — без ограничений."""
+        return [d.strip().lower() for d in self.ALLOWED_EMAIL_DOMAINS.split(",") if d.strip()]
 
     @property
     def is_production(self) -> bool:

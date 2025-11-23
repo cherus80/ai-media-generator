@@ -11,7 +11,7 @@ interface PromptDecisionModalProps {
   onUseOriginal: () => void;
   onUseAiHelper: () => void;
   modelName: string;
-  isLoading?: boolean;
+  loadingTarget?: 'original' | 'ai' | null;
 }
 
 export const PromptDecisionModal: React.FC<PromptDecisionModalProps> = ({
@@ -21,11 +21,13 @@ export const PromptDecisionModal: React.FC<PromptDecisionModalProps> = ({
   onUseOriginal,
   onUseAiHelper,
   modelName,
-  isLoading = false,
+  loadingTarget = null,
 }) => {
   if (!isOpen) {
     return null;
   }
+
+  const isBusy = Boolean(loadingTarget);
 
   return (
     <motion.div
@@ -87,7 +89,7 @@ export const PromptDecisionModal: React.FC<PromptDecisionModalProps> = ({
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
-                  if (!isLoading) onUseOriginal();
+                  if (!isBusy) onUseOriginal();
                 }}
               >
                 <Button
@@ -95,8 +97,8 @@ export const PromptDecisionModal: React.FC<PromptDecisionModalProps> = ({
                   size="lg"
                   fullWidth
                   type="submit"
-                  disabled={isLoading}
-                  isLoading={isLoading}
+                  disabled={isBusy}
+                  isLoading={loadingTarget === 'original'}
                 >
                   Отправить без улучшений
                 </Button>
@@ -120,7 +122,7 @@ export const PromptDecisionModal: React.FC<PromptDecisionModalProps> = ({
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              if (!isLoading) onUseAiHelper();
+              if (!isBusy) onUseAiHelper();
             }}
           >
             <Button
@@ -128,8 +130,8 @@ export const PromptDecisionModal: React.FC<PromptDecisionModalProps> = ({
               size="lg"
               fullWidth
               type="submit"
-              disabled={isLoading}
-              isLoading={isLoading}
+              disabled={isBusy}
+              isLoading={loadingTarget === 'ai'}
               icon={
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l4 2" />

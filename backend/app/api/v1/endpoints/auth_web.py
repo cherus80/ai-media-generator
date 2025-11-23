@@ -10,16 +10,18 @@ Endpoints:
 """
 
 import secrets
+import time
+from collections import defaultdict, deque
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import CurrentUser, DBSession
 from app.core.config import settings
-from app.models.user import User, AuthProvider
+from app.models.user import User, AuthProvider, UserRole
 from app.schemas.auth_web import (
     RegisterRequest,
     LoginRequest,
@@ -34,6 +36,9 @@ from app.utils.password import hash_password, verify_password, is_strong_passwor
 from app.utils.google_oauth import verify_google_id_token, GoogleOAuthError
 
 router = APIRouter(prefix="/auth-web", tags=["Web Authentication"])
+# In-memory rate limit for registrations
+_register_hits: defaultdict[str, deque] = defaultdict(deque)
+_REGISTER_WINDOW_SEC = 60
 
 
 def generate_referral_code(user_id: int) -> str:
@@ -93,7 +98,8 @@ def user_to_profile(user: User) -> UserProfile:
 
 @router.post("/register", response_model=LoginResponse, status_code=status.HTTP_201_CREATED)
 async def register_with_email(
-    request: RegisterRequest,
+    request: Request,
+    request_body: RegisterRequest,
     db: DBSession,
 ) -> LoginResponse:
     """
@@ -109,9 +115,31 @@ async def register_with_email(
     Raises:
         HTTPException 400: Если email уже занят или пароль слабый
     """
+    # Rate limit by client IP
+    client_ip = request.client.host if request.client else "unknown"
+    now = time.time()
+    hits = _register_hits[client_ip]
+    while hits and now - hits[0] > _REGISTER_WINDOW_SEC:
+        hits.popleft()
+    hits.append(now)
+    if len(hits) > settings.REGISTER_RATE_LIMIT_PER_MINUTE:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Слишком много попыток регистрации. Попробуйте позже.",
+        )
+
+    # Domain whitelist (if configured)
+    if settings.allowed_email_domains:
+        domain = request_body.email.split("@")[-1].lower()
+        if domain not in settings.allowed_email_domains:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Регистрация с этим доменом недоступна. Используйте разрешённый домен.",
+            )
+
     # Проверка, что email не занят
     result = await db.execute(
-        select(User).where(User.email == request.email)
+        select(User).where(User.email == request_body.email)
     )
     existing_user = result.scalar_one_or_none()
 
@@ -122,7 +150,7 @@ async def register_with_email(
         )
 
     # Дополнительная проверка силы пароля (уже есть в схеме, но на всякий случай)
-    is_valid, error_msg = is_strong_password(request.password)
+    is_valid, error_msg = is_strong_password(request_body.password)
     if not is_valid:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -130,23 +158,27 @@ async def register_with_email(
         )
 
     # Хешируем пароль
-    password_hash = hash_password(request.password)
+    password_hash = hash_password(request_body.password)
 
     # Создаём нового пользователя
     user = User(
-        email=request.email,
+        email=request_body.email,
         email_verified=False,  # TODO: Добавить email verification позже
         password_hash=password_hash,
         auth_provider=AuthProvider.EMAIL,
-        first_name=request.first_name,
-        last_name=request.last_name,
-        username=request.email.split('@')[0],  # Временный username из email
+        first_name=request_body.first_name,
+        last_name=request_body.last_name,
+        username=request_body.email.split('@')[0],  # Временный username из email
         balance_credits=100,  # 100 тестовых кредитов при регистрации
         freemium_actions_used=0,
         freemium_reset_at=datetime.utcnow(),
         is_active=True,
         is_banned=False,
     )
+
+    # Автоматическое назначение роли ADMIN, если email в whitelist
+    if user.email and user.email.lower() in settings.admin_email_list:
+        user.role = UserRole.ADMIN
 
     db.add(user)
     await db.commit()
@@ -197,18 +229,45 @@ async def login_with_email(
     )
     user = result.scalar_one_or_none()
 
-    # Проверка существования пользователя и правильности пароля
-    if not user or not user.password_hash:
+    # Проверка существования пользователя
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
         )
 
-    if not verify_password(request.password, user.password_hash):
+    # --- Legacy поддержка старых аккаунтов ---
+    # 1) Если пароль отсутствует (старые записи) — принимаем введённый пароль и устанавливаем bcrypt.
+    password_ok = False
+    if not user.password_hash:
+        user.password_hash = hash_password(request.password)
+        await db.commit()
+        await db.refresh(user)
+        password_ok = True
+    else:
+        # 2) Нормальная проверка bcrypt
+        password_ok = verify_password(request.password, user.password_hash)
+
+        # 3) Легаси-хэши без bcrypt-префикса: если хранимое значение не начинается с "$2"
+        #    попробуем прямое сравнение и мигрируем на bcrypt.
+        if not password_ok and not user.password_hash.startswith("$2"):
+            if request.password == user.password_hash:
+                user.password_hash = hash_password(request.password)
+                await db.commit()
+                await db.refresh(user)
+                password_ok = True
+
+    if not password_ok:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
         )
+
+    # Автонормализация роли админа по whitelist
+    if user.email and user.email.lower() in settings.admin_email_list and user.role != UserRole.ADMIN:
+        user.role = UserRole.ADMIN
+        await db.commit()
+        await db.refresh(user)
 
     # Проверка, что пользователь не забанен
     if user.is_banned:
@@ -320,6 +379,10 @@ async def login_with_google(
         user.last_name = last_name or user.last_name
         user.updated_at = datetime.utcnow()
 
+        # Автоназначение роли ADMIN по whitelist
+        if user.email and user.email.lower() in settings.admin_email_list and user.role != UserRole.ADMIN:
+            user.role = UserRole.ADMIN
+
         # Сбрасываем Freemium счётчик, если нужно
         user.reset_freemium_if_needed()
 
@@ -344,6 +407,10 @@ async def login_with_google(
             is_active=True,
             is_banned=False,
         )
+
+        # Автоназначение роли ADMIN по whitelist
+        if user.email and user.email.lower() in settings.admin_email_list:
+            user.role = UserRole.ADMIN
 
         db.add(user)
         await db.commit()

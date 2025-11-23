@@ -40,7 +40,7 @@ export const EditingPage: React.FC = () => {
   const [showResetConfirm, setShowResetConfirm] = React.useState(false);
   const [pendingPrompt, setPendingPrompt] = React.useState<string | null>(null);
   const [showPromptDecision, setShowPromptDecision] = React.useState(false);
-  const [isDecisionLoading, setIsDecisionLoading] = React.useState(false);
+  const [decisionLoadingTarget, setDecisionLoadingTarget] = React.useState<'original' | 'ai' | null>(null);
 
   // Сброс состояния при монтировании страницы
   useEffect(() => {
@@ -88,7 +88,7 @@ export const EditingPage: React.FC = () => {
     console.log('[EditingPage] Starting direct generation with prompt:', pendingPrompt);
     console.log('[EditingPage] Current sessionId:', sessionId);
 
-    setIsDecisionLoading(true);
+    setDecisionLoadingTarget('original');
     try {
       addMessage({
         role: 'user',
@@ -111,7 +111,7 @@ export const EditingPage: React.FC = () => {
       console.error('[EditingPage] Error in handleUseOriginalPrompt:', err);
       toast.error(err.message || 'Ошибка генерации изображения');
     } finally {
-      setIsDecisionLoading(false);
+      setDecisionLoadingTarget(null);
     }
   };
 
@@ -120,7 +120,7 @@ export const EditingPage: React.FC = () => {
       return;
     }
 
-    setIsDecisionLoading(true);
+    setDecisionLoadingTarget('ai');
     try {
       await sendMessage(pendingPrompt);
       toast.success('AI предложил варианты промптов — выберите подходящий.');
@@ -129,7 +129,7 @@ export const EditingPage: React.FC = () => {
     } catch (err: any) {
       toast.error(err.message || 'Ошибка отправки запроса AI-ассистенту');
     } finally {
-      setIsDecisionLoading(false);
+      setDecisionLoadingTarget(null);
     }
   };
 
@@ -305,7 +305,7 @@ export const EditingPage: React.FC = () => {
 
               <ChatInput
                 onSend={handlePromptSubmit}
-                disabled={isSendingMessage || isGenerating || isDecisionLoading}
+                disabled={isSendingMessage || isGenerating || decisionLoadingTarget !== null}
                 placeholder="Опишите, как хотите изменить изображение..."
               />
             </>
@@ -315,14 +315,14 @@ export const EditingPage: React.FC = () => {
           prompt={pendingPrompt || ''}
           isOpen={showPromptDecision && Boolean(pendingPrompt)}
           onClose={() => {
-            if (isDecisionLoading) return;
+            if (decisionLoadingTarget) return;
             setShowPromptDecision(false);
             setPendingPrompt(null);
           }}
           onUseOriginal={handleUseOriginalPrompt}
           onUseAiHelper={handleUseAiHelper}
           modelName={promptAssistantModel}
-          isLoading={isDecisionLoading}
+          loadingTarget={decisionLoadingTarget}
         />
 
         {/* Reset confirmation modal */}

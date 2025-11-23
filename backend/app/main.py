@@ -87,6 +87,9 @@ app.add_middleware(
         "http://localhost:3000",  # Frontend dev
         "http://127.0.0.1:3000",
         "http://localhost:5173",  # Vite dev server
+        "http://127.0.0.1:5173",
+        "http://localhost:5174",  # fallback Vite port
+        "http://127.0.0.1:5174",
         "https://ai-bot-media.mix4.ru",  # Production frontend
         "https://api.ai-bot-media.mix4.ru",  # Production API
     ],

@@ -35,34 +35,35 @@ FITTING_PROMPTS = {
         "Photorealistic, 8k, detailed fabric texture."
     ),
     "accessory_head": (
-        "A professional portrait showing a person wearing the accessory on their head. "
-        "Clear focus on the accessory, natural lighting, realistic placement. "
-        "High detail, photorealistic, 8k quality."
+        "Place the accessory on the existing head without changing the face or hairstyle. "
+        "Keep the original head shape and pose, no extra heads or body parts. "
+        "Professional portrait lighting, realistic placement, photorealistic 8k."
     ),
     "accessory_face": (
-        "A professional close-up portrait showing a person wearing the accessory on their face. "
-        "Clear focus on glasses/mask, natural lighting, realistic fit and placement. "
-        "High detail, photorealistic, 8k quality."
+        "Overlay the accessory on the existing face (e.g., glasses/mask) keeping facial features intact. "
+        "Do not add extra faces or heads, match perspective and scale to the current face. "
+        "Natural lighting, realistic fit, photorealistic 8k."
     ),
     "accessory_neck": (
-        "A fashion portrait focusing on the neck area with the accessory. "
-        "Professional lighting, elegant pose, realistic jewelry placement. "
-        "Photorealistic, high detail, 8k quality."
+        "Place the accessory on the current neck/collarbone area, preserving the person’s pose and skin. "
+        "No extra necks or bodies. Realistic jewelry placement, elegant portrait lighting, photorealistic 8k."
     ),
     "accessory_hands": (
-        "A close-up shot of hands wearing the accessory. "
-        "Professional lighting, natural hand position, realistic fit. "
-        "High detail, photorealistic, 8k quality."
+        "Place the accessory precisely on the existing wrist of the person in the photo. "
+        "Do not add or replace arms or hands; preserve the original arm shape, pose, and skin. "
+        "Match scale, angle, and perspective to the current wrist; keep lighting and skin tone consistent. "
+        "Avoid oversized accessories and avoid covering the body. Photorealistic, high detail, 8k quality."
     ),
     "accessory_legs": (
-        "A fashion shot showing legs wearing the accessory. "
-        "Professional lighting, natural pose, realistic placement. "
-        "Photorealistic, high detail, 8k quality."
+        "Place the footwear on the existing feet of the person. "
+        "Do not add extra legs or change the body/pose. "
+        "Match scale, angle, and perspective to the current feet and floor; keep background unchanged and original framing/aspect ratio. "
+        "Preserve skin, ankles, and original lighting; avoid oversized or floating shoes. "
+        "Do not add white or blank margins; do not extend canvas. Photorealistic, high detail, 8k quality."
     ),
     "accessory_body": (
-        "A full-body fashion photoshoot showing a person wearing the clothing item. "
-        "Professional studio lighting, clean background, realistic fit and draping. "
-        "Photorealistic, 8k, detailed fabric texture, full body view."
+        "Replace clothing on the existing body while keeping the person’s pose, proportions, and skin visible. "
+        "No extra limbs or duplicated body parts. Realistic fit and draping, studio lighting, photorealistic 8k."
     ),
 }
 
