@@ -42,6 +42,8 @@ interface AuthState {
   hasCredits: boolean;
   canUseFreemium: boolean;
   hasActiveSubscription: boolean;
+  isAdmin: boolean;
+  isSuperAdmin: boolean;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -54,6 +56,8 @@ export const useAuthStore = create<AuthState>()(
           !!user?.subscription_type &&
           !!user.subscription_expires_at &&
           new Date(user.subscription_expires_at) > new Date(),
+        isAdmin: user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN',
+        isSuperAdmin: user?.role === 'SUPER_ADMIN',
       });
 
       return {
@@ -273,6 +277,7 @@ export const useAuthStore = create<AuthState>()(
         hasCredits: false,
         canUseFreemium: false,
         hasActiveSubscription: false,
+        isAdmin: false,
       };
     },
     {
@@ -289,11 +294,27 @@ export const useAuthStore = create<AuthState>()(
         return (state, error) => {
           if (error) {
             console.error('❌ Ошибка восстановления состояния:', error);
-          } else {
+          } else if (state) {
+            // Recompute access flags from rehydrated user
+            const computeAccessFlags = (user: UserProfile | null) => ({
+              hasCredits: (user?.balance_credits ?? 0) > 0,
+              canUseFreemium: user?.can_use_freemium ?? false,
+              hasActiveSubscription:
+                !!user?.subscription_type &&
+                !!user.subscription_expires_at &&
+                new Date(user.subscription_expires_at) > new Date(),
+              isAdmin: user?.role === 'ADMIN',
+            });
+
+            // Apply computed flags to rehydrated state
+            Object.assign(state, computeAccessFlags(state.user));
+
             console.log('✅ Состояние авторизации восстановлено:', {
-              hasToken: !!state?.token,
-              isAuthenticated: state?.isAuthenticated,
-              hasUser: !!state?.user,
+              hasToken: !!state.token,
+              isAuthenticated: state.isAuthenticated,
+              hasUser: !!state.user,
+              isAdmin: state.isAdmin,
+              role: state.user?.role,
             });
           }
         };

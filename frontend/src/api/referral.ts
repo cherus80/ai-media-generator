@@ -115,24 +115,32 @@ export const copyReferralLink = async (link: string): Promise<boolean> => {
 };
 
 /**
- * Поделиться реферальной ссылкой через Telegram
+ * Поделиться реферальной ссылкой
+ * Использует Web Share API если доступен, иначе копирует в буфер обмена
  * @param link - Реферальная ссылка
  * @param text - Текст сообщения
  */
-export const shareReferralLink = (link: string, text?: string): void => {
-  const message = text || `Присоединяйся к AI Image Generator!\n${link}`;
+export const shareReferralLink = async (link: string, text?: string): Promise<void> => {
+  const message = text || 'Join AI Image Generator and get bonus credits!';
 
-  // Используем Telegram Share API
-  if (window.Telegram?.WebApp) {
-    const url = `https://t.me/share/url?url=${encodeURIComponent(
-      link
-    )}&text=${encodeURIComponent(message)}`;
-    window.Telegram.WebApp.openTelegramLink(url);
+  // Проверяем поддержку Web Share API
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: 'AI Image Generator',
+        text: message,
+        url: link,
+      });
+      console.log('Successfully shared via Web Share API');
+    } catch (error) {
+      // Пользователь отменил шаринг или произошла ошибка
+      console.log('Share cancelled or failed:', error);
+      // Fallback: копируем в буфер обмена
+      await copyReferralLink(link);
+    }
   } else {
-    // Fallback: открываем в новом окне
-    const url = `https://t.me/share/url?url=${encodeURIComponent(
-      link
-    )}&text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank');
+    // Fallback: копируем в буфер обмена
+    await copyReferralLink(link);
+    alert('Link copied to clipboard! Share it with your friends.');
   }
 };

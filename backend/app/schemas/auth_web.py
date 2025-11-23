@@ -12,6 +12,8 @@ from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
+from app.models.user import UserRole
+
 
 # ============================================================================
 # User Profile (defined first for use in response schemas)
@@ -65,6 +67,9 @@ class UserProfile(BaseModel):
     is_blocked: bool = Field(..., description="Is user blocked/banned")
     created_at: datetime = Field(..., description="Account creation date")
     last_activity_at: datetime = Field(..., description="Last activity timestamp")
+
+    # Role
+    role: UserRole = Field(default=UserRole.USER, description="User role (USER or ADMIN)")
 
     # Referral
     referral_code: str = Field(..., description="Unique referral code")

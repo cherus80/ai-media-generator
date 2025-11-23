@@ -98,6 +98,9 @@ export interface UserProfile {
   created_at: string;
   last_activity_at: string;
 
+  // Role
+  role: 'USER' | 'ADMIN'; // User role for admin panel access
+
   // Referral
   referral_code: string;
   referred_by_id?: number;

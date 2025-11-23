@@ -37,6 +37,13 @@ class AuthProvider(str, enum.Enum):
     TELEGRAM = "TELEGRAM" # Legacy Telegram (для обратной совместимости)
 
 
+class UserRole(str, enum.Enum):
+    """Роли пользователей"""
+    USER = "USER"               # Обычный пользователь
+    ADMIN = "ADMIN"             # Администратор
+    SUPER_ADMIN = "SUPER_ADMIN" # Главный администратор
+
+
 class User(Base, TimestampMixin):
     """
     Модель пользователя.
@@ -176,6 +183,21 @@ class User(Base, TimestampMixin):
         comment="Забанен ли пользователь",
     )
 
+    # Роль пользователя
+    role: Mapped[UserRole] = mapped_column(
+        Enum(UserRole, name="user_role_enum"),
+        default=UserRole.USER,
+        nullable=False,
+        comment="Роль пользователя (user, admin)",
+    )
+
+    # Последняя активность
+    last_active_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="Дата и время последней активности",
+    )
+
     # Relationships
     generations: Mapped[list["Generation"]] = relationship(
         "Generation",
@@ -219,6 +241,8 @@ class User(Base, TimestampMixin):
         Index("idx_subscription_end", "subscription_end"),
         Index("idx_is_active", "is_active"),
         Index("idx_auth_provider", "auth_provider"),
+        Index("idx_role", "role"),
+        Index("idx_last_active_at", "last_active_at"),
     )
 
     def __repr__(self) -> str:

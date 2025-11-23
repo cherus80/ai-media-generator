@@ -13,8 +13,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException, status
 
 from app.core.config import settings
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.models.payment import Payment
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class InsufficientCreditsError(Exception):
@@ -41,11 +44,16 @@ async def check_user_can_perform_action(
     Returns:
         tuple[bool, str]: (can_perform, payment_method)
             - can_perform: True если может выполнить
-            - payment_method: "credits", "subscription", "freemium"
+            - payment_method: "credits", "subscription", "freemium", "admin"
 
     Raises:
         HTTPException: Если пользователь не может выполнить действие
     """
+    # 0. Админы имеют безлимитный доступ
+    if user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
+        logger.info(f"✅ Admin bypass for user {user.id} (role={user.role.value})")
+        return True, "admin"
+
     # 1. Проверка кредитов
     if user.balance_credits >= credits_cost:
         return True, "credits"
@@ -121,7 +129,15 @@ async def deduct_credits(
         )
 
     # Списание в зависимости от метода оплаты
-    if payment_method == "credits":
+    if payment_method == "admin":
+        # Админы не тратят кредиты - безлимитный доступ
+        logger.info(
+            f"💳 Credits NOT deducted for admin {user.id} "
+            f"(role={user.role.value}, generation_id={generation_id})"
+        )
+        pass
+
+    elif payment_method == "credits":
         user.balance_credits -= credits_cost
 
     elif payment_method == "subscription":

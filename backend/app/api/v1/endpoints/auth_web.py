@@ -80,6 +80,7 @@ def user_to_profile(user: User) -> UserProfile:
         is_blocked=user.is_banned,
         created_at=user.created_at,
         last_activity_at=user.updated_at,
+        role=user.role,
         referral_code=referral_code,
         referred_by_id=None,  # TODO: Add через relationship позже
     )

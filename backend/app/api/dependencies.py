@@ -16,7 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.db.session import get_db
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.utils.jwt import JWTTokenError, verify_token
 
 # HTTP Bearer схема для Authorization header
@@ -118,7 +118,63 @@ async def get_current_active_user(
     return current_user
 
 
+async def get_current_admin(
+    current_user: Annotated[User, Depends(get_current_active_user)],
+) -> User:
+    """
+    Dependency для получения только администраторов.
+
+    Проверяет, что текущий пользователь имеет роль ADMIN или SUPER_ADMIN.
+
+    Args:
+        current_user: Текущий активный пользователь из get_current_active_user
+
+    Returns:
+        User: Объект пользователя с ролью администратора
+
+    Raises:
+        HTTPException 403: Если у пользователя нет прав администратора
+    """
+    if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required. Insufficient permissions.",
+        )
+
+    return current_user
+
+
+async def get_current_super_admin(
+    current_user: Annotated[User, Depends(get_current_active_user)],
+) -> User:
+    """
+    Dependency для получения только главных администраторов (SUPER_ADMIN).
+
+    Используется для операций, доступных только super admin:
+    - Назначение других администраторов
+    - Управление правами доступа
+
+    Args:
+        current_user: Текущий активный пользователь из get_current_active_user
+
+    Returns:
+        User: Объект пользователя с ролью SUPER_ADMIN
+
+    Raises:
+        HTTPException 403: Если у пользователя нет прав главного администратора
+    """
+    if current_user.role != UserRole.SUPER_ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Super admin access required. Only the main administrator can perform this action.",
+        )
+
+    return current_user
+
+
 # Type aliases для удобства
 CurrentUser = Annotated[User, Depends(get_current_user)]
 ActiveUser = Annotated[User, Depends(get_current_active_user)]
+AdminUser = Annotated[User, Depends(get_current_admin)]
+SuperAdminUser = Annotated[User, Depends(get_current_super_admin)]
 DBSession = Annotated[AsyncSession, Depends(get_db)]

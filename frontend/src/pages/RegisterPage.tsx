@@ -1,12 +1,14 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../store/authStore';
 import { GoogleSignInButton } from '../components/auth/GoogleSignInButton';
 import { validateRegisterForm, checkPasswordStrength, getPasswordStrengthLabel, getPasswordStrengthColor } from '../utils/passwordValidation';
+import { registerReferral } from '../api/referral';
 
 export function RegisterPage() {
   const navigate = useNavigate();
   const { registerWithEmail, isLoading, error, clearError } = useAuth();
+  const [searchParams] = useSearchParams();
 
   const [formData, setFormData] = useState({
     email: '',
@@ -17,8 +19,18 @@ export function RegisterPage() {
   });
   const [formErrors, setFormErrors] = useState<any>({});
   const [showPassword, setShowPassword] = useState(false);
+  const [referralCode, setReferralCode] = useState<string | null>(null);
 
   const passwordStrength = checkPasswordStrength(formData.password);
+
+  // Извлечь реферальный код из URL при монтировании компонента
+  useEffect(() => {
+    const refCode = searchParams.get('ref');
+    if (refCode) {
+      setReferralCode(refCode);
+      console.log('Referral code detected:', refCode);
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,13 +49,34 @@ export function RegisterPage() {
         first_name: formData.first_name || undefined,
         last_name: formData.last_name || undefined,
       });
+
+      // Если есть реферальный код, зарегистрировать реферала
+      if (referralCode) {
+        try {
+          await registerReferral(referralCode);
+          console.log('Referral registered successfully');
+        } catch (refError) {
+          console.error('Failed to register referral:', refError);
+          // Не блокируем переход даже если реферал не зарегистрировался
+        }
+      }
+
       navigate('/');
     } catch (err) {
       // Error handled in store
     }
   };
 
-  const handleGoogleSuccess = () => {
+  const handleGoogleSuccess = async () => {
+    // Если есть реферальный код, зарегистрировать реферала
+    if (referralCode) {
+      try {
+        await registerReferral(referralCode);
+        console.log('Referral registered successfully after Google sign-in');
+      } catch (refError) {
+        console.error('Failed to register referral after Google sign-in:', refError);
+      }
+    }
     navigate('/');
   };
 
@@ -59,6 +92,19 @@ export function RegisterPage() {
             </Link>
           </p>
         </div>
+
+        {referralCode && (
+          <div className="rounded-md bg-green-50 p-4 border border-green-200">
+            <div className="flex items-center">
+              <svg className="h-5 w-5 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <p className="text-sm font-medium text-green-800">
+                You've been invited! Register to get bonus credits.
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="mt-8 space-y-6">
           <GoogleSignInButton

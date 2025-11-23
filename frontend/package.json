@@ -21,8 +21,10 @@
     "react-dom": "^18.2.0",
     "react-dropzone": "^14.2.3",
     "react-hot-toast": "^2.4.1",
+    "react-infinite-scroll-component": "^6.1.0",
     "react-router-dom": "^6.21.1",
     "react-step-wizard": "^5.3.11",
+    "recharts": "^3.4.1",
     "uuid": "^13.0.0",
     "zustand": "^4.4.7"
   },

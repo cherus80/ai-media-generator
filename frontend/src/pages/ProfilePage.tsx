@@ -503,8 +503,8 @@ export const ProfilePage: React.FC = () => {
                   <Button
                     variant="success"
                     size="md"
-                    onClick={() => {
-                      shareReferralLink(
+                    onClick={async () => {
+                      await shareReferralLink(
                         referralStats.referral_link,
                         'Присоединяйся к AI Image Generator и получай бонусы за создание изображений!'
                       );

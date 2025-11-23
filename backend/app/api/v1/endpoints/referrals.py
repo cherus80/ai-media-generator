@@ -54,9 +54,9 @@ def get_referral_link(referral_code: str) -> str:
     Returns:
         Полная ссылка для приглашения
     """
-    # Ссылка на Telegram бота с start параметром
-    bot_username = getattr(settings, "BOT_USERNAME", "YourBotUsername")
-    return f"https://t.me/{bot_username}?start=ref_{referral_code}"
+    # Веб-ссылка на страницу регистрации с реферальным кодом
+    frontend_url = settings.FRONTEND_URL
+    return f"{frontend_url}/register?ref={referral_code}"
 
 
 @router.get("/link", response_model=ReferralLinkResponse)

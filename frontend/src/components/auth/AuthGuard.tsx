@@ -18,7 +18,18 @@ interface AuthGuardProps {
 }
 
 export const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
-  const { isAuthenticated, isLoading, error } = useAuth();
+  const { isAuthenticated, isLoading, error, token } = useAuth();
+  const [isHydrated, setIsHydrated] = React.useState(false);
+
+  // Ждем восстановления состояния из localStorage
+  React.useEffect(() => {
+    // Даем zustand время восстановить состояние из localStorage
+    const timer = setTimeout(() => {
+      setIsHydrated(true);
+    }, 500); // 500ms для надежного восстановления
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // Check if running in Telegram
   const inTelegram = isTelegramWebApp();
@@ -47,6 +58,11 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
   // DEV MODE: Show dev badge when running locally
   if (isDev && !inTelegram) {
     console.log('🔧 Работает в DEV режиме без Telegram');
+  }
+
+  // Ждем гидратации состояния из localStorage
+  if (!isHydrated) {
+    return <LoadingPage message="Загрузка..." />;
   }
 
   // Loading - show loading page
@@ -82,6 +98,6 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
     return <>{children}</>;
   }
 
-  // Fallback - redirect to login (shouldn't happen with auto-login)
+  // Fallback - redirect to login (только после гидратации)
   return <Navigate to="/login" replace />;
 };

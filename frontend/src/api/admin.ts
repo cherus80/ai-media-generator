@@ -1,7 +1,7 @@
 /**
  * API клиент для админки.
  *
- * Все запросы требуют заголовок X-Admin-Secret.
+ * Все запросы требуют роль ADMIN (проверяется через JWT токен).
  */
 
 import apiClient from './client';
@@ -12,76 +12,23 @@ import type {
   AdminUsersRequest,
   PaymentExportResponse,
   PaymentExportRequest,
+  UserRegistrationData,
+  UserActivityStats,
+  UserDetailsResponse,
+  AddCreditsRequest,
+  AddCreditsResponse,
+  ReferralStatsResponse,
 } from '../types/admin';
 
 // ============================================================================
-// Конфигурация
-// ============================================================================
-
-/**
- * Получить ADMIN_SECRET_KEY из локального хранилища или переменных окружения.
- */
-export const getAdminSecret = (): string | null => {
-  // Сначала проверяем localStorage (для сохранённого ключа)
-  const savedSecret = localStorage.getItem('admin_secret_key');
-  if (savedSecret) {
-    return savedSecret;
-  }
-
-  // Fallback на переменную окружения (для development)
-  return import.meta.env.VITE_ADMIN_SECRET_KEY || null;
-};
-
-/**
- * Сохранить ADMIN_SECRET_KEY в localStorage.
- */
-export const setAdminSecret = (secret: string): void => {
-  localStorage.setItem('admin_secret_key', secret);
-};
-
-/**
- * Удалить ADMIN_SECRET_KEY из localStorage.
- */
-export const clearAdminSecret = (): void => {
-  localStorage.removeItem('admin_secret_key');
-};
-
-/**
- * Проверить, установлен ли ADMIN_SECRET_KEY.
- */
-export const hasAdminSecret = (): boolean => {
-  return getAdminSecret() !== null;
-};
-
-// ============================================================================
-// Вспомогательные функции
-// ============================================================================
-
-/**
- * Создать заголовки с X-Admin-Secret.
- */
-const createAdminHeaders = (): Record<string, string> => {
-  const secret = getAdminSecret();
-  if (!secret) {
-    throw new Error('Admin secret key is not set. Please set it using setAdminSecret().');
-  }
-
-  return {
-    'X-Admin-Secret': secret,
-  };
-};
-
-// ============================================================================
-// API запросы
+// Dashboard API
 // ============================================================================
 
 /**
  * Получить общую статистику приложения.
  */
 export const getAdminStats = async (): Promise<AdminStats> => {
-  const response = await apiClient.get<AdminStats>('/api/v1/admin/stats', {
-    headers: createAdminHeaders(),
-  });
+  const response = await apiClient.get<AdminStats>('/api/v1/admin/dashboard/stats');
   return response.data;
 };
 
@@ -89,29 +36,119 @@ export const getAdminStats = async (): Promise<AdminStats> => {
  * Получить данные для графиков (последние 30 дней).
  */
 export const getAdminCharts = async (): Promise<AdminChartsData> => {
-  const response = await apiClient.get<AdminChartsData>('/api/v1/admin/charts', {
-    headers: createAdminHeaders(),
-  });
+  const response = await apiClient.get<AdminChartsData>('/api/v1/admin/dashboard/charts');
   return response.data;
 };
+
+/**
+ * Получить динамику регистраций пользователей по дням.
+ */
+export const getUserRegistrations = async (days: number = 30): Promise<UserRegistrationData[]> => {
+  const response = await apiClient.get<UserRegistrationData[]>(
+    '/api/v1/admin/dashboard/user-registrations',
+    { params: { days } }
+  );
+  return response.data;
+};
+
+/**
+ * Получить статистику активности пользователей.
+ */
+export const getUserActivity = async (): Promise<UserActivityStats> => {
+  const response = await apiClient.get<UserActivityStats>('/api/v1/admin/dashboard/user-activity');
+  return response.data;
+};
+
+// ============================================================================
+// Users API
+// ============================================================================
 
 /**
  * Получить список пользователей с фильтрацией и пагинацией.
  */
 export const getAdminUsers = async (params?: AdminUsersRequest): Promise<AdminUsersResponse> => {
   const response = await apiClient.get<AdminUsersResponse>('/api/v1/admin/users', {
-    headers: createAdminHeaders(),
     params: params || {},
   });
   return response.data;
 };
 
 /**
+ * Получить детальную информацию о пользователе.
+ */
+export const getUserDetails = async (userId: number): Promise<UserDetailsResponse> => {
+  const response = await apiClient.get<UserDetailsResponse>(`/api/v1/admin/users/${userId}`);
+  return response.data;
+};
+
+/**
+ * Начислить кредиты пользователю.
+ */
+export const addUserCredits = async (
+  userId: number,
+  data: AddCreditsRequest
+): Promise<AddCreditsResponse> => {
+  const response = await apiClient.post<AddCreditsResponse>(
+    `/api/v1/admin/users/${userId}/add-credits`,
+    data
+  );
+  return response.data;
+};
+
+// ============================================================================
+// Referrals API
+// ============================================================================
+
+/**
+ * Получить статистику рефералов.
+ */
+export const getReferralStats = async (): Promise<ReferralStatsResponse> => {
+  const response = await apiClient.get<ReferralStatsResponse>('/api/v1/admin/referrals/stats');
+  return response.data;
+};
+
+// ============================================================================
+// Export API
+// ============================================================================
+
+/**
+ * Экспортировать пользователей в CSV и скачать файл.
+ */
+export const exportUsersCSV = async (): Promise<void> => {
+  const response = await apiClient.get('/api/v1/admin/export/users', {
+    responseType: 'blob',
+  });
+
+  // Создаём ссылку для скачивания
+  const blob = new Blob([response.data], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+
+  // Получаем имя файла из заголовка Content-Disposition или генерируем
+  const contentDisposition = response.headers['content-disposition'];
+  let filename = 'users_export.csv';
+  if (contentDisposition) {
+    const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
+    if (filenameMatch) {
+      filename = filenameMatch[1];
+    }
+  }
+
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+};
+
+/**
  * Экспортировать платежи в JSON.
  */
-export const exportPaymentsJSON = async (params?: PaymentExportRequest): Promise<PaymentExportResponse> => {
-  const response = await apiClient.get<PaymentExportResponse>('/api/v1/admin/payments/export', {
-    headers: createAdminHeaders(),
+export const exportPaymentsJSON = async (
+  params?: PaymentExportRequest
+): Promise<PaymentExportResponse> => {
+  const response = await apiClient.get<PaymentExportResponse>('/api/v1/admin/export/payments', {
     params: {
       ...params,
       format: 'json',
@@ -124,8 +161,7 @@ export const exportPaymentsJSON = async (params?: PaymentExportRequest): Promise
  * Экспортировать платежи в CSV и скачать файл.
  */
 export const exportPaymentsCSV = async (params?: PaymentExportRequest): Promise<void> => {
-  const response = await apiClient.get('/api/v1/admin/payments/export', {
-    headers: createAdminHeaders(),
+  const response = await apiClient.get('/api/v1/admin/export/payments', {
     params: {
       ...params,
       format: 'csv',
@@ -142,6 +178,37 @@ export const exportPaymentsCSV = async (params?: PaymentExportRequest): Promise<
   // Получаем имя файла из заголовка Content-Disposition или генерируем
   const contentDisposition = response.headers['content-disposition'];
   let filename = 'payments_export.csv';
+  if (contentDisposition) {
+    const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
+    if (filenameMatch) {
+      filename = filenameMatch[1];
+    }
+  }
+
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url);
+};
+
+/**
+ * Экспортировать генерации в CSV и скачать файл.
+ */
+export const exportGenerationsCSV = async (): Promise<void> => {
+  const response = await apiClient.get('/api/v1/admin/export/generations', {
+    responseType: 'blob',
+  });
+
+  // Создаём ссылку для скачивания
+  const blob = new Blob([response.data], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+
+  // Получаем имя файла из заголовка Content-Disposition или генерируем
+  const contentDisposition = response.headers['content-disposition'];
+  let filename = 'generations_export.csv';
   if (contentDisposition) {
     const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
     if (filenameMatch) {

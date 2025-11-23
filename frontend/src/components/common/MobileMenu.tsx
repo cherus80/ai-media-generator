@@ -15,7 +15,7 @@ interface MobileMenuProps {
 
 export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
-  const { user, logout } = useAuthStore();
+  const { user, logout, isAdmin } = useAuthStore();
 
   // Закрытие при нажатии Escape
   useEffect(() => {
@@ -97,6 +97,26 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
     },
   ];
 
+  // Добавляем пункт "Админка" только для администраторов
+  const adminMenuItem = isAdmin
+    ? {
+        icon: (
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+            />
+          </svg>
+        ),
+        label: 'Админка',
+        onClick: () => handleNavigate('/admin'),
+      }
+    : null;
+
+  const allMenuItems = adminMenuItem ? [adminMenuItem, ...menuItems] : menuItems;
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -142,7 +162,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
             {/* Пункты меню */}
             <nav className="flex-1 overflow-y-auto p-4">
               <ul className="space-y-2">
-                {menuItems.map((item, index) => (
+                {allMenuItems.map((item, index) => (
                   <li key={index}>
                     <button
                       onClick={item.onClick}

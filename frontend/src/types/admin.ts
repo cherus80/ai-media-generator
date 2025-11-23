@@ -70,7 +70,8 @@ export interface AdminChartsData {
 
 export interface AdminUserItem {
   id: number;
-  telegram_id: number;
+  email: string | null;
+  telegram_id: number | null;
   username: string | null;
   first_name: string | null;
   last_name: string | null;
@@ -78,9 +79,10 @@ export interface AdminUserItem {
   subscription_type: string | null;
   subscription_expires_at: string | null; // ISO datetime
   freemium_actions_remaining: number;
-  freemium_reset_at: string; // ISO datetime
+  freemium_reset_at: string | null; // ISO datetime
   created_at: string; // ISO datetime
   last_active_at: string | null; // ISO datetime
+  role: 'USER' | 'ADMIN'; // User role
   total_generations: number;
   total_spent: string; // Decimal as string
   referrals_count: number;
@@ -162,4 +164,79 @@ export interface ChartConfig {
   data: ChartDataPoint[];
   color: string;
   backgroundColor?: string;
+}
+
+// ============================================================================
+// Динамика регистраций
+// ============================================================================
+
+export interface UserRegistrationData {
+  date: string; // YYYY-MM-DD
+  count: number;
+}
+
+// ============================================================================
+// Активность пользователей
+// ============================================================================
+
+export interface TopUserByGenerations {
+  id: number;
+  email: string | null;
+  username: string | null;
+  generations_count: number;
+}
+
+export interface UserActivityStats {
+  active_today: number;
+  active_this_week: number;
+  active_this_month: number;
+  top_users: TopUserByGenerations[];
+  avg_generations_per_user: number;
+  total_credits_spent: number;
+}
+
+// ============================================================================
+// Начисление кредитов
+// ============================================================================
+
+export interface AddCreditsRequest {
+  amount: number;
+  reason: string;
+}
+
+export interface AddCreditsResponse {
+  success: boolean;
+  user_id: number;
+  new_balance: number;
+  message: string;
+}
+
+// ============================================================================
+// Детали пользователя
+// ============================================================================
+
+export interface UserDetailsResponse {
+  user: AdminUserItem;
+  recent_generations: any[]; // Can be typed more specifically if needed
+  recent_payments: any[]; // Can be typed more specifically if needed
+  referrals: { id: number; email?: string; username?: string; created_at: string }[];
+}
+
+// ============================================================================
+// Статистика рефералов
+// ============================================================================
+
+export interface ReferralStatsItem {
+  user_id: number;
+  email: string | null;
+  username: string | null;
+  referrals_count: number;
+  active_referrals: number;
+  credits_earned: number;
+}
+
+export interface ReferralStatsResponse {
+  stats: ReferralStatsItem[];
+  total_referrals: number;
+  total_credits_earned: number;
 }

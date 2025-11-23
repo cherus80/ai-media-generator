@@ -120,7 +120,8 @@ class AdminChartsData(BaseModel):
 class AdminUserItem(BaseModel):
     """Информация о пользователе для админки."""
     id: int
-    telegram_id: int
+    email: str | None = Field(None, description="Email (для веб-пользователей)")
+    telegram_id: int | None = Field(None, description="Telegram ID (legacy)")
     username: str | None
     first_name: str | None
     last_name: str | None
@@ -128,9 +129,10 @@ class AdminUserItem(BaseModel):
     subscription_type: str | None
     subscription_expires_at: datetime | None
     freemium_actions_remaining: int
-    freemium_reset_at: datetime
+    freemium_reset_at: datetime | None
     created_at: datetime
     last_active_at: datetime | None
+    role: str = Field(..., description="Роль пользователя (user/admin)")
     total_generations: int = Field(..., description="Всего генераций этого пользователя")
     total_spent: Decimal = Field(..., description="Всего потрачено (₽)")
     referrals_count: int = Field(..., description="Количество приглашённых друзей")
@@ -202,3 +204,166 @@ class PaymentExportRequest(BaseModel):
     date_to: datetime | None = Field(default=None, description="Конечная дата")
     status: str | None = Field(default="succeeded", description="Статус платежа")
     format: str = Field(default="csv", description="Формат экспорта (csv/json)")
+
+
+# ============================================================================
+# Динамика регистраций
+# ============================================================================
+
+class UserRegistrationData(BaseModel):
+    """Данные о регистрациях пользователей по дням."""
+    date: str = Field(..., description="Дата (YYYY-MM-DD)")
+    count: int = Field(..., description="Количество регистраций")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "date": "2025-01-15",
+                "count": 12
+            }
+        }
+
+
+# ============================================================================
+# Активность пользователей
+# ============================================================================
+
+class TopUserByGenerations(BaseModel):
+    """Топ пользователь по генерациям."""
+    id: int
+    email: str | None
+    username: str | None
+    generations_count: int
+
+
+class UserActivityStats(BaseModel):
+    """Статистика активности пользователей."""
+    active_today: int = Field(..., description="Активных сегодня")
+    active_this_week: int = Field(..., description="Активных за неделю")
+    active_this_month: int = Field(..., description="Активных за месяц")
+    top_users: list[TopUserByGenerations] = Field(..., description="Топ 10 пользователей по генерациям")
+    avg_generations_per_user: float = Field(..., description="Среднее количество генераций на пользователя")
+    total_credits_spent: int = Field(..., description="Всего потрачено кредитов")
+
+
+# ============================================================================
+# Начисление кредитов
+# ============================================================================
+
+class AddCreditsRequest(BaseModel):
+    """Запрос на начисление кредитов пользователю."""
+    amount: int = Field(..., gt=0, description="Количество кредитов для начисления")
+    reason: str = Field(..., min_length=3, max_length=200, description="Причина начисления")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "amount": 100,
+                "reason": "Компенсация за проблему с генерацией"
+            }
+        }
+
+
+class AddCreditsResponse(BaseModel):
+    """Ответ на начисление кредитов."""
+    success: bool
+    user_id: int
+    new_balance: int = Field(..., description="Новый баланс пользователя")
+    message: str
+
+
+# ============================================================================
+# Детали пользователя
+# ============================================================================
+
+class UserDetailsResponse(BaseModel):
+    """Детальная информация о пользователе."""
+    user: AdminUserItem
+    recent_generations: list = Field(..., description="Последние 10 генераций")
+    recent_payments: list = Field(..., description="Последние 10 платежей")
+    referrals: list[dict] = Field(..., description="Список приглашенных пользователей")
+
+
+# ============================================================================
+# Статистика рефералов
+# ============================================================================
+
+class ReferralStatsItem(BaseModel):
+    """Статистика рефералов по пользователю."""
+    user_id: int
+    email: str | None
+    username: str | None
+    referrals_count: int = Field(..., description="Количество приглашенных")
+    active_referrals: int = Field(..., description="Активных рефералов")
+    credits_earned: int = Field(..., description="Заработано кредитов")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "user_id": 42,
+                "email": "user@example.com",
+                "username": "user123",
+                "referrals_count": 15,
+                "active_referrals": 8,
+                "credits_earned": 150
+            }
+        }
+
+
+class ReferralStatsResponse(BaseModel):
+    """Ответ со статистикой рефералов."""
+    stats: list[ReferralStatsItem]
+    total_referrals: int = Field(..., description="Всего рефералов в системе")
+    total_credits_earned: int = Field(..., description="Всего заработано кредитов")
+
+
+# ============================================================================
+# Управление правами пользователей
+# ============================================================================
+
+class MakeAdminRequest(BaseModel):
+    """Запрос на назначение пользователя администратором."""
+    email: str = Field(..., description="Email пользователя для назначения админом")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "email": "newadmin@example.com"
+            }
+        }
+
+
+class MakeAdminResponse(BaseModel):
+    """Ответ на назначение администратора."""
+    success: bool = Field(..., description="Успешность операции")
+    user_id: int = Field(..., description="ID пользователя")
+    email: str = Field(..., description="Email пользователя")
+    role: str = Field(..., description="Новая роль пользователя")
+    message: str = Field(..., description="Сообщение о результате")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "success": True,
+                "user_id": 42,
+                "email": "newadmin@example.com",
+                "role": "ADMIN",
+                "message": "User newadmin@example.com is now an admin"
+            }
+        }
+
+
+class DeleteUserResponse(BaseModel):
+    """Ответ на удаление пользователя."""
+    success: bool = Field(..., description="Успешность операции")
+    user_id: int = Field(..., description="ID удаленного пользователя")
+    message: str = Field(..., description="Сообщение о результате")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "success": True,
+                "user_id": 42,
+                "message": "User with ID 42 has been deleted"
+            }
+        }

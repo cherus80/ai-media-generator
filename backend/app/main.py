@@ -5,9 +5,10 @@ FastAPI Main Application.
 """
 
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from typing import AsyncGenerator
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -97,6 +98,49 @@ app.add_middleware(
 
 # GZip Compression
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+
+# Middleware для отслеживания активности пользователей
+@app.middleware("http")
+async def track_user_activity(request: Request, call_next):
+    """
+    Middleware для обновления last_active_at у авторизованных пользователей.
+
+    Обновляет время последней активности при каждом запросе с валидным JWT токеном.
+    """
+    response = await call_next(request)
+
+    # Проверяем, есть ли Authorization header
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        try:
+            from app.utils.jwt import verify_token
+            from app.db.session import AsyncSessionLocal
+            from app.models.user import User
+            from sqlalchemy import select
+
+            # Извлекаем и проверяем токен
+            token = auth_header.split(" ")[1]
+            payload = verify_token(token)
+
+            if payload and "user_id" in payload:
+                user_id = payload["user_id"]
+
+                # Обновляем last_active_at в БД
+                async with AsyncSessionLocal() as db:
+                    result = await db.execute(
+                        select(User).where(User.id == user_id)
+                    )
+                    user = result.scalar_one_or_none()
+
+                    if user:
+                        user.last_active_at = datetime.now(timezone.utc)
+                        await db.commit()
+        except Exception:
+            # Игнорируем ошибки в middleware, чтобы не нарушать основной запрос
+            pass
+
+    return response
 
 
 # Static files для uploads (необходимо для виртуальной примерки)
