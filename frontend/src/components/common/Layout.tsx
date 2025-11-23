@@ -9,6 +9,7 @@ import { motion } from 'framer-motion';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { MobileMenu } from './MobileMenu';
+import { EmailVerificationBanner } from './EmailVerificationBanner';
 import { useAuthStore } from '../../store/authStore';
 
 interface LayoutProps {
@@ -138,6 +139,9 @@ export const Layout: React.FC<LayoutProps> = ({
           </div>
         </div>
       </header>
+
+      {/* Email Verification Banner */}
+      <EmailVerificationBanner />
 
       {/* Main content */}
       <main>{children}</main>

@@ -12,6 +12,8 @@ import type {
   LoginResponse,
   GoogleOAuthResponse,
   UserProfileResponse,
+  SendVerificationEmailResponse,
+  VerifyEmailResponse,
 } from '../types/auth';
 
 /**
@@ -60,4 +62,30 @@ export async function refreshUserProfile(): Promise<UserProfileResponse> {
 export function logout(): void {
   // Token is cleared in authStore
   // Could add server-side logout endpoint in the future (e.g., token blacklist)
+}
+
+// ============================================================================
+// Email Verification
+// ============================================================================
+
+/**
+ * Send verification email to current user
+ * Requires authentication
+ */
+export async function sendVerificationEmail(): Promise<SendVerificationEmailResponse> {
+  const response = await client.post<SendVerificationEmailResponse>(
+    '/api/v1/auth-web/send-verification'
+  );
+  return response.data;
+}
+
+/**
+ * Verify email with token
+ * No authentication required
+ */
+export async function verifyEmail(token: string): Promise<VerifyEmailResponse> {
+  const response = await client.get<VerifyEmailResponse>(
+    `/api/v1/auth-web/verify?token=${encodeURIComponent(token)}`
+  );
+  return response.data;
 }

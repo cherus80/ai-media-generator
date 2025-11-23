@@ -7,6 +7,7 @@ import { EditingPage } from './pages/EditingPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { AdminPage } from './pages/AdminPage';
 import { ErrorPage } from './pages/ErrorPage';
+import { EmailVerificationPage } from './pages/EmailVerificationPage';
 import MockPaymentEmulator from './pages/MockPaymentEmulator';
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
         {/* Auth pages */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/verify" element={<EmailVerificationPage />} />
 
         {/* Главная страница - выбор функции */}
         <Route path="/" element={<HomePage />} />

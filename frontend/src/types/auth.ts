@@ -148,6 +148,23 @@ export interface PasswordResetConfirm {
 }
 
 // ============================================================================
+// Email Verification
+// ============================================================================
+
+export interface SendVerificationEmailResponse {
+  message: string;
+}
+
+export interface VerifyEmailRequest {
+  token: string;
+}
+
+export interface VerifyEmailResponse {
+  message: string;
+  user: UserProfile;
+}
+
+// ============================================================================
 // Form Validation
 // ============================================================================
 
