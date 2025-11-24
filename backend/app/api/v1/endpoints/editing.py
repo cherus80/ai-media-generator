@@ -33,6 +33,7 @@ from app.schemas.editing import (
     ChatHistoryMessage,
 )
 from app.services.credits import deduct_credits, check_user_can_perform_action
+from app.services.billing_v4 import BillingV4Service
 from app.services.chat import (
     create_chat_session,
     get_chat_session,
@@ -165,17 +166,27 @@ async def send_message(
     """
     Отправить сообщение AI-ассистенту и получить 3 варианта промптов.
     """
-    # Проверка баланса
-    can_perform, reason = await check_user_can_perform_action(
-        user=current_user,
-        credits_cost=1,  # Стоимость запроса к AI
-    )
+    billing_v4_enabled = settings.BILLING_V4_ENABLED
+    assistant_cost = settings.BILLING_ASSISTANT_COST_CREDITS if billing_v4_enabled else 1
 
-    if not can_perform:
-        raise HTTPException(
-            status_code=status.HTTP_402_PAYMENT_REQUIRED,
-            detail=reason or "Insufficient credits"
+    if billing_v4_enabled:
+        billing = BillingV4Service(db)
+        await billing.charge_assistant(
+            current_user.id,
+            meta={"feature": "editing_assistant", "session_id": str(request.session_id)},
         )
+    else:
+        # Проверка баланса для старой модели
+        can_perform, reason = await check_user_can_perform_action(
+            user=current_user,
+            credits_cost=assistant_cost,
+        )
+
+        if not can_perform:
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail=reason or "Insufficient credits"
+            )
 
     try:
         # Проверка существования сессии
@@ -224,13 +235,14 @@ async def send_message(
                 detail=f"AI service error: {str(e)}"
             )
 
-        # Списание 1 кредита (ПОСЛЕ успешного получения промптов)
-        await deduct_credits(
-            session=db,
-            user=current_user,
-            credits_cost=1,
-            generation_id=None,  # Не привязано к генерации
-        )
+        # Списание при старой модели (Billing v3)
+        if not billing_v4_enabled:
+            await deduct_credits(
+                session=db,
+                user=current_user,
+                credits_cost=assistant_cost,
+                generation_id=None,  # Не привязано к генерации
+            )
 
         # Формируем ответ assistant с промптами
         assistant_content = (
@@ -299,16 +311,38 @@ async def generate_image(
     """
     Сгенерировать отредактированное изображение по промпту.
     """
-    # Проверка баланса
-    can_perform, reason = await check_user_can_perform_action(
-        user=current_user,
-        credits_cost=1,  # Стоимость генерации
-    )
+    billing_v4_enabled = settings.BILLING_V4_ENABLED
+    generation_cost = settings.BILLING_GENERATION_COST_CREDITS if billing_v4_enabled else 1
+    charge_info = None
 
-    if not can_perform:
-        raise HTTPException(
-            status_code=status.HTTP_402_PAYMENT_REQUIRED,
-            detail=reason or "Insufficient credits"
+    if billing_v4_enabled:
+        billing = BillingV4Service(db)
+        charge_info = await billing.charge_generation(
+            current_user.id,
+            meta={
+                "feature": "editing_generation",
+                "session_id": str(request.session_id),
+            },
+            cost_credits=generation_cost,
+        )
+    else:
+        # Проверка баланса и списание в старой модели
+        can_perform, reason = await check_user_can_perform_action(
+            user=current_user,
+            credits_cost=generation_cost,
+        )
+
+        if not can_perform:
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail=reason or "Insufficient credits"
+            )
+
+        await deduct_credits(
+            session=db,
+            user=current_user,
+            credits_cost=generation_cost,
+            generation_id=None,  # Будет установлено позже
         )
 
     try:
@@ -335,7 +369,11 @@ async def generate_image(
             prompt=request.prompt,
             status="pending",
             progress=0,
-            credits_spent=1,
+            credits_spent=(
+                generation_cost
+                if billing_v4_enabled and charge_info and charge_info.get("payment_source") == "credits"
+                else (generation_cost if not billing_v4_enabled else 0)
+            ),
         )
 
         db.add(generation)

@@ -28,6 +28,7 @@ from app.schemas.fitting import (
     FittingResult,
 )
 from app.services.credits import deduct_credits, check_user_can_perform_action
+from app.services.billing_v4 import BillingV4Service
 from app.services.file_validator import validate_image_file
 from app.services.file_storage import save_upload_file, get_file_by_id
 from app.tasks.fitting import generate_fitting_task
@@ -100,16 +101,9 @@ async def generate_fitting(
     """
     Запустить генерацию примерки.
     """
-    credits_cost = 2
-
-    # Проверка баланса
-    try:
-        can_perform, payment_method = await check_user_can_perform_action(
-            current_user,
-            credits_cost
-        )
-    except HTTPException as e:
-        raise e
+    billing_v4_enabled = settings.BILLING_V4_ENABLED
+    credits_cost = settings.BILLING_GENERATION_COST_CREDITS if billing_v4_enabled else 2
+    charge_info = None
 
     # Проверка существования файлов
     # Важно: проверяем, что файлы существуют и не истёк срок хранения (24 часа)
@@ -139,7 +133,33 @@ async def generate_fitting(
             detail=f"Item photo not found: {str(e)}"
         )
 
-    # Создание записи Generation в БД (БЕЗ списания кредитов - будет в Celery после успеха)
+    if billing_v4_enabled:
+        billing = BillingV4Service(db)
+        charge_info = await billing.charge_generation(
+            current_user.id,
+            meta={
+                "feature": "fitting",
+                "user_photo_id": str(request.user_photo_id),
+                "item_photo_id": str(request.item_photo_id),
+            },
+        )
+    else:
+        # Проверка баланса для старой модели
+        try:
+            can_perform, _ = await check_user_can_perform_action(
+                current_user,
+                credits_cost
+            )
+        except HTTPException as e:
+            raise e
+
+        if not can_perform:
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail="Insufficient credits"
+            )
+
+    # Создание записи Generation в БД
     generation = Generation(
         user_id=current_user.id,
         type="fitting",
@@ -148,14 +168,16 @@ async def generate_fitting(
         accessory_zone=request.accessory_zone,
         prompt="Virtual try-on generation",  # Placeholder prompt for database
         status="pending",
-        credits_spent=0,  # Будет установлено после успешной генерации
+        credits_spent=(
+            credits_cost
+            if billing_v4_enabled and charge_info and charge_info.get("payment_source") == "credits"
+            else 0
+        ),
     )
 
     db.add(generation)
     await db.commit()
     await db.refresh(generation)
-
-    # НЕ списываем кредиты здесь - списание произойдёт в Celery задаче ПОСЛЕ успешной генерации
 
     # Запуск Celery задачи с передачей credits_cost
     task = generate_fitting_task.delay(

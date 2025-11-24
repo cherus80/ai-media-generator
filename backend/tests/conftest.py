@@ -507,6 +507,164 @@ def sample_png_bytes() -> bytes:
     )
 
 
+# ==================== Billing v4 Fixtures ====================
+
+@pytest.fixture
+async def test_user_with_subscription_v4(test_db):
+    """Create a test user with active subscription (Billing v4)."""
+    from app.models.user import User, SubscriptionType, UserRole
+
+    user = User(
+        email="sub_user@example.com",
+        first_name="Subscription",
+        last_name="User",
+        balance_credits=10,
+        subscription_type=SubscriptionType.BASIC,
+        subscription_end=datetime.utcnow() + timedelta(days=30),
+        subscription_ops_limit=80,
+        subscription_ops_used=10,
+        subscription_ops_reset_at=datetime.utcnow(),
+        freemium_actions_used=0,
+        freemium_reset_at=datetime.utcnow(),
+        role=UserRole.USER,
+    )
+
+    test_db.add(user)
+    await test_db.commit()
+    await test_db.refresh(user)
+
+    return user
+
+
+@pytest.fixture
+async def test_user_freemium_v4(test_db):
+    """Create a test user with only freemium (Billing v4)."""
+    from app.models.user import User, UserRole
+
+    user = User(
+        email="freemium_v4@example.com",
+        first_name="Freemium",
+        last_name="User",
+        balance_credits=0,
+        subscription_type=None,
+        subscription_ops_limit=0,
+        subscription_ops_used=0,
+        subscription_ops_reset_at=None,
+        freemium_actions_used=2,
+        freemium_reset_at=datetime.utcnow(),
+        role=UserRole.USER,
+    )
+
+    test_db.add(user)
+    await test_db.commit()
+    await test_db.refresh(user)
+
+    return user
+
+
+@pytest.fixture
+async def test_user_credits_only_v4(test_db):
+    """Create a test user with only credits (Billing v4)."""
+    from app.models.user import User, UserRole
+
+    user = User(
+        email="credits_v4@example.com",
+        first_name="Credits",
+        last_name="User",
+        balance_credits=20,
+        subscription_type=None,
+        subscription_ops_limit=0,
+        subscription_ops_used=0,
+        subscription_ops_reset_at=None,
+        freemium_actions_used=5,  # Freemium exhausted
+        freemium_reset_at=datetime.utcnow(),
+        role=UserRole.USER,
+    )
+
+    test_db.add(user)
+    await test_db.commit()
+    await test_db.refresh(user)
+
+    return user
+
+
+@pytest.fixture
+async def test_user_no_funds_v4(test_db):
+    """Create a test user with no funds (Billing v4)."""
+    from app.models.user import User, UserRole
+
+    user = User(
+        email="nofunds_v4@example.com",
+        first_name="NoFunds",
+        last_name="User",
+        balance_credits=0,
+        subscription_type=None,
+        subscription_ops_limit=0,
+        subscription_ops_used=0,
+        subscription_ops_reset_at=None,
+        freemium_actions_used=5,  # Freemium exhausted
+        freemium_reset_at=datetime.utcnow(),
+        role=UserRole.USER,
+    )
+
+    test_db.add(user)
+    await test_db.commit()
+    await test_db.refresh(user)
+
+    return user
+
+
+@pytest.fixture
+async def test_admin_user_v4(test_db):
+    """Create an admin test user (Billing v4)."""
+    from app.models.user import User, UserRole
+
+    user = User(
+        email="admin_v4@example.com",
+        first_name="Admin",
+        last_name="User",
+        balance_credits=0,
+        subscription_type=None,
+        subscription_ops_limit=0,
+        subscription_ops_used=0,
+        freemium_actions_used=0,
+        role=UserRole.ADMIN,
+    )
+
+    test_db.add(user)
+    await test_db.commit()
+    await test_db.refresh(user)
+
+    return user
+
+
+@pytest.fixture
+async def test_user_expired_subscription_v4(test_db):
+    """Create a test user with expired subscription (Billing v4)."""
+    from app.models.user import User, SubscriptionType, UserRole
+
+    user = User(
+        email="expired_sub_v4@example.com",
+        first_name="Expired",
+        last_name="Subscription",
+        balance_credits=0,
+        subscription_type=SubscriptionType.PREMIUM,
+        subscription_end=datetime.utcnow() - timedelta(days=5),  # Expired
+        subscription_ops_limit=250,
+        subscription_ops_used=100,
+        subscription_ops_reset_at=datetime.utcnow() - timedelta(days=35),
+        freemium_actions_used=1,
+        freemium_reset_at=datetime.utcnow(),
+        role=UserRole.USER,
+    )
+
+    test_db.add(user)
+    await test_db.commit()
+    await test_db.refresh(user)
+
+    return user
+
+
 # ==================== Cleanup ====================
 
 @pytest.fixture(autouse=True)
@@ -529,3 +687,4 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "file: mark test as file handling related")
     config.addinivalue_line("markers", "credits: mark test as credits management related")
     config.addinivalue_line("markers", "chat: mark test as chat/messaging related")
+    config.addinivalue_line("markers", "billing: mark test as billing v4 related")

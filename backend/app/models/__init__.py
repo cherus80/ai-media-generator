@@ -10,6 +10,7 @@ from app.models.chat import ChatHistory
 from app.models.payment import Payment, PaymentStatus, PaymentType
 from app.models.referral import Referral
 from app.models.email_verification import EmailVerificationToken
+from app.models.credits_ledger import CreditsLedger, LedgerEntryType, LedgerSource
 
 __all__ = [
     "User",
@@ -22,4 +23,7 @@ __all__ = [
     "PaymentType",
     "Referral",
     "EmailVerificationToken",
+    "CreditsLedger",
+    "LedgerEntryType",
+    "LedgerSource",
 ]

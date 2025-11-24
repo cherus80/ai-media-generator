@@ -80,6 +80,56 @@ class Settings(BaseSettings):
     PAYMENT_MOCK_MODE: bool = Field(default=False, description="Enable payment mock mode for local testing")
 
     # Монетизация
+    BILLING_V4_ENABLED: bool = Field(
+        default=False,
+        description="Включить новую систему биллинга (Freemium + Subscription + Credits)",
+    )
+    BILLING_GENERATION_COST_CREDITS: int = Field(
+        default=2,
+        description="Стоимость одной генерации в кредитах",
+    )
+    BILLING_ASSISTANT_COST_CREDITS: int = Field(
+        default=1,
+        description="Стоимость запроса к AI-ассистенту в кредитах",
+    )
+    BILLING_FREEMIUM_OPS_LIMIT: int = Field(
+        default=5,
+        description="Лимит бесплатных операций в месяц для freemium",
+    )
+    BILLING_FREE_TRIAL_CREDITS: int = Field(
+        default=10,
+        description="Кредиты, выдаваемые при регистрации",
+    )
+    BILLING_SUBSCRIPTION_TIERS: dict = Field(
+        default_factory=lambda: {
+            "basic": {"price": 299, "ops_limit": 80},
+            "standard": {"price": 499, "ops_limit": 130},
+            "pro": {"price": 499, "ops_limit": 130},  # alias для старого enum значения
+            "premium": {"price": 899, "ops_limit": 250},
+        },
+        description="Тарифы подписок: цена в рублях и лимит операций",
+    )
+    BILLING_CREDIT_PACKAGES: dict = Field(
+        default_factory=lambda: {
+            "small": {"price": 100, "credits": 20},
+            "medium": {"price": 230, "credits": 50},
+            "large": {"price": 400, "credits": 100},
+            "pro": {"price": 900, "credits": 250},
+        },
+        description="Пакеты разовой покупки кредитов",
+    )
+    BILLING_LEDGER_ENABLED: bool = Field(
+        default=True,
+        description="Вести журнал списаний/начислений в credits_ledger",
+    )
+    BILLING_MUTEX_TIMEOUT_MS: int = Field(
+        default=2000,
+        description="Таймаут блокировки при конкурентных списаниях",
+    )
+    YOOKASSA_IDEMPOTENCY_HEADER: str = Field(
+        default="Idempotence-Key",
+        description="Заголовок для идемпотентности ЮKassa",
+    )
     FREEMIUM_ACTIONS_PER_MONTH: int = Field(default=10)
     FREEMIUM_WATERMARK_TEXT: str = Field(default="AI Image Generator")
 

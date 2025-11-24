@@ -162,6 +162,25 @@ class User(Base, TimestampMixin):
         comment="Дата окончания подписки",
     )
 
+    # Лимиты подписки (Billing v4)
+    subscription_ops_limit: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
+        comment="Месячный лимит операций по подписке",
+    )
+    subscription_ops_used: Mapped[int] = mapped_column(
+        Integer,
+        default=0,
+        nullable=False,
+        comment="Сколько операций потрачено в текущем периоде подписки",
+    )
+    subscription_ops_reset_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="Дата последнего сброса лимита подписки",
+    )
+
     # Freemium счётчик
     freemium_actions_used: Mapped[int] = mapped_column(
         Integer,
@@ -219,6 +238,12 @@ class User(Base, TimestampMixin):
 
     payments: Mapped[list["Payment"]] = relationship(
         "Payment",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+    ledger_entries: Mapped[list["CreditsLedger"]] = relationship(
+        "CreditsLedger",
         back_populates="user",
         cascade="all, delete-orphan",
     )

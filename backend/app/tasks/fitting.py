@@ -234,14 +234,16 @@ def generate_fitting_task(
                     generation.image_url = final_image_url
                     generation.has_watermark = has_watermark
                     generation.prompt = prompt
-                    generation.credits_spent = credits_cost
+                    if not settings.BILLING_V4_ENABLED:
+                        generation.credits_spent = credits_cost
                     await session.commit()
 
-                    user = await session.get(User, user_id)
-                    if user:
-                        from app.services.credits import deduct_credits
-                        await deduct_credits(session, user, credits_cost, generation_id=generation_id)
-                        logger.info(f"Credits deducted after successful generation: {credits_cost}")
+                    if not settings.BILLING_V4_ENABLED:
+                        user = await session.get(User, user_id)
+                        if user:
+                            from app.services.credits import deduct_credits
+                            await deduct_credits(session, user, credits_cost, generation_id=generation_id)
+                            logger.info(f"Credits deducted after successful generation: {credits_cost}")
 
                 await update_generation_status(session, generation_id, "completed", progress=100)
 
