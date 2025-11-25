@@ -71,6 +71,26 @@ class Settings(BaseSettings):
         description="Модель OpenRouter для улучшения промптов (GPT, по умолчанию gpt-4.1-mini)",
     )
 
+    # kie.ai Nano Banana API (Primary service for image generation)
+    USE_KIE_AI: bool = Field(
+        default=True,
+        description="Использовать kie.ai как основной сервис (fallback на OpenRouter при ошибках)",
+    )
+    KIE_AI_API_KEY: Optional[str] = Field(default=None, description="API key for kie.ai (optional)")
+    KIE_AI_BASE_URL: str = Field(default="https://api.kie.ai/v1")
+    KIE_AI_TIMEOUT: int = Field(
+        default=90,
+        description="Timeout для kie.ai запросов в секундах (среднее время обработки ~80s)",
+    )
+    KIE_AI_POLL_INTERVAL: int = Field(
+        default=5,
+        description="Интервал polling статуса задачи в секундах",
+    )
+    KIE_AI_DISABLE_FALLBACK: bool = Field(
+        default=False,
+        description="Если true — не делать fallback на OpenRouter при ошибках kie.ai (для тестов)",
+    )
+
     # ЮKassa (опционально - только для платежей)
     YUKASSA_SHOP_ID: Optional[str] = Field(default=None, description="ЮKassa shop ID (optional)")
     YUKASSA_SECRET_KEY: Optional[str] = Field(default=None, description="ЮKassa secret key (optional)")

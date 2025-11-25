@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.12.5] - 2025-11-23
 
+## [Unreleased]
+
+### Changed - kie.ai integration
+- Переписан клиент kie.ai под новый API (`/api/v1/jobs/createTask` + `/api/v1/gpt4o-image/record-info`), теперь передаются публичные URL вместо base64.
+- Добавлен флаг `KIE_AI_DISABLE_FALLBACK` для отладки: при включении отключается fallback на OpenRouter и ошибки kie.ai видны сразу.
+- Для работы kie.ai требуется, чтобы ссылки на `/uploads/*` были доступны извне (или через туннель), иначе сервис не сможет скачать изображения и задачи зависнут по таймауту.
+
 ### Fixed - Google OAuth Authentication
 
 #### Backend

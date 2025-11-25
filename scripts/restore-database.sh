@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# AI Image Bot - Database Restore Script
+# AI Media Generator - Database Restore Script
 #
 # Восстановление PostgreSQL базы данных из backup
 #

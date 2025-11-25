@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# AI Image Bot - Database Backup Script
+# AI Media Generator - Database Backup Script
 #
 # Автоматическое резервное копирование PostgreSQL базы данных
 # с ротацией старых backup'ов

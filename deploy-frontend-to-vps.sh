@@ -24,7 +24,7 @@ VPS_HOST="ai-bot-vps"  # Используем alias из ~/.ssh/config
 VPS_PROJECT_DIR="/root/ai-image-bot"
 
 echo ""
-info "🚀 Деплой фронтенда AI Image Bot на VPS (Cache Busting v0.11.3)"
+info "🚀 Деплой фронтенда AI Media Generator на VPS (Cache Busting v0.11.3)"
 echo ""
 
 # Проверка подключения к VPS

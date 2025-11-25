@@ -15,6 +15,7 @@ from app.models.user import User
 from app.models.chat import ChatHistory
 from app.services.file_storage import save_upload_file_by_content, get_file_by_id
 from app.services.openrouter import OpenRouterClient, OpenRouterError
+from app.services.kie_ai import KieAIClient, KieAIError, KieAITimeoutError, KieAITaskFailedError
 from app.tasks.celery_app import celery_app
 from app.tasks.utils import (
     should_add_watermark,
@@ -22,8 +23,22 @@ from app.tasks.utils import (
     extract_file_id_from_url,
     image_to_base64_data_url,
 )
+from app.utils.image_utils import determine_image_size_for_editing
 
 logger = logging.getLogger(__name__)
+
+
+def _to_public_url(path_or_url: str) -> str:
+    """
+    Convert local/relative path to absolute URL using BACKEND_URL.
+    Assumes files are served from /uploads/.
+    """
+    if not path_or_url:
+        return path_or_url
+    if path_or_url.startswith("http://") or path_or_url.startswith("https://"):
+        return path_or_url
+    trimmed = path_or_url.lstrip("./")
+    return f"{settings.BACKEND_URL.rstrip('/')}/{trimmed.lstrip('/')}"
 
 
 class EditingTask(Task):
@@ -106,12 +121,17 @@ def generate_editing_task(
                 if not base_image_path:
                     raise ValueError("Base image not found for editing")
 
-                base_image_data = image_to_base64_data_url(base_image_path)
-
                 logger.info(
                     f"Starting image editing for generation {generation_id}, "
                     f"prompt: {prompt[:100]}..."
                 )
+
+                # Определение aspect_ratio для сохранения оригинального размера
+                aspect_ratio = determine_image_size_for_editing(base_image_path)
+                logger.info(f"Determined aspect ratio for editing: {aspect_ratio}")
+
+                # Публичный URL для kie.ai (требуются HTTP ссылки, не base64)
+                public_base_image_url = _to_public_url(base_image_url or str(base_image_path))
 
                 # Обновление прогресса
                 await update_generation_status(
@@ -121,95 +141,163 @@ def generate_editing_task(
                     progress=50
                 )
 
-                # Генерация через OpenRouter (Gemini image model)
-                try:
-                    openrouter_client = OpenRouterClient()
-                    result_url = await openrouter_client.generate_image_edit(
-                        base_image_data=base_image_data,
-                        prompt=prompt,
-                        aspect_ratio="1:1",
-                    )
-                    await openrouter_client.close()
+                # Генерация редактирования изображения
+                # Используем kie.ai как primary, OpenRouter как fallback
+                result_url = None
+                service_used = None
 
-                    if not result_url:
-                        raise ValueError("OpenRouter returned empty image URL")
+                # Попытка 1: kie.ai (если включен feature flag)
+                if settings.USE_KIE_AI and settings.KIE_AI_API_KEY:
+                    logger.info("Attempting image editing with kie.ai...")
+                    try:
+                        # Progress callback для обновления прогресса во время polling
+                        async def progress_callback(status: str, progress_pct: int):
+                            # Mapping статусов kie.ai к прогрессу
+                            actual_progress = 50 + int(progress_pct * 0.3)  # 50-80%
+                            await update_generation_status(
+                                session,
+                                generation_id,
+                                "processing",
+                                progress=actual_progress
+                            )
 
-                    # Обновление прогресса
-                    await update_generation_status(
-                        session,
-                        generation_id,
-                        "processing",
-                        progress=80
-                    )
+                        kie_ai_client = KieAIClient()
+                        await update_generation_status(session, generation_id, "processing", progress=55)
 
-                    # Сохранение результата локально
-                    if result_url.startswith("data:image"):
-                        import re
-
-                        match = re.match(r"data:image/(?P<fmt>[^;]+);base64,(?P<data>.+)", result_url)
-                        if not match:
-                            raise ValueError("Invalid data URL from OpenRouter")
-
-                        image_format = match.group("fmt")
-                        base64_data = match.group("data")
-                        image_bytes = base64.b64decode(base64_data)
-
-                        file_id, image_url, file_size = await save_upload_file_by_content(
-                            content=image_bytes,
-                            user_id=user_id,
-                            filename=f"editing_{generation_id}.{image_format}",
+                        result_url = await kie_ai_client.generate_image_edit(
+                            base_image_url=public_base_image_url,
+                            prompt=prompt,
+                            image_size=aspect_ratio,
+                            progress_callback=progress_callback,
                         )
+
+                        await kie_ai_client.close()
+                        service_used = "kie_ai"
+                        logger.info("kie.ai image editing successful")
+
+                    except (KieAIError, KieAITimeoutError, KieAITaskFailedError, Exception) as kie_error:
+                        logger.warning(
+                            f"kie.ai editing failed: {type(kie_error).__name__}: {kie_error}. "
+                            f"Falling back to OpenRouter..."
+                        )
+                        if settings.KIE_AI_DISABLE_FALLBACK:
+                            # Прерываемся, чтобы увидеть ошибку kie.ai во время тестов
+                            raise
+                        result_url = None  # Reset для fallback
+
+                # Попытка 2: OpenRouter (fallback или primary если kie.ai отключен)
+                if service_used == "kie_ai" and settings.KIE_AI_DISABLE_FALLBACK:
+                    raise ValueError("kie.ai failed and fallback is disabled")
+
+                if not result_url:
+                    if service_used is None:
+                        logger.info("Using OpenRouter as primary service (kie.ai disabled or not configured)")
                     else:
-                        image_url = result_url
-                        file_size = 0
+                        logger.info("Falling back to OpenRouter after kie.ai failure")
 
-                    if image_url and image_url.startswith("/"):
-                        image_url = f"{settings.BACKEND_URL}{image_url}"
+                    try:
+                        base_image_data = image_to_base64_data_url(base_image_path)
 
-                    logger.info(
-                        f"Saved edited image: {image_url} "
-                        f"(size: {file_size} bytes, watermark: {has_watermark})"
+                        openrouter_client = OpenRouterClient()
+                        await update_generation_status(session, generation_id, "processing", progress=60)
+
+                        result_url = await openrouter_client.generate_image_edit(
+                            base_image_data=base_image_data,
+                            prompt=prompt,
+                            aspect_ratio=aspect_ratio,
+                        )
+
+                        await openrouter_client.close()
+                        service_used = "openrouter"
+                        logger.info("OpenRouter image editing successful")
+
+                        if not result_url:
+                            raise ValueError("OpenRouter returned empty image URL")
+
+                    except OpenRouterError as or_error:
+                        logger.error(f"OpenRouter editing failed: {or_error}")
+                        raise ValueError(f"Image editing failed on all services: {or_error}")
+
+                if not result_url:
+                    raise ValueError("Image editing failed: no image URL generated")
+
+                # Обновление прогресса
+                await update_generation_status(
+                    session,
+                    generation_id,
+                    "processing",
+                    progress=80
+                )
+
+                # Сохранение результата локально
+                if result_url.startswith("data:image"):
+                    import re
+
+                    match = re.match(r"data:image/(?P<fmt>[^;]+);base64,(?P<data>.+)", result_url)
+                    if not match:
+                        raise ValueError("Invalid data URL")
+
+                    image_format = match.group("fmt")
+                    base64_data = match.group("data")
+                    image_bytes = base64.b64decode(base64_data)
+
+                    file_id, image_url, file_size = await save_upload_file_by_content(
+                        content=image_bytes,
+                        user_id=user_id,
+                        filename=f"editing_{generation_id}.{image_format}",
                     )
+                else:
+                    image_url = result_url
+                    file_size = 0
 
-                    # Обновление Generation с результатом
-                    await update_generation_status(
-                        session,
-                        generation_id,
-                        "completed",
-                        progress=100,
+                if image_url and image_url.startswith("/"):
+                    image_url = f"{settings.BACKEND_URL}{image_url}"
+
+                logger.info(
+                    f"Saved edited image: {image_url} "
+                    f"(size: {file_size} bytes, watermark: {has_watermark})"
+                )
+
+                # Обновление Generation с результатом
+                await update_generation_status(
+                    session,
+                    generation_id,
+                    "completed",
+                    progress=100,
+                    image_url=image_url,
+                )
+
+                logger.info(
+                    f"Editing generation completed: generation_id={generation_id}, "
+                    f"service={service_used}, aspect_ratio={aspect_ratio}"
+                )
+
+                # Добавление результата в историю чата
+                chat_history = await session.execute(
+                    select(ChatHistory).where(
+                        ChatHistory.session_id == session_id,
+                        ChatHistory.user_id == user_id,
+                    )
+                )
+                chat = chat_history.scalar_one_or_none()
+
+                if chat:
+                    # Обновляем базовое изображение для следующих запросов
+                    chat.base_image_url = image_url
+                    chat.add_message(
+                        role="assistant",
+                        content=f"Image edited successfully with prompt: {prompt}",
                         image_url=image_url,
                     )
+                    await session.commit()
+                    logger.info(f"Added result to chat history {session_id}")
 
-                    # Добавление результата в историю чата
-                    chat_history = await session.execute(
-                        select(ChatHistory).where(
-                            ChatHistory.session_id == session_id,
-                            ChatHistory.user_id == user_id,
-                        )
-                    )
-                    chat = chat_history.scalar_one_or_none()
-
-                    if chat:
-                        # Обновляем базовое изображение для следующих запросов
-                        chat.base_image_url = image_url
-                        chat.add_message(
-                            role="assistant",
-                            content=f"Image edited successfully with prompt: {prompt}",
-                            image_url=image_url,
-                        )
-                        await session.commit()
-                        logger.info(f"Added result to chat history {session_id}")
-
-                    return {
-                        "status": "completed",
-                        "image_url": image_url,
-                        "has_watermark": has_watermark,
-                        "generation_id": generation_id,
-                    }
-
-                except OpenRouterError as api_error:
-                    logger.error(f"OpenRouter API error: {api_error}")
-                    raise
+                return {
+                    "status": "completed",
+                    "image_url": image_url,
+                    "has_watermark": has_watermark,
+                    "generation_id": generation_id,
+                }
 
             except Exception as e:
                 logger.error(

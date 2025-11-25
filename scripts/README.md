@@ -1,6 +1,6 @@
 # Production Scripts
 
-Скрипты для управления production deployment AI Image Bot.
+Скрипты для управления production deployment AI Media Generator.
 
 ## Backup Scripts
 

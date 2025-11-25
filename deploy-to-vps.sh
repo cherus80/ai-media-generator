@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ###############################################################################
-# Скрипт для деплоя AI Image Bot на VPS с локальной машины
+# Скрипт для деплоя AI Media Generator на VPS с локальной машины
 # Использование: ./deploy-to-vps.sh
 ###############################################################################
 
@@ -22,7 +22,7 @@ VPS_HOST="ai-bot-vps"  # Используем alias из ~/.ssh/config
 VPS_PROJECT_DIR="/root/ai-image-bot"
 SSH_OPTS=""  # SSH config берёт всё из ~/.ssh/config
 
-info "Деплой AI Image Bot на VPS..."
+info "Деплой AI Media Generator на VPS..."
 
 # Проверка подключения к VPS
 info "Шаг 1/6: Проверка подключения к VPS..."

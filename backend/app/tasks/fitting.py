@@ -16,6 +16,7 @@ from app.models.generation import Generation
 from app.models.user import User
 from app.services.file_storage import save_upload_file_by_content, get_file_by_id
 from app.services.openrouter import OpenRouterClient, OpenRouterError
+from app.services.kie_ai import KieAIClient, KieAIError, KieAITimeoutError, KieAITaskFailedError
 from app.tasks.celery_app import celery_app
 from app.tasks.utils import (
     extract_file_id_from_url,
@@ -23,6 +24,7 @@ from app.tasks.utils import (
     update_generation_status,
     image_to_base64_data_url,
 )
+from app.utils.image_utils import determine_image_size_for_fitting
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +68,19 @@ FITTING_PROMPTS = {
         "No extra limbs or duplicated body parts. Realistic fit and draping, studio lighting, photorealistic 8k."
     ),
 }
+
+
+def _to_public_url(path_or_url: str) -> str:
+    """
+    Convert local/relative path to absolute URL using BACKEND_URL.
+    Assumes files served at /uploads.
+    """
+    if not path_or_url:
+        return path_or_url
+    if path_or_url.startswith("http://") or path_or_url.startswith("https://"):
+        return path_or_url
+    trimmed = path_or_url.lstrip("./")
+    return f"{settings.BACKEND_URL.rstrip('/')}/{trimmed.lstrip('/')}"
 
 
 def _get_prompt_for_zone(zone: Optional[str]) -> str:
@@ -181,28 +196,94 @@ def generate_fitting_task(
                     progress=50
                 )
 
+                # Определение aspect_ratio из user photo
+                aspect_ratio = determine_image_size_for_fitting(user_photo_path)
+                logger.info(f"Determined aspect ratio for fitting: {aspect_ratio}")
 
-                # Генерация изображения с виртуальной примеркой — теперь сразу через OpenRouter
-                try:
-                    user_photo_base64 = image_to_base64_data_url(user_photo_path)
-                    item_photo_base64 = image_to_base64_data_url(item_photo_path)
+                # Публичные URL для kie.ai
+                public_user_photo_url = _to_public_url(user_photo_url or str(user_photo_path))
+                public_item_photo_url = _to_public_url(item_photo_url or str(item_photo_path))
 
-                    openrouter_client = OpenRouterClient()
-                    await update_generation_status(session, generation_id, "processing", progress=60)
+                # Генерация изображения с виртуальной примеркой
+                # Используем kie.ai как primary, OpenRouter как fallback
+                generated_image_url = None
+                service_used = None
 
-                    generated_image_url = await openrouter_client.generate_virtual_tryon(
-                        user_photo_data=user_photo_base64,
-                        item_photo_data=item_photo_base64,
-                        prompt=prompt,
-                        aspect_ratio="1:1",
-                    )
+                # Попытка 1: kie.ai (если включен feature flag)
+                if settings.USE_KIE_AI and settings.KIE_AI_API_KEY:
+                    logger.info("Attempting virtual try-on with kie.ai...")
+                    try:
+                        # Progress callback для обновления прогресса во время polling
+                        async def progress_callback(status: str, progress_pct: int):
+                            # Mapping статусов kie.ai к прогрессу
+                            # waiting=10%, queuing=30%, generating=60%, success=80%
+                            actual_progress = 50 + int(progress_pct * 0.3)  # 50-80%
+                            await update_generation_status(
+                                session,
+                                generation_id,
+                                "processing",
+                                progress=actual_progress
+                            )
 
-                    await openrouter_client.close()
-                    logger.info("OpenRouter virtual try-on successful")
+                        kie_ai_client = KieAIClient()
+                        await update_generation_status(session, generation_id, "processing", progress=55)
 
-                except OpenRouterError as or_error:
-                    logger.error(f"OpenRouter try-on failed: {or_error}")
-                    raise ValueError(f"Virtual try-on failed: {or_error}")
+                        generated_image_url = await kie_ai_client.generate_virtual_tryon(
+                            user_photo_url=public_user_photo_url,
+                            item_photo_url=public_item_photo_url,
+                            prompt=prompt,
+                            image_size=aspect_ratio,
+                            progress_callback=progress_callback,
+                        )
+
+                        await kie_ai_client.close()
+                        service_used = "kie_ai"
+                        logger.info("kie.ai virtual try-on successful")
+
+                    except (KieAIError, KieAITimeoutError, KieAITaskFailedError, Exception) as kie_error:
+                        logger.warning(
+                            f"kie.ai try-on failed: {type(kie_error).__name__}: {kie_error}. "
+                            f"Falling back to OpenRouter..."
+                        )
+                        if settings.KIE_AI_DISABLE_FALLBACK:
+                            # Прерываемся, чтобы протестировать kie.ai без OpenRouter
+                            raise
+                        generated_image_url = None  # Reset для fallback
+
+                # Попытка 2: OpenRouter (fallback или primary если kie.ai отключен)
+                if service_used == "kie_ai" and settings.KIE_AI_DISABLE_FALLBACK:
+                    raise ValueError("kie.ai failed and fallback is disabled")
+
+                if not generated_image_url:
+                    if service_used is None:
+                        logger.info("Using OpenRouter as primary service (kie.ai disabled or not configured)")
+                    else:
+                        logger.info("Falling back to OpenRouter after kie.ai failure")
+
+                    try:
+                        user_photo_base64 = image_to_base64_data_url(user_photo_path)
+                        item_photo_base64 = image_to_base64_data_url(item_photo_path)
+
+                        openrouter_client = OpenRouterClient()
+                        await update_generation_status(session, generation_id, "processing", progress=60)
+
+                        generated_image_url = await openrouter_client.generate_virtual_tryon(
+                            user_photo_data=user_photo_base64,
+                            item_photo_data=item_photo_base64,
+                            prompt=prompt,
+                            aspect_ratio=aspect_ratio,
+                        )
+
+                        await openrouter_client.close()
+                        service_used = "openrouter"
+                        logger.info("OpenRouter virtual try-on successful")
+
+                    except OpenRouterError as or_error:
+                        logger.error(f"OpenRouter try-on failed: {or_error}")
+                        raise ValueError(f"Virtual try-on failed on all services: {or_error}")
+
+                if not generated_image_url:
+                    raise ValueError("Virtual try-on failed: no image URL generated")
 
                 await update_generation_status(session, generation_id, "processing", progress=80)
 
@@ -238,12 +319,17 @@ def generate_fitting_task(
                         generation.credits_spent = credits_cost
                     await session.commit()
 
-                    if not settings.BILLING_V4_ENABLED:
-                        user = await session.get(User, user_id)
-                        if user:
-                            from app.services.credits import deduct_credits
-                            await deduct_credits(session, user, credits_cost, generation_id=generation_id)
-                            logger.info(f"Credits deducted after successful generation: {credits_cost}")
+                logger.info(
+                    f"Fitting generation completed: generation_id={generation_id}, "
+                    f"service={service_used}, aspect_ratio={aspect_ratio}"
+                )
+
+                if not settings.BILLING_V4_ENABLED:
+                    user = await session.get(User, user_id)
+                    if user:
+                        from app.services.credits import deduct_credits
+                        await deduct_credits(session, user, credits_cost, generation_id=generation_id)
+                        logger.info(f"Credits deducted after successful generation: {credits_cost}")
 
                 await update_generation_status(session, generation_id, "completed", progress=100)
 

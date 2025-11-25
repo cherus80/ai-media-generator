@@ -58,7 +58,7 @@
 2. Нажмите **Create Credentials** → **OAuth client ID**
 3. Выберите **Application type**: **Web application**
 4. Настройте:
-   - **Name**: `AI Image Bot Web Client`
+   - **Name**: `AI Media Generator Web Client`
 
    - **Authorized JavaScript origins**:
      ```

@@ -14,12 +14,12 @@ interface Step3ZoneProps {
 }
 
 const ZONES = [
-  { id: 'head' as AccessoryZone, label: 'Голова', icon: '👒', description: 'Шляпы, шапки' },
+  { id: 'head' as AccessoryZone, label: 'Голова', icon: '🧢', description: 'Кепки, шапки' },
   { id: 'face' as AccessoryZone, label: 'Лицо', icon: '👓', description: 'Очки, маски' },
-  { id: 'neck' as AccessoryZone, label: 'Шея', icon: '📿', description: 'Колье, шарфы' },
-  { id: 'hands' as AccessoryZone, label: 'Руки', icon: '💍', description: 'Часы, браслеты, кольца' },
-  { id: 'legs' as AccessoryZone, label: 'Ноги', icon: '👟', description: 'Обувь' },
-  { id: 'body' as AccessoryZone, label: 'Всё тело', icon: '👔', description: 'Одежда, костюмы' },
+  { id: 'neck' as AccessoryZone, label: 'Шея', icon: '🧣', description: 'Шарфы, баффы, цепочки' },
+  { id: 'hands' as AccessoryZone, label: 'Руки', icon: '⌚', description: 'Часы, браслеты, перчатки' },
+  { id: 'legs' as AccessoryZone, label: 'Ноги', icon: '👟 🥾', description: 'Кроссовки, ботинки' },
+  { id: 'body' as AccessoryZone, label: 'Всё тело', icon: '🧥', description: 'Футболки, рубашки, худи, джинсы, костюмы' },
 ];
 
 export const Step3Zone: React.FC<Step3ZoneProps> = ({ onBack, onGenerate }) => {
@@ -158,7 +158,7 @@ export const Step3Zone: React.FC<Step3ZoneProps> = ({ onBack, onGenerate }) => {
           Когда указывать зону?
         </h3>
         <ul className="text-sm text-yellow-800 space-y-1">
-          <li>• Для одежды (футболки, платья) — выберите "Всё тело" или нажмите "Пропустить"</li>
+          <li>• Для одежды (футболки, рубашки, худи, джинсы, костюмы) — выберите "Всё тело" или нажмите "Пропустить"</li>
           <li>• Для аксессуаров (очки, украшения) — укажите зону для точности</li>
           <li>• При нажатии "Пропустить" примерка применится на всё тело</li>
         </ul>

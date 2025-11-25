@@ -354,14 +354,6 @@ async def generate_image(
             require_active=True,
         )
 
-        # Списание 1 кредита
-        await deduct_credits(
-            session=db,
-            user=current_user,
-            credits_cost=1,
-            generation_id=None,  # Будет установлено позже
-        )
-
         # Создание записи Generation
         generation = Generation(
             user_id=current_user.id,
@@ -370,8 +362,8 @@ async def generate_image(
             status="pending",
             progress=0,
             credits_spent=(
-                generation_cost
-                if billing_v4_enabled and charge_info and charge_info.get("payment_source") == "credits"
+                charge_info.get("credits_spent", 0)
+                if billing_v4_enabled and charge_info
                 else (generation_cost if not billing_v4_enabled else 0)
             ),
         )
