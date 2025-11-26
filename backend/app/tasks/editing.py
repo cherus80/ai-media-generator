@@ -23,7 +23,7 @@ from app.tasks.utils import (
     extract_file_id_from_url,
     image_to_base64_data_url,
 )
-from app.utils.image_utils import determine_image_size_for_editing
+from app.utils.image_utils import determine_image_size_for_editing, convert_iphone_format_to_png
 
 logger = logging.getLogger(__name__)
 
@@ -120,6 +120,11 @@ def generate_editing_task(
                 base_image_path = get_file_by_id(base_image_id)
                 if not base_image_path:
                     raise ValueError("Base image not found for editing")
+
+                # Конвертация iPhone форматов (MPO/HEIC/HEIF) в PNG если необходимо
+                logger.info("Checking if iPhone format conversion is needed...")
+                base_image_path = convert_iphone_format_to_png(base_image_path)
+                logger.info(f"Using base image: {base_image_path.name}")
 
                 logger.info(
                     f"Starting image editing for generation {generation_id}, "

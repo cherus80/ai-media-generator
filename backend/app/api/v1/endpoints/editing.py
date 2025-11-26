@@ -17,7 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_current_active_user, get_db
+from app.api.dependencies import get_current_active_user, require_verified_email, get_db
 from app.core.config import settings
 from app.models.generation import Generation
 from app.models.user import User
@@ -155,12 +155,13 @@ async def create_session(
         "2. Средний (2-3 предложения)\n"
         "3. Детальный (3-4 предложения)\n\n"
         "Стоимость: 1 кредит (или Freemium)\n\n"
+        "Требуется подтверждённый email для доступа.\n\n"
         "История чата: отправляются последние 10 сообщений для контекста."
     )
 )
 async def send_message(
     request: ChatMessageRequest,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_verified_email),
     db: AsyncSession = Depends(get_db),
 ) -> ChatMessageResponse:
     """
@@ -295,6 +296,7 @@ async def send_message(
     description=(
         "Запускает генерацию отредактированного изображения через OpenRouter API.\n\n"
         "Стоимость: 1 кредит (или Freemium)\n\n"
+        "Требуется подтверждённый email для доступа.\n\n"
         "Процесс:\n"
         "1. Списание 1 кредита\n"
         "2. Создание записи Generation\n"
@@ -305,7 +307,7 @@ async def send_message(
 )
 async def generate_image(
     request: GenerateImageRequest,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_verified_email),
     db: AsyncSession = Depends(get_db),
 ) -> GenerateImageResponse:
     """

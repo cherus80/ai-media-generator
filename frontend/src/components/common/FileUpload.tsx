@@ -27,10 +27,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     'image/jpeg': ['.jpg', '.jpeg'],
     'image/png': ['.png'],
     'image/webp': ['.webp'],
+    'image/heic': ['.heic'],
+    'image/heif': ['.heif'],
+    'image/mpo': ['.mpo'],
   },
   maxSize = 10 * 1024 * 1024, // 10MB
   label = 'Загрузите фото',
-  hint = 'JPEG, PNG или WebP, до 10MB',
+  hint = 'JPEG, PNG, WebP или фото iPhone (HEIC/MPO), до 10MB',
 }) => {
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {

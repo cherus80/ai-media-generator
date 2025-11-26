@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     gcc \
     libpq-dev \
     libmagic1 \
+    libheif-dev \
     curl \
     && rm -rf /var/lib/apt/lists/*
 

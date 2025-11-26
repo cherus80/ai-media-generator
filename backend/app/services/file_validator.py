@@ -17,9 +17,13 @@ IMAGE_SIGNATURES = {
         bytes([0xFF, 0xD8, 0xFF, 0xE0]),  # JFIF
         bytes([0xFF, 0xD8, 0xFF, 0xE1]),  # EXIF
         bytes([0xFF, 0xD8, 0xFF, 0xDB]),  # JPEG RAW
+        bytes([0xFF, 0xD8, 0xFF, 0xE2]),  # MPO (Multi Picture Object) - iPhone photos
     ],
     'png': [bytes([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])],
     'webp': [bytes([0x52, 0x49, 0x46, 0x46])],  # RIFF (WebP starts with RIFF)
+    'heic': [
+        b'ftyp',  # HEIC/HEIF format marker at offset 4
+    ],
 }
 
 
@@ -53,7 +57,7 @@ async def validate_image_file(file: UploadFile) -> bool:
             detail="File content type is missing"
         )
 
-    allowed_mime_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    allowed_mime_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'image/mpo']
     if file.content_type not in allowed_mime_types:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -84,7 +88,7 @@ async def validate_image_file(file: UploadFile) -> bool:
     # Проверка magic bytes (сигнатуры файла)
     is_valid_signature = False
 
-    # Проверяем JPEG
+    # Проверяем JPEG/MPO (MPO использует JPEG magic bytes)
     for jpeg_sig in IMAGE_SIGNATURES['jpeg']:
         if content.startswith(jpeg_sig):
             is_valid_signature = True
@@ -98,6 +102,16 @@ async def validate_image_file(file: UploadFile) -> bool:
     if not is_valid_signature and content.startswith(IMAGE_SIGNATURES['webp'][0]):
         if len(content) >= 12 and content[8:12] == b'WEBP':
             is_valid_signature = True
+
+    # Проверяем HEIC/HEIF (ftyp на позиции 4-8)
+    if not is_valid_signature and len(content) >= 12:
+        # HEIC/HEIF имеют 'ftyp' в байтах 4-8, затем 'heic', 'heix', 'hevc', 'hevx', 'mif1' и др.
+        if content[4:8] == b'ftyp':
+            # Проверяем известные HEIC/HEIF бренды
+            brand = content[8:12]
+            heic_brands = [b'heic', b'heix', b'hevc', b'hevx', b'mif1', b'msf1', b'heim', b'heis']
+            if brand in heic_brands:
+                is_valid_signature = True
 
     if not is_valid_signature:
         raise HTTPException(
@@ -119,8 +133,9 @@ async def validate_image_file(file: UploadFile) -> bool:
         image = Image.open(io.BytesIO(image_data))
         image_format = image.format.lower() if image.format else None
 
-        # Проверяем формат
-        if image_format not in ['jpeg', 'png', 'webp']:
+        # Проверяем формат (включая MPO и HEIC/HEIF для iPhone)
+        allowed_formats = ['jpeg', 'png', 'webp', 'mpo', 'heic', 'heif']
+        if image_format not in allowed_formats:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Invalid image format detected: {image_format}"
@@ -158,6 +173,9 @@ def get_file_extension(content_type: str) -> Optional[str]:
         'image/jpg': 'jpg',
         'image/png': 'png',
         'image/webp': 'webp',
+        'image/heic': 'heic',
+        'image/heif': 'heif',
+        'image/mpo': 'mpo',
     }
 
     return mime_to_ext.get(content_type)

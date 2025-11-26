@@ -24,7 +24,7 @@ from app.tasks.utils import (
     update_generation_status,
     image_to_base64_data_url,
 )
-from app.utils.image_utils import determine_image_size_for_fitting
+from app.utils.image_utils import determine_image_size_for_fitting, convert_iphone_format_to_png
 
 logger = logging.getLogger(__name__)
 
@@ -187,6 +187,12 @@ def generate_fitting_task(
 
                 if not user_photo_path or not item_photo_path:
                     raise ValueError("Photo files not found")
+
+                # Конвертация iPhone форматов (MPO/HEIC/HEIF) в PNG если необходимо
+                logger.info("Checking if iPhone format conversion is needed...")
+                user_photo_path = convert_iphone_format_to_png(user_photo_path)
+                item_photo_path = convert_iphone_format_to_png(item_photo_path)
+                logger.info(f"Using photos: user={user_photo_path.name}, item={item_photo_path.name}")
 
                 # Обновление прогресса
                 await update_generation_status(

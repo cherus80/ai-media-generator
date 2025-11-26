@@ -41,6 +41,7 @@ python-telegram-bot==20.8
 
 # Обработка изображений
 Pillow==10.2.0
+pillow-heif==0.13.1  # для поддержки HEIC формата (iPhone)
 python-magic==0.4.27
 
 # Логирование и мониторинг

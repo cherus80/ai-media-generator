@@ -10,7 +10,6 @@ import React, { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { LoadingPage } from '../../pages/LoadingPage';
-import { isTelegramWebApp } from '../../utils/telegram';
 
 interface AuthGuardProps {
   children: ReactNode;
@@ -30,35 +29,6 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
 
     return () => clearTimeout(timer);
   }, []);
-
-  // Check if running in Telegram
-  const inTelegram = isTelegramWebApp();
-  const isDev = import.meta.env.DEV; // Vite development mode
-
-  // Not in Telegram - show error (skip check in dev mode)
-  if (!inTelegram && !isDev) {
-    return fallback || (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-red-50 dark:bg-gray-900 p-6">
-        <div className="max-w-md text-center">
-          <div className="text-6xl mb-4">⚠️</div>
-          <h1 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-2">
-            Недопустимый доступ
-          </h1>
-          <p className="text-gray-700 dark:text-gray-300 mb-4">
-            Это приложение должно быть открыто через Telegram.
-          </p>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Пожалуйста, используйте официальное приложение Telegram для доступа к этому сервису.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // DEV MODE: Show dev badge when running locally
-  if (isDev && !inTelegram) {
-    console.log('🔧 Работает в DEV режиме без Telegram');
-  }
 
   // Ждем гидратации состояния из localStorage
   if (!isHydrated) {

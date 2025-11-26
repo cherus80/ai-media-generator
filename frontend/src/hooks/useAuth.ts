@@ -6,7 +6,6 @@
 
 import { useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
-import { isTelegramWebApp } from '../utils/telegram';
 
 export const useAuth = () => {
   const {
@@ -46,24 +45,8 @@ export const useAuth = () => {
         return;
       }
 
-      const isDev = import.meta.env.DEV;
-      const inTelegram = isTelegramWebApp();
-
-      // Skip if not in Telegram AND not in dev mode
-      if (!inTelegram && !isDev) {
-        console.warn('Не запущено в Telegram WebApp');
-        return;
-      }
-
-      // In dev mode without Telegram, skip auto-login
-      // User will need to manually login via /login or /register
-      if (isDev && !inTelegram) {
-        console.log('🔧 DEV режим: автоматическая авторизация пропущена');
-        return;
-      }
-
-      // Attempt Telegram login only if in Telegram
-      if (inTelegram) {
+      // Telegram auto-login: оставляем только если пользователь действительно в Telegram
+      if (window.Telegram?.WebApp) {
         try {
           await loginWithTelegram();
         } catch (error) {

@@ -36,6 +36,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
     # Startup
     print("🚀 Starting AI Image Generator backend...")
 
+    # Регистрация HEIC/HEIF поддержки для iPhone фото
+    try:
+        import pillow_heif
+        pillow_heif.register_heif_opener()
+        print("📸 HEIC/HEIF image support registered (iPhone photos)")
+    except ImportError:
+        print("⚠️  pillow-heif not installed, HEIC/HEIF formats not supported")
+
     # Инициализация БД
     if not settings.is_production:
         print("📊 Initializing database...")

@@ -7,6 +7,134 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.12.6] - 2025-11-26
+
+### Added - iPhone Photo Support (MPO/HEIC)
+
+#### Backend
+- **pillow-heif library**: Added support for iPhone HEIC/HEIF image formats
+  - Added `pillow-heif==0.14.0` to requirements.txt
+  - Installed `libheif-dev` in Dockerfile for HEIF codec support
+  - Registered HEIC opener in main.py startup to enable automatic HEIC detection
+  - File: [backend/requirements.txt](backend/requirements.txt), [backend/Dockerfile](backend/Dockerfile)
+
+- **MPO format support**: Added support for Multi-Picture Object format (used by some cameras)
+  - Updated `ALLOWED_EXTENSIONS` to include `heic,heif,mpo`
+  - File: [backend/app/core/config.py:163](backend/app/core/config.py#L163)
+
+- **Image conversion utility**: Created automatic converter for HEIC/MPO → JPEG
+  - New function `convert_to_jpeg_if_needed()` in `image_utils.py`
+  - Automatically converts HEIC/HEIF/MPO formats to JPEG before processing
+  - Preserves EXIF data and image quality during conversion
+  - File: [backend/app/utils/image_utils.py](backend/app/utils/image_utils.py)
+
+- **File validation**: Enhanced image validator to support new formats
+  - Added magic byte detection for HEIC (`ftyp`)
+  - Added validation for MPO format (JPEG with APP2 marker)
+  - Updated MIME type mapping to accept `image/heic` and `image/heif`
+  - File: [backend/app/services/file_validator.py](backend/app/services/file_validator.py)
+
+- **Task integration**: Integrated HEIC/MPO conversion in Celery tasks
+  - Fitting task: Converts user and item photos before try-on generation
+  - Editing task: Converts base images before AI editing
+  - Files: [backend/app/tasks/fitting.py](backend/app/tasks/fitting.py), [backend/app/tasks/editing.py](backend/app/tasks/editing.py)
+
+#### Frontend
+- **FileUpload component**: Updated to accept HEIC/HEIF/MPO files
+  - Added `.heic,.heif,.mpo` to accepted file types
+  - Updated validation messages to mention iPhone photo support
+  - File: [frontend/src/components/common/FileUpload.tsx](frontend/src/components/common/FileUpload.tsx)
+
+### Added - Email Verification System
+
+#### Backend
+- **Email verification dependency**: Created `require_verified_email` dependency
+  - Blocks access to premium features for unverified email users
+  - Exempts admins and Google OAuth users from verification
+  - Returns HTTP 403 with clear error message for unverified users
+  - File: [backend/app/api/dependencies.py](backend/app/api/dependencies.py)
+
+- **Protected endpoints**: Added email verification requirement to critical endpoints
+  - Fitting generation: `/api/v1/fitting/generate` now requires verified email
+  - Editing chat: `/api/v1/editing/chat` now requires verified email
+  - Editing generation: `/api/v1/editing/generate` now requires verified email
+  - Payment creation: `/api/v1/payments/create` now requires verified email
+  - Files: [backend/app/api/v1/endpoints/fitting.py:99](backend/app/api/v1/endpoints/fitting.py#L99), [backend/app/api/v1/endpoints/editing.py:164](backend/app/api/v1/endpoints/editing.py#L164), [backend/app/api/v1/endpoints/payments.py:55](backend/app/api/v1/endpoints/payments.py#L55)
+
+- **SMTP configuration**: Email service already implemented with Mail.ru SMTP support
+  - Supports TLS (port 587) and SSL (port 465) connections
+  - HTML and plain text email templates
+  - Configurable via environment variables (SMTP_HOST, SMTP_USER, SMTP_PASSWORD)
+  - File: [backend/app/services/email.py](backend/app/services/email.py)
+
+#### Frontend
+- **Email verification banner**: Component already integrated in Layout
+  - Shows warning to unverified users
+  - Provides "Resend verification email" button
+  - Dismissible with localStorage persistence
+  - File: [frontend/src/components/common/EmailVerificationBanner.tsx](frontend/src/components/common/EmailVerificationBanner.tsx)
+
+- **Profile page**: Already displays email verification status
+  - Shows verified/unverified badge
+  - Allows resending verification email
+  - File: [frontend/src/pages/ProfilePage.tsx](frontend/src/pages/ProfilePage.tsx)
+
+### Changed - Russian Localization
+
+#### Frontend
+- **LoginPage**: Fully translated to Russian
+  - "Sign in to your account" → "Войдите в свой аккаунт"
+  - "create a new account" → "создайте новый аккаунт"
+  - "Or continue with email" → "Или продолжите с email"
+  - All form labels and buttons translated
+  - File: [frontend/src/pages/LoginPage.tsx](frontend/src/pages/LoginPage.tsx)
+
+- **RegisterPage**: Fully translated to Russian
+  - "Create your account" → "Создайте свой аккаунт"
+  - "Already have an account?" → "Уже есть аккаунт?"
+  - Referral invitation message translated
+  - Password strength indicator translated
+  - All form fields and validation messages in Russian
+  - File: [frontend/src/pages/RegisterPage.tsx](frontend/src/pages/RegisterPage.tsx)
+
+- **GoogleSignInButton**: Component comments and error messages translated
+  - "Google Sign-In not configured" → "Google вход не настроен"
+  - "Loading Google Sign-In..." → "Загрузка Google входа..."
+  - "Google Sign-In failed" → "Google вход не удался"
+  - File: [frontend/src/components/auth/GoogleSignInButton.tsx](frontend/src/components/auth/GoogleSignInButton.tsx)
+
+- **MockPaymentEmulator**: Development tool fully translated
+  - "Loading..." → "Загрузка..."
+  - "Refresh" → "Обновить"
+  - "Error" / "Success" → "Ошибка" / "Успех"
+  - "No payments found" → "Платежи не найдены"
+  - "Approve" / "Cancel" → "Подтвердить" / "Отменить"
+  - All payment details and warnings in Russian
+  - File: [frontend/src/pages/MockPaymentEmulator.tsx](frontend/src/pages/MockPaymentEmulator.tsx)
+
+- **Verified existing translations**: Confirmed these pages already in Russian
+  - HomePage, ProfilePage, EmailVerificationPage, ErrorPage, LoadingPage, AuthGuard
+  - No changes needed
+
+### Impact
+- **iPhone users**: Can now upload photos directly from iPhone Camera (HEIC/HEIF format)
+- **Security**: Unverified users cannot use premium features (fitting, editing, payments)
+- **UX**: Entire authentication flow now in Russian for Russian-speaking users
+- **Email verification**: Ready for production deployment (requires SMTP configuration)
+
+### Configuration Required
+- **SMTP Mail.ru setup**: Add to `backend/.env`:
+  ```
+  SMTP_HOST=smtp.mail.ru
+  SMTP_PORT=465
+  SMTP_USER=your-email@mail.ru
+  SMTP_PASSWORD=your-app-password
+  SMTP_USE_TLS=false
+  EMAIL_FROM=your-email@mail.ru
+  ```
+
+---
+
 ## [0.12.5] - 2025-11-23
 
 ## [Unreleased]
@@ -15,6 +143,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Переписан клиент kie.ai под новый API (`/api/v1/jobs/createTask` + `/api/v1/gpt4o-image/record-info`), теперь передаются публичные URL вместо base64.
 - Добавлен флаг `KIE_AI_DISABLE_FALLBACK` для отладки: при включении отключается fallback на OpenRouter и ошибки kie.ai видны сразу.
 - Для работы kie.ai требуется, чтобы ссылки на `/uploads/*` были доступны извне (или через туннель), иначе сервис не сможет скачать изображения и задачи зависнут по таймауту.
+
+### Changed - Web auth
+- Убран принудительный баннер «Откройте через Telegram»: AuthGuard больше не блокирует доступ вне Telegram, а auto-login через Telegram выполняется только если приложение действительно запущено внутри Telegram WebApp.
 
 ### Fixed - Google OAuth Authentication
 

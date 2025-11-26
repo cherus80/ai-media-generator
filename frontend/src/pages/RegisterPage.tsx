@@ -84,11 +84,11 @@ export function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
       <div className="max-w-md w-full space-y-8">
         <div>
-          <h2 className="text-center text-3xl font-bold text-gray-900">Create your account</h2>
+          <h2 className="text-center text-3xl font-bold text-gray-900">Создайте свой аккаунт</h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Already have an account?{' '}
+            Уже есть аккаунт?{' '}
             <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
-              Sign in
+              Войти
             </Link>
           </p>
         </div>
@@ -100,7 +100,7 @@ export function RegisterPage() {
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
               <p className="text-sm font-medium text-green-800">
-                You've been invited! Register to get bonus credits.
+                Вас пригласили! Зарегистрируйтесь, чтобы получить бонусные кредиты.
               </p>
             </div>
           </div>
@@ -119,7 +119,7 @@ export function RegisterPage() {
               <div className="w-full border-t border-gray-300" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-gray-50 text-gray-500">Or register with email</span>
+              <span className="px-2 bg-gray-50 text-gray-500">Или зарегистрируйтесь с email</span>
             </div>
           </div>
 
@@ -133,7 +133,7 @@ export function RegisterPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="first_name" className="block text-sm font-medium text-gray-700">
-                  First name
+                  Имя
                 </label>
                 <input
                   id="first_name"
@@ -145,7 +145,7 @@ export function RegisterPage() {
               </div>
               <div>
                 <label htmlFor="last_name" className="block text-sm font-medium text-gray-700">
-                  Last name
+                  Фамилия
                 </label>
                 <input
                   id="last_name"
@@ -159,7 +159,7 @@ export function RegisterPage() {
 
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
+                Email адрес
               </label>
               <input
                 id="email"
@@ -175,7 +175,7 @@ export function RegisterPage() {
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
+                Пароль
               </label>
               <input
                 id="password"
@@ -189,7 +189,7 @@ export function RegisterPage() {
               {formData.password && (
                 <div className="mt-2">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-gray-600">Password strength:</span>
+                    <span className="text-xs text-gray-600">Надежность пароля:</span>
                     <span className={`text-xs font-medium ${passwordStrength.score >= 3 ? 'text-green-600' : 'text-orange-600'}`}>
                       {getPasswordStrengthLabel(passwordStrength.score)}
                     </span>
@@ -207,7 +207,7 @@ export function RegisterPage() {
 
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                Confirm password
+                Подтвердите пароль
               </label>
               <input
                 id="confirmPassword"
@@ -232,7 +232,7 @@ export function RegisterPage() {
                 onChange={(e) => setShowPassword(e.target.checked)}
               />
               <label htmlFor="show-password" className="ml-2 block text-sm text-gray-700">
-                Show passwords
+                Показать пароли
               </label>
             </div>
 
@@ -241,7 +241,7 @@ export function RegisterPage() {
               disabled={isLoading}
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
             >
-              {isLoading ? 'Creating account...' : 'Create account'}
+              {isLoading ? 'Создание аккаунта...' : 'Создать аккаунт'}
             </button>
           </form>
         </div>

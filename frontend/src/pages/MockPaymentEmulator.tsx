@@ -46,7 +46,7 @@ const MockPaymentEmulator: React.FC = () => {
 
       setPayments(response.data.payments);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to load payments');
+      setError(err.response?.data?.detail || 'Не удалось загрузить платежи');
     } finally {
       setLoading(false);
     }
@@ -62,10 +62,10 @@ const MockPaymentEmulator: React.FC = () => {
         `${API_BASE_URL}/api/v1/mock-payments/${paymentId}/approve`
       );
 
-      setSuccessMessage(`Payment ${paymentId} approved successfully!`);
+      setSuccessMessage(`Платёж ${paymentId} успешно подтверждён!`);
       await loadPayments();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to approve payment');
+      setError(err.response?.data?.detail || 'Не удалось подтвердить платёж');
     }
   };
 
@@ -79,10 +79,10 @@ const MockPaymentEmulator: React.FC = () => {
         `${API_BASE_URL}/api/v1/mock-payments/${paymentId}/cancel`
       );
 
-      setSuccessMessage(`Payment ${paymentId} canceled successfully!`);
+      setSuccessMessage(`Платёж ${paymentId} успешно отменён!`);
       await loadPayments();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to cancel payment');
+      setError(err.response?.data?.detail || 'Не удалось отменить платёж');
     }
   };
 
@@ -113,7 +113,7 @@ const MockPaymentEmulator: React.FC = () => {
               disabled={loading}
               className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-medium disabled:opacity-50"
             >
-              {loading ? 'Loading...' : 'Refresh'}
+              {loading ? 'Загрузка...' : 'Обновить'}
             </button>
           </div>
         </div>
@@ -121,13 +121,13 @@ const MockPaymentEmulator: React.FC = () => {
         {/* Alerts */}
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4">
-            <strong>Error:</strong> {error}
+            <strong>Ошибка:</strong> {error}
           </div>
         )}
 
         {successMessage && (
           <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg mb-4">
-            <strong>Success:</strong> {successMessage}
+            <strong>Успех:</strong> {successMessage}
           </div>
         )}
 
@@ -135,15 +135,15 @@ const MockPaymentEmulator: React.FC = () => {
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
             <h2 className="text-xl font-semibold text-gray-800">
-              Payments ({payments.length})
+              Платежи ({payments.length})
             </h2>
           </div>
 
           {payments.length === 0 ? (
             <div className="p-12 text-center text-gray-500">
-              <p className="text-lg">No payments found</p>
+              <p className="text-lg">Платежи не найдены</p>
               <p className="text-sm mt-2">
-                Create a payment in the app to see it here
+                Создайте платёж в приложении, чтобы увидеть его здесь
               </p>
             </div>
           ) : (
@@ -177,13 +177,13 @@ const MockPaymentEmulator: React.FC = () => {
 
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
-                          <span className="text-gray-500">Payment ID:</span>
+                          <span className="text-gray-500">ID платежа:</span>
                           <p className="font-mono text-gray-800 break-all">
                             {payment.payment_id}
                           </p>
                         </div>
                         <div>
-                          <span className="text-gray-500">Created At:</span>
+                          <span className="text-gray-500">Создан:</span>
                           <p className="text-gray-800">
                             {new Date(payment.created_at).toLocaleString()}
                           </p>
@@ -193,7 +193,7 @@ const MockPaymentEmulator: React.FC = () => {
                       {/* Metadata */}
                       {Object.keys(payment.metadata).length > 0 && (
                         <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                          <p className="text-xs text-gray-500 mb-2">Metadata:</p>
+                          <p className="text-xs text-gray-500 mb-2">Метаданные:</p>
                           <pre className="text-xs font-mono text-gray-700 overflow-x-auto">
                             {JSON.stringify(payment.metadata, null, 2)}
                           </pre>
@@ -208,13 +208,13 @@ const MockPaymentEmulator: React.FC = () => {
                           onClick={() => approvePayment(payment.payment_id)}
                           className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg font-medium transition-colors"
                         >
-                          ✓ Approve
+                          ✓ Подтвердить
                         </button>
                         <button
                           onClick={() => cancelPayment(payment.payment_id)}
                           className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg font-medium transition-colors"
                         >
-                          ✗ Cancel
+                          ✗ Отменить
                         </button>
                       </div>
                     )}
@@ -228,8 +228,8 @@ const MockPaymentEmulator: React.FC = () => {
         {/* Footer */}
         <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
           <p className="text-sm text-yellow-800">
-            <strong>⚠️ Warning:</strong> This is a mock payment emulator for local testing only.
-            It does not process real payments. Set PAYMENT_MOCK_MODE=true in backend .env to enable.
+            <strong>⚠️ Внимание:</strong> Это эмулятор платежей только для локального тестирования.
+            Он не обрабатывает реальные платежи. Установите PAYMENT_MOCK_MODE=true в backend .env для включения.
           </p>
         </div>
       </div>

@@ -1,7 +1,7 @@
 /**
- * Google Sign-In Button Component
+ * Компонент кнопки Google входа
  *
- * Renders Google's official Sign-In button and handles OAuth flow
+ * Отображает официальную кнопку Google и обрабатывает OAuth flow
  */
 
 import { useEffect, useRef, useState } from 'react';
@@ -32,22 +32,22 @@ export function GoogleSignInButton({
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
   useEffect(() => {
-    // Check if client ID is configured
+    // Проверка, настроен ли client ID
     if (!clientId) {
-      console.error('Google Client ID not configured. Set VITE_GOOGLE_CLIENT_ID in .env');
-      onError?.('Google Sign-In not configured');
+      console.error('Google Client ID не настроен. Установите VITE_GOOGLE_CLIENT_ID в .env');
+      onError?.('Google вход не настроен');
       return;
     }
 
-    // Wait for Google Identity Services script to load
+    // Ожидание загрузки Google Identity Services
     const initializeGoogle = () => {
       if (!window.google?.accounts?.id) {
-        console.warn('Google Identity Services not loaded yet, retrying...');
+        console.warn('Google Identity Services ещё не загружен, повторная попытка...');
         return false;
       }
 
       try {
-        // Initialize Google Sign-In
+        // Инициализация Google входа
         window.google.accounts.id.initialize({
           client_id: clientId,
           callback: handleCredentialResponse,
@@ -55,7 +55,7 @@ export function GoogleSignInButton({
           cancel_on_tap_outside: true,
         });
 
-        // Render the button
+        // Отрисовка кнопки
         if (buttonRef.current) {
           const config: GoogleSignInButtonConfig = {
             type: 'standard',
@@ -74,17 +74,17 @@ export function GoogleSignInButton({
         }
         return true;
       } catch (error) {
-        console.error('Error initializing Google Sign-In:', error);
+        console.error('Ошибка инициализации Google входа:', error);
         return false;
       }
     };
 
-    // Try to initialize immediately
+    // Попытка инициализации сразу
     if (initializeGoogle()) {
       return;
     }
 
-    // If not loaded, retry with intervals
+    // Если не загружен, повторять с интервалом
     let retryCount = 0;
     const maxRetries = 10;
     const retryInterval = 500; // 500ms
@@ -96,8 +96,8 @@ export function GoogleSignInButton({
         clearInterval(intervalId);
       } else if (retryCount >= maxRetries) {
         clearInterval(intervalId);
-        console.error('Google Identity Services failed to load after multiple retries');
-        onError?.('Google Sign-In not available');
+        console.error('Google Identity Services не удалось загрузить после нескольких попыток');
+        onError?.('Google вход недоступен');
       }
     }, retryInterval);
 
@@ -108,26 +108,26 @@ export function GoogleSignInButton({
     setIsLoading(true);
 
     try {
-      // Send ID token to backend
+      // Отправка ID токена на backend
       await loginWithGoogle(response.credential);
 
-      // Success
+      // Успех
       onSuccess?.();
     } catch (error: any) {
-      console.error('Google Sign-In error:', error);
+      console.error('Ошибка Google входа:', error);
       const errorMessage =
-        error.response?.data?.detail || error.message || 'Google Sign-In failed';
+        error.response?.data?.detail || error.message || 'Google вход не удался';
       onError?.(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Show loading state or placeholder if Google not loaded or no client ID
+  // Показать состояние загрузки или заглушку, если Google не загружен или нет client ID
   if (!clientId) {
     return (
       <div className="flex items-center justify-center p-3 border border-gray-300 rounded-md bg-gray-50">
-        <span className="text-sm text-gray-500">Google Sign-In not configured</span>
+        <span className="text-sm text-gray-500">Google вход не настроен</span>
       </div>
     );
   }
@@ -135,17 +135,17 @@ export function GoogleSignInButton({
   if (!window.google?.accounts?.id) {
     return (
       <div className="flex items-center justify-center p-3 border border-gray-300 rounded-md bg-gray-50">
-        <span className="text-sm text-gray-500">Loading Google Sign-In...</span>
+        <span className="text-sm text-gray-500">Загрузка Google входа...</span>
       </div>
     );
   }
 
   return (
     <div className="relative">
-      {/* Google button will be rendered here */}
+      {/* Здесь будет отрисована кнопка Google */}
       <div ref={buttonRef} className={isLoading ? 'opacity-50 pointer-events-none' : ''} />
 
-      {/* Loading overlay */}
+      {/* Оверлей загрузки */}
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75">
           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>

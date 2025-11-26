@@ -16,7 +16,7 @@ from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, status,
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_current_active_user, get_db
+from app.api.dependencies import get_current_active_user, require_verified_email, get_db
 from app.core.config import settings
 from app.models.generation import Generation
 from app.models.user import User
@@ -90,12 +90,13 @@ async def upload_photo(
     description=(
         "Запускает генерацию примерки одежды/аксессуара.\n\n"
         "Стоимость: 2 кредита\n\n"
+        "Требуется подтверждённый email для доступа.\n\n"
         "Возвращает task_id для отслеживания прогресса через WebSocket или polling."
     )
 )
 async def generate_fitting(
     request: FittingRequest,
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_verified_email),
     db: AsyncSession = Depends(get_db),
 ) -> FittingResponse:
     """

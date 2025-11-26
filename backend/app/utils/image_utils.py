@@ -295,6 +295,88 @@ def get_output_format_for_file(file_path: str | Path, default: str = "png") -> s
         return default
 
 
+def convert_iphone_format_to_png(file_path: str | Path) -> Path:
+    """
+    Convert iPhone-specific formats (MPO, HEIC, HEIF) to PNG if needed.
+
+    This function checks if the input image is in an iPhone-specific format
+    (MPO, HEIC, or HEIF) and converts it to PNG for better compatibility
+    with AI services. If the image is already in a standard format (JPEG, PNG, WebP),
+    it returns the original path unchanged.
+
+    Args:
+        file_path: Path to input image file
+
+    Returns:
+        Path to the image file (either original or converted PNG)
+
+    Raises:
+        ValueError: If image cannot be read or converted
+        IOError: If file operations fail
+
+    Examples:
+        >>> convert_iphone_format_to_png("photo.heic")
+        Path("photo_converted.png")
+        >>> convert_iphone_format_to_png("normal.jpg")
+        Path("normal.jpg")
+    """
+    path = Path(file_path)
+
+    # Check if file exists
+    if not path.exists():
+        raise IOError(f"File not found: {file_path}")
+
+    try:
+        # Open image and check format
+        with Image.open(path) as img:
+            img_format = img.format.upper() if img.format else None
+
+            # iPhone-specific formats that need conversion
+            iphone_formats = ["MPO", "HEIC", "HEIF"]
+
+            if img_format not in iphone_formats:
+                # Standard format, no conversion needed
+                logger.debug(
+                    f"Image format {img_format} does not require conversion, "
+                    f"returning original path: {path}"
+                )
+                return path
+
+            # Need to convert
+            logger.info(
+                f"Converting iPhone format {img_format} to PNG: {path.name}"
+            )
+
+            # Create output path (same directory, replace extension with .png)
+            output_path = path.with_stem(f"{path.stem}_converted").with_suffix(".png")
+
+            # Convert to RGB mode (required for PNG)
+            # Some HEIC images may be in different color modes
+            if img.mode not in ["RGB", "RGBA"]:
+                logger.debug(f"Converting image mode from {img.mode} to RGB")
+                rgb_img = img.convert("RGB")
+            else:
+                rgb_img = img
+
+            # Save as PNG
+            rgb_img.save(output_path, "PNG", optimize=True)
+
+            logger.info(
+                f"Successfully converted {path.name} ({img_format}) to "
+                f"{output_path.name} (PNG)"
+            )
+
+            return output_path
+
+    except Exception as e:
+        logger.error(
+            f"Failed to convert iPhone format {file_path} to PNG: {e}"
+        )
+        raise ValueError(
+            f"Cannot convert image {path.name}: {e}"
+        ) from e
+
+
 # ======================================================================
 # VALIDATION UTILITIES
 # ======================================================================

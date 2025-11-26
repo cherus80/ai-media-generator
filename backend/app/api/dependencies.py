@@ -16,7 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.db.session import get_db
-from app.models.user import User, UserRole
+from app.models.user import User, UserRole, AuthProvider
 from app.utils.jwt import JWTTokenError, verify_token
 
 # HTTP Bearer схема для Authorization header
@@ -172,9 +172,50 @@ async def get_current_super_admin(
     return current_user
 
 
+async def require_verified_email(
+    current_user: Annotated[User, Depends(get_current_active_user)],
+) -> User:
+    """
+    Dependency для проверки, что email пользователя подтверждён.
+
+    Блокирует доступ к функциям приложения (примерка, редактирование, платежи)
+    для пользователей с неподтверждённым email.
+
+    Args:
+        current_user: Текущий активный пользователь из get_current_active_user
+
+    Returns:
+        User: Объект пользователя с подтверждённым email
+
+    Raises:
+        HTTPException 403: Если email пользователя не подтверждён
+    """
+    # Администраторы освобождены от проверки email
+    if current_user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
+        return current_user
+
+    # OAuth пользователи (Google) считаются верифицированными автоматически
+    if current_user.auth_provider == AuthProvider.google:
+        return current_user
+
+    # Проверка email_verified для обычных пользователей
+    if not current_user.email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                "Email verification required. "
+                "Please verify your email address to use this feature. "
+                "Check your inbox for the verification link or request a new one."
+            ),
+        )
+
+    return current_user
+
+
 # Type aliases для удобства
 CurrentUser = Annotated[User, Depends(get_current_user)]
 ActiveUser = Annotated[User, Depends(get_current_active_user)]
+VerifiedUser = Annotated[User, Depends(require_verified_email)]
 AdminUser = Annotated[User, Depends(get_current_admin)]
 SuperAdminUser = Annotated[User, Depends(get_current_super_admin)]
 DBSession = Annotated[AsyncSession, Depends(get_db)]
