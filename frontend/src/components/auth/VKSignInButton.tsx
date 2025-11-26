@@ -53,7 +53,7 @@ export function VKSignInButton({ onSuccess, onError }: VKSignInButtonProps) {
 
         const script = document.createElement('script');
         script.id = 'vkid-sdk';
-        script.src = 'https://unpkg.com/@vkid/sdk/dist/index-umd.js';
+        script.src = 'https://unpkg.com/@vkid/sdk@<3.0.0/dist-sdk/umd/index.js';
         script.async = true;
         script.defer = true;
         script.onload = () => resolve();

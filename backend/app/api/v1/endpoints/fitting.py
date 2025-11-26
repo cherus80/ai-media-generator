@@ -347,7 +347,7 @@ async def get_fitting_history(
             Generation.type == "fitting"
         )
         .order_by(Generation.created_at.desc())
-        .limit(limit)
+        .limit(page_size)
         .offset(offset)
     )
 
