@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.15.1] - 2025-11-27
+
+### Fixed - Virtual Try-On Generation
+
+#### Backend
+- **kie.ai API Integration Fix**: Fixed "image_urls file type not supported" error
+  - **Problem**: After iPhone format (MPO/HEIC/HEIF) conversion to PNG, files were renamed with `_converted.png` suffix, but URLs sent to kie.ai API didn't include file extensions
+  - **Root Cause**: Original file URLs (without extensions) were used instead of converted file paths with extensions
+  - **Solution**: Now using actual converted file names (`user_photo_path.name` and `item_photo_path.name`) which include proper extensions
+  - **Example**:
+    - Before: `https://ai-generator.mix4.ru/uploads/d9d7de38-532a-4b5a-9b0c-474ecea0bdeb` ❌ (no extension)
+    - After: `https://ai-generator.mix4.ru/uploads/d9d7de38-532a-4b5a-9b0c-474ecea0bdeb_converted.png` ✅ (with extension)
+  - **Impact**: Virtual try-on now works correctly with kie.ai API for all image formats
+  - **File**: [backend/app/tasks/fitting.py:197-209](backend/app/tasks/fitting.py#L197-L209)
+  - **Added**: Comprehensive inline documentation explaining the fix
+
+- **Documentation**: Added detailed comments explaining the iPhone format conversion workflow and kie.ai API requirements
+  - Documented the conversion process from MPO/HEIC to PNG
+  - Explained why file extensions are required by kie.ai API
+  - Added before/after examples for clarity
+
+### Technical Notes
+- **kie.ai API Requirement**: The API validates file types based on URL extensions (.jpg, .png, etc.)
+- **Image Editing**: Continues to work correctly as it already used proper file extensions
+- **Affected Feature**: Virtual try-on (clothing and accessories fitting)
+
+---
+
 ## [0.15.0] - 2025-11-26
 
 ### Added - VK ID OAuth Authentication

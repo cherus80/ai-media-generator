@@ -194,8 +194,17 @@ def generate_fitting_task(
                 aspect_ratio = determine_image_size_for_fitting(user_photo_path)
                 logger.info(f"Determined aspect ratio for fitting: {aspect_ratio}")
 
-                # Публичные URL для kie.ai
-                # Используем конвертированные имена файлов (могут содержать _converted.png)
+                # Формирование публичных URL для kie.ai API
+                # ВАЖНО: После конвертации iPhone форматов (строки 181-182), файлы могут иметь новые имена
+                # с суффиксом "_converted.png" (например: "abc123_converted.png").
+                # kie.ai API требует, чтобы URL содержали расширения файлов (.jpg, .png),
+                # иначе возвращает ошибку "image_urls file type not supported".
+                # Поэтому мы используем user_photo_path.name и item_photo_path.name,
+                # которые содержат актуальные имена файлов с расширениями после конвертации.
+                # Пример:
+                #   До конвертации: user_photo_path = "d9d7de38-...-474ecea0bdeb.jpg" (MPO формат)
+                #   После конвертации: user_photo_path = "d9d7de38-...-474ecea0bdeb_converted.png"
+                #   Результат URL: "https://ai-generator.mix4.ru/uploads/d9d7de38-...-474ecea0bdeb_converted.png"
                 public_user_photo_url = to_public_url(f"uploads/{user_photo_path.name}")
                 public_item_photo_url = to_public_url(f"uploads/{item_photo_path.name}")
 
