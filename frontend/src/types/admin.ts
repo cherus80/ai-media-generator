@@ -240,3 +240,25 @@ export interface ReferralStatsResponse {
   total_referrals: number;
   total_credits_earned: number;
 }
+
+// ============================================================================
+// Промпты примерки
+// ============================================================================
+
+export interface FittingPromptItem {
+  zone: string;
+  prompt: string;
+  is_default: boolean;
+  updated_at: string | null;
+  updated_by_user_id: number | null;
+}
+
+export interface FittingPromptListResponse {
+  items: FittingPromptItem[];
+  total: number;
+}
+
+export interface UpdateFittingPromptRequest {
+  prompt?: string;
+  use_default?: boolean;
+}

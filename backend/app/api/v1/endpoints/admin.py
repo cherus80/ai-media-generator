@@ -50,11 +50,20 @@ from app.schemas.admin import (
     UserActivityStats,
     UserDetailsResponse,
     UserRegistrationData,
+    FittingPromptListResponse,
+    FittingPromptItem,
+    UpdateFittingPromptRequest,
 )
 from app.utils.tax import (
     calculate_npd_tax,
     calculate_yukassa_commission,
     calculate_net_amount,
+)
+from app.services.fitting_prompts import (
+    list_prompts as list_fitting_prompts,
+    upsert_prompt as upsert_fitting_prompt,
+    reset_prompt as reset_fitting_prompt,
+    PROMPT_ZONES,
 )
 
 router = APIRouter()
@@ -998,6 +1007,62 @@ async def export_generations(
             "Content-Disposition": f"attachment; filename=generations_export_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
         }
     )
+
+
+# ============================================================================
+# Промпты примерки
+# ============================================================================
+
+@router.get("/fitting/prompts", response_model=FittingPromptListResponse)
+async def get_fitting_prompts(
+    admin: AdminUser,
+    db: DBSession,
+) -> FittingPromptListResponse:
+    """
+    Получить список промптов для зон примерки.
+
+    Требует роль: ADMIN
+    """
+    items = await list_fitting_prompts(db)
+    return FittingPromptListResponse(items=[FittingPromptItem(**item) for item in items], total=len(items))
+
+
+@router.put("/fitting/prompts/{zone}", response_model=FittingPromptItem)
+async def update_fitting_prompt(
+    zone: str,
+    payload: UpdateFittingPromptRequest,
+    admin: AdminUser,
+    db: DBSession,
+) -> FittingPromptItem:
+    """
+    Обновить или сбросить промпт для конкретной зоны.
+
+    Требует роль: ADMIN
+    """
+    zone_key = zone.lower()
+    if zone_key not in PROMPT_ZONES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unknown zone: {zone}",
+        )
+
+    try:
+        if payload.use_default:
+            item = await reset_fitting_prompt(db, zone_key)
+        else:
+            item = await upsert_fitting_prompt(
+                db,
+                zone_key,
+                payload.prompt or "",
+                updated_by_user_id=admin.id,
+            )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        )
+
+    return FittingPromptItem(**item)
 
 
 # ============================================================================

@@ -64,21 +64,21 @@ export const Step3Zone: React.FC<Step3ZoneProps> = ({ onBack, onGenerate }) => {
       </div>
 
       {/* Zone selection */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-2 gap-4 mb-6 max-[360px]:grid-cols-1">
         {ZONES.map((zone) => (
           <button
             key={zone.id}
             onClick={() => setAccessoryZone(zone.id)}
-            className={`p-4 border-2 rounded-lg transition-all hover:border-blue-400 ${
+            className={`p-4 border-2 rounded-lg transition-all hover:border-blue-400 max-[360px]:p-3 ${
               accessoryZone === zone.id
                 ? 'border-blue-600 bg-blue-50'
                 : 'border-gray-300 bg-white'
             }`}
           >
-            <div className="text-4xl mb-2">{zone.icon}</div>
+            <div className="text-4xl mb-2 max-[360px]:text-3xl">{zone.icon}</div>
             <div className="text-left">
-              <h3 className="font-semibold text-gray-900">{zone.label}</h3>
-              <p className="text-xs text-gray-600">{zone.description}</p>
+              <h3 className="font-semibold text-gray-900 max-[360px]:text-sm">{zone.label}</h3>
+              <p className="text-xs text-gray-600 max-[360px]:text-[11px]">{zone.description}</p>
             </div>
           </button>
         ))}

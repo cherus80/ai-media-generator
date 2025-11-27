@@ -11,7 +11,7 @@ export type PaymentType = 'subscription' | 'credits';
 /**
  * Тип подписки
  */
-export type SubscriptionType = 'basic' | 'pro' | 'premium';
+export type SubscriptionType = 'basic' | 'pro' | 'premium' | 'standard';
 
 /**
  * Статус платежа

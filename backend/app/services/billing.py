@@ -12,6 +12,7 @@ from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.models.user import User
 from app.models.payment import Payment
 
@@ -19,8 +20,7 @@ from app.models.payment import Payment
 logger = logging.getLogger(__name__)
 
 
-# Тарифы подписок
-SUBSCRIPTION_TARIFFS = {
+DEFAULT_SUBSCRIPTION_TARIFFS = {
     "basic": {
         "name": "Basic",
         "price": Decimal("299.00"),
@@ -46,7 +46,7 @@ SUBSCRIPTION_TARIFFS = {
 }
 
 # Пакеты кредитов
-CREDITS_PACKAGES = {
+DEFAULT_CREDITS_PACKAGES = {
     "credits_100": {
         "name": "100 кредитов",
         "price": Decimal("199.00"),
@@ -67,6 +67,56 @@ CREDITS_PACKAGES = {
         "is_popular": True,
     },
 }
+
+
+def _build_subscription_tariffs() -> dict:
+    """
+    Построить тарифы подписок из настроек (fallback на дефолт).
+    """
+    config = settings.BILLING_SUBSCRIPTION_TIERS or {}
+    if not config:
+        return DEFAULT_SUBSCRIPTION_TARIFFS
+
+    tariffs: dict = {}
+    for tariff_id, data in config.items():
+        actions = data.get("ops_limit") or data.get("credits_amount") or data.get("credits") or 0
+        price = Decimal(str(data.get("price", 0)))
+        tariffs[tariff_id] = {
+            "name": data.get("name") or tariff_id.capitalize(),
+            "price": price,
+            "credits_amount": actions,
+            "duration_days": data.get("duration_days", 30),
+            "description": data.get("description") or f"{actions} действий на {data.get('duration_days', 30)} дней",
+            "is_popular": data.get("is_popular", False),
+        }
+    return tariffs
+
+
+def _build_credit_packages() -> dict:
+    """
+    Построить пакеты кредитов из настроек (fallback на дефолт).
+    """
+    config = settings.BILLING_CREDIT_PACKAGES or {}
+    if not config:
+        return DEFAULT_CREDITS_PACKAGES
+
+    packages: dict = {}
+    for package_id, data in config.items():
+        credits = data.get("credits") or data.get("credits_amount") or 0
+        price = Decimal(str(data.get("price", 0)))
+        packages[package_id] = {
+            "name": data.get("name") or f"{credits} кредитов",
+            "price": price,
+            "credits_amount": credits,
+            "description": data.get("description") or "Разовая покупка кредитов",
+            "is_popular": data.get("is_popular", False),
+        }
+    return packages
+
+
+# Тарифы подписок и пакеты кредитов (инициализация при импорте)
+SUBSCRIPTION_TARIFFS = _build_subscription_tariffs()
+CREDITS_PACKAGES = _build_credit_packages()
 
 
 class BillingError(Exception):

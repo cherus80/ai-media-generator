@@ -23,7 +23,7 @@ export const CreditsCard: React.FC<CreditsCardProps> = ({
   return (
     <div
       className={`
-        relative p-6 rounded-xl border-2 transition-all cursor-pointer
+        relative p-6 rounded-xl border-2 transition-all cursor-pointer max-[360px]:p-4
         ${
           isSelected
             ? 'border-purple-500 bg-purple-50 shadow-lg scale-105'
@@ -45,16 +45,16 @@ export const CreditsCard: React.FC<CreditsCardProps> = ({
       {/* Количество кредитов */}
       <div className="text-center mb-4">
         <div className="flex items-baseline justify-center">
-          <span className="text-4xl font-bold text-gray-900">
+          <span className="text-4xl font-bold text-gray-900 max-[360px]:text-3xl">
             {pkg.credits_amount}
           </span>
           {hasBonus && (
-            <span className="ml-2 text-2xl font-semibold text-green-600">
+            <span className="ml-2 text-2xl font-semibold text-green-600 max-[360px]:text-xl">
               +{pkg.bonus_credits}
             </span>
           )}
         </div>
-        <div className="text-sm text-gray-600 mt-1">
+        <div className="text-sm text-gray-600 mt-1 max-[360px]:text-[12px]">
           {hasBonus ? (
             <>
               <span className="font-semibold">{totalCredits} кредитов</span>
@@ -68,7 +68,7 @@ export const CreditsCard: React.FC<CreditsCardProps> = ({
 
       {/* Описание */}
       {pkg.description && (
-        <p className="text-sm text-gray-600 text-center mb-4">
+        <p className="text-sm text-gray-600 text-center mb-4 max-[360px]:text-[13px]">
           {pkg.description}
         </p>
       )}
@@ -76,12 +76,12 @@ export const CreditsCard: React.FC<CreditsCardProps> = ({
       {/* Цена */}
       <div className="mb-4">
         <div className="flex items-baseline justify-center">
-          <span className="text-3xl font-bold text-gray-900">{pkg.price}</span>
+          <span className="text-3xl font-bold text-gray-900 max-[360px]:text-2xl">{pkg.price}</span>
           <span className="ml-1 text-gray-600">{pkg.currency}</span>
         </div>
 
         {/* Стоимость за кредит */}
-        <div className="text-center text-sm text-gray-500 mt-2">
+        <div className="text-center text-sm text-gray-500 mt-2 max-[360px]:text-[12px]">
           ~{(pkg.price / totalCredits).toFixed(2)} {pkg.currency} за кредит
         </div>
 
@@ -95,7 +95,7 @@ export const CreditsCard: React.FC<CreditsCardProps> = ({
 
       {/* Информационная секция */}
       <div className="bg-gray-50 rounded-lg p-3 mb-4">
-        <div className="text-xs text-gray-600 space-y-1">
+        <div className="text-xs text-gray-600 space-y-1 max-[360px]:text-[11px]">
           <div className="flex justify-between">
             <span>Примерка одежды:</span>
             <span className="font-semibold">

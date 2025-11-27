@@ -9,7 +9,8 @@ Pydantic схемы для админки.
 
 from datetime import datetime
 from decimal import Decimal
-from pydantic import BaseModel, Field
+from typing import Optional
+from pydantic import BaseModel, Field, FieldValidationInfo, field_validator
 
 
 # ============================================================================
@@ -204,6 +205,40 @@ class PaymentExportRequest(BaseModel):
     date_to: datetime | None = Field(default=None, description="Конечная дата")
     status: str | None = Field(default="succeeded", description="Статус платежа")
     format: str = Field(default="csv", description="Формат экспорта (csv/json)")
+
+
+# ============================================================================
+# Промпты примерки
+# ============================================================================
+
+class FittingPromptItem(BaseModel):
+    """Промпт для конкретной зоны примерки."""
+    zone: str
+    prompt: str
+    is_default: bool
+    updated_at: Optional[datetime] = None
+    updated_by_user_id: Optional[int] = None
+
+
+class FittingPromptListResponse(BaseModel):
+    """Ответ со списком промптов."""
+    items: list[FittingPromptItem]
+    total: int
+
+
+class UpdateFittingPromptRequest(BaseModel):
+    """Запрос на обновление промпта."""
+    prompt: Optional[str] = None
+    use_default: bool = Field(default=False, description="Сбросить на дефолт")
+
+    @field_validator("prompt")
+    @classmethod
+    def validate_prompt(cls, v: Optional[str], info: FieldValidationInfo):
+        use_default = info.data.get("use_default", False)
+        if not use_default:
+            if v is None or not v.strip():
+                raise ValueError("prompt обязателен, если не выбран сброс")
+        return v
 
 
 # ============================================================================

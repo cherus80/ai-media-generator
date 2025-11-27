@@ -26,66 +26,9 @@ from app.tasks.utils import (
     image_to_base64_data_url,
 )
 from app.utils.image_utils import determine_image_size_for_fitting, convert_iphone_format_to_png
+from app.services.fitting_prompts import get_prompt_for_zone
 
 logger = logging.getLogger(__name__)
-
-
-# Фиксированные промпты для примерки
-FITTING_PROMPTS = {
-    "clothing": (
-        "A high-quality fashion photoshoot showing a person wearing the clothing item. "
-        "Professional studio lighting, clean background, realistic fit and draping. "
-        "Photorealistic, 8k, detailed fabric texture."
-    ),
-    "accessory_head": (
-        "Place the accessory on the existing head without changing the face or hairstyle. "
-        "Keep the original head shape and pose, no extra heads or body parts. "
-        "Professional portrait lighting, realistic placement, photorealistic 8k."
-    ),
-    "accessory_face": (
-        "Overlay the accessory on the existing face (e.g., glasses/mask) keeping facial features intact. "
-        "Do not add extra faces or heads, match perspective and scale to the current face. "
-        "Natural lighting, realistic fit, photorealistic 8k."
-    ),
-    "accessory_neck": (
-        "Place the accessory on the current neck/collarbone area, preserving the person’s pose and skin. "
-        "No extra necks or bodies. Realistic jewelry placement, elegant portrait lighting, photorealistic 8k."
-    ),
-    "accessory_hands": (
-        "Place the accessory precisely on the existing wrist of the person in the photo. "
-        "Do not add or replace arms or hands; preserve the original arm shape, pose, and skin. "
-        "Match scale, angle, and perspective to the current wrist; keep lighting and skin tone consistent. "
-        "Avoid oversized accessories and avoid covering the body. Photorealistic, high detail, 8k quality."
-    ),
-    "accessory_legs": (
-        "Place the footwear on the existing feet of the person. "
-        "Do not add extra legs or change the body/pose. "
-        "Match scale, angle, and perspective to the current feet and floor; keep background unchanged and original framing/aspect ratio. "
-        "Preserve skin, ankles, and original lighting; avoid oversized or floating shoes. "
-        "Do not add white or blank margins; do not extend canvas. Photorealistic, high detail, 8k quality."
-    ),
-    "accessory_body": (
-        "Replace clothing on the existing body while keeping the person’s pose, proportions, and skin visible. "
-        "No extra limbs or duplicated body parts. Realistic fit and draping, studio lighting, photorealistic 8k."
-    ),
-}
-
-
-def _get_prompt_for_zone(zone: Optional[str]) -> str:
-    """
-    Получить промпт в зависимости от зоны аксессуара.
-
-    Args:
-        zone: Зона аксессуара (head, face, neck, hands, legs, body) или None для одежды
-
-    Returns:
-        str: Промпт для генерации
-    """
-    if not zone:
-        return FITTING_PROMPTS["clothing"]
-
-    zone_key = f"accessory_{zone.lower()}"
-    return FITTING_PROMPTS.get(zone_key, FITTING_PROMPTS["clothing"])
 
 
 class FittingTask(Task):
@@ -156,7 +99,7 @@ def generate_fitting_task(
                 has_watermark = should_add_watermark(user)
 
                 # Получение промпта
-                prompt = _get_prompt_for_zone(accessory_zone)
+                prompt = await get_prompt_for_zone(session, accessory_zone)
 
                 # Обновление прогресса
                 await update_generation_status(

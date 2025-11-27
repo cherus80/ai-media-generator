@@ -18,6 +18,9 @@ import type {
   AddCreditsRequest,
   AddCreditsResponse,
   ReferralStatsResponse,
+  FittingPromptListResponse,
+  FittingPromptItem,
+  UpdateFittingPromptRequest,
 } from '../types/admin';
 
 // ============================================================================
@@ -221,6 +224,26 @@ export const exportGenerationsCSV = async (): Promise<void> => {
   link.click();
   document.body.removeChild(link);
   window.URL.revokeObjectURL(url);
+};
+
+// ============================================================================
+// Промпты примерки
+// ============================================================================
+
+export const getFittingPrompts = async (): Promise<FittingPromptListResponse> => {
+  const response = await apiClient.get<FittingPromptListResponse>('/api/v1/admin/fitting/prompts');
+  return response.data;
+};
+
+export const updateFittingPrompt = async (
+  zone: string,
+  data: UpdateFittingPromptRequest
+): Promise<FittingPromptItem> => {
+  const response = await apiClient.put<FittingPromptItem>(
+    `/api/v1/admin/fitting/prompts/${zone}`,
+    data
+  );
+  return response.data;
 };
 
 // ============================================================================
