@@ -60,6 +60,10 @@ class Settings(BaseSettings):
     # VK ID OAuth (опционально для локального тестирования)
     VK_APP_ID: Optional[str] = Field(default=None, description="VK ID Application ID (optional)")
     VK_CLIENT_SECRET: Optional[str] = Field(default=None, description="VK ID Client Secret (optional)")
+    VK_JWKS_URL: str = Field(
+        default="https://id.vk.com/.well-known/jwks",
+        description="JWKS endpoint for VK ID id_token verification",
+    )
 
     # JWT настройки
     JWT_SECRET_KEY: str = Field(..., description="Secret key for JWT tokens")

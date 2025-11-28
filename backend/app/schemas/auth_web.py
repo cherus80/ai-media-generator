@@ -233,6 +233,44 @@ class VKOAuthRequest(BaseModel):
 VKOAuthResponse = GoogleOAuthResponse
 
 
+class VKOAuthPKCERequest(BaseModel):
+    """Запрос на вход через VK ID OAuth 2.1 с PKCE"""
+
+    code: str = Field(
+        ...,
+        description="Authorization code from VK ID after redirect",
+        example="auth_code_from_vk"
+    )
+
+    code_verifier: str = Field(
+        ...,
+        description="PKCE code_verifier generated on client",
+        example="s3cure_random_verifier"
+    )
+
+    state: Optional[str] = Field(
+        default=None,
+        description="State parameter for CSRF protection (must match the value sent in authorize request)",
+    )
+
+    nonce: Optional[str] = Field(
+        default=None,
+        description="Nonce used when requesting id_token (optional)",
+    )
+
+    redirect_uri: str = Field(
+        ...,
+        description="Redirect URI used in VK ID authorize request",
+        example="https://example.com/auth/vk/callback"
+    )
+
+    device_id: Optional[str] = Field(
+        default=None,
+        description="Device identifier from VK ID SDK",
+        example="550e8400-e29b-41d4-a716-446655440000"
+    )
+
+
 # ============================================================================
 # Email Verification
 # ============================================================================

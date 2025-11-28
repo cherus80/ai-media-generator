@@ -13,6 +13,7 @@ import type {
   LoginResponse,
   GoogleOAuthResponse,
   VKOAuthResponse,
+  VKOAuthPKCERequest,
   UserProfileResponse,
   SendVerificationEmailResponse,
   VerifyEmailResponse,
@@ -49,6 +50,14 @@ export async function loginWithGoogle(idToken: string): Promise<GoogleOAuthRespo
 export async function loginWithVK(token: string, uuid: string): Promise<VKOAuthResponse> {
   const data: VKOAuthRequest = { token, uuid };
   const response = await client.post<VKOAuthResponse>('/api/v1/auth-web/vk', data);
+  return response.data;
+}
+
+/**
+ * Login or register with VK OAuth 2.1 (PKCE)
+ */
+export async function loginWithVKPKCE(payload: VKOAuthPKCERequest): Promise<VKOAuthResponse> {
+  const response = await client.post<VKOAuthResponse>('/api/v1/auth-web/vk/pkce', payload);
   return response.data;
 }
 

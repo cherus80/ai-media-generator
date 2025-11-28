@@ -23,19 +23,19 @@
    - **Платформа**: Выберите "Website" или "Standalone"
    - **Категория**: Развлечения / Утилиты
 
-### Шаг 1.2: Получите App ID и Service Key
+### Шаг 1.2: Получите App ID и Client Secret
 1. После создания приложения перейдите в **"Настройки"**
 2. Скопируйте **App ID** (например, `51234567`)
 3. Перейдите в **"Ключи доступа"** (Access Tokens)
-4. Создайте **Service Key** (секретный ключ для backend)
+4. Создайте **Client Secret** (секретный ключ для backend)
    - Выберите права доступа: `email` (минимум)
-   - Скопируйте **Service Key** (начинается с `vk1.a...`)
+   - Скопируйте **Client Secret** (начинается с `vk1.a...`)
 
-### Шаг 1.3: Настройте Redirect URI
+### Шаг 1.3: Настройте Redirect URI (PKCE)
 1. В разделе **"Настройки"** → **"Redirect URI"**
 2. Добавьте разрешенные URL:
-   - **Development**: `http://localhost:5173` (или ваш dev URL)
-   - **Production**: `https://yourdomain.com`
+   - **Development**: `http://localhost:5173/vk/callback`
+   - **Production**: `https://yourdomain.com/vk/callback` (замените на фактический домен)
 
 ### Шаг 1.4: Настройте Trusted Domains
 1. В разделе **"Настройки"** → **"Доверенные домены"**
@@ -53,16 +53,16 @@
 ```env
 # VK OAuth Configuration
 VK_APP_ID=51234567
-VK_SERVICE_KEY=vk1.a.your-service-key-here
+VK_CLIENT_SECRET=vk1.a.your-client-secret-here
 ```
 
 Пример `.env.example` уже обновлен с этими переменными.
 
-### Шаг 2.2: Проверьте backend код
-Backend уже настроен и включает:
+### Шаг 2.2: Проверьте backend код (OAuth 2.1, PKCE)
+Backend включает:
 
-- **`backend/app/utils/vk_oauth.py`**: Утилита для проверки VK silent token
-- **`backend/app/api/v1/endpoints/auth_web.py`**: Endpoint `/api/v1/auth-web/vk`
+- **`backend/app/utils/vk_oauth.py`**: Обмен `code` → `access/refresh/id_token` (PKCE)
+- **`backend/app/api/v1/endpoints/auth_web.py`**: Endpoint `/api/v1/auth-web/vk/pkce`
 - **`backend/app/models/user.py`**: Добавлен `AuthProvider.VK`
 - **`backend/alembic/versions/20251126_1500_add_vk_auth_provider.py`**: Миграция БД
 
@@ -96,16 +96,16 @@ VITE_VK_APP_ID=51234567
 
 Пример `.env.example` уже обновлен.
 
-### Шаг 3.2: Проверьте frontend код
-Frontend уже настроен и включает:
+### Шаг 3.2: Проверьте frontend код (OAuth 2.1, PKCE)
+Frontend включает:
 
-- **`frontend/index.html`**: VK ID SDK script добавлен
-- **`frontend/src/types/auth.ts`**: Типы для VK OAuth
-- **`frontend/src/api/authWeb.ts`**: API client `loginWithVK()`
-- **`frontend/src/store/authStore.ts`**: Store метод `loginWithVK()`
-- **`frontend/src/components/auth/VKSignInButton.tsx`**: Компонент кнопки VK
-- **`frontend/src/pages/LoginPage.tsx`**: Добавлена кнопка VK
-- **`frontend/src/pages/RegisterPage.tsx`**: Добавлена кнопка VK
+- **`frontend/src/utils/pkce.ts`**: генерация `code_verifier`, `code_challenge`, `state`, `nonce`, `device_id`
+- **`frontend/src/components/auth/VKSignInButton.tsx`**: кнопка запуска PKCE-redirect на `https://id.vk.ru/authorize`
+- **`frontend/src/pages/VKCallbackPage.tsx`**: страница `/vk/callback`, обменивает `code` на токены через `/api/v1/auth-web/vk/pkce`
+- **`frontend/src/api/authWeb.ts`**: API client `loginWithVKPKCE()`
+- **`frontend/src/store/authStore.ts`**: store метод `loginWithVKPKCE()`
+- **`frontend/src/types/auth.ts`**: типы для VK OAuth PKCE
+- **`frontend/src/pages/LoginPage.tsx`**: кнопка VK подключена
 
 ### Шаг 3.3: Установите зависимости (если еще не установлены)
 ```bash
@@ -136,19 +136,19 @@ docker-compose -f docker-compose.prod.yml restart frontend
    console.log(window.VKID); // должен вернуть объект
    ```
 
-### Тест 2: Проверка кнопки VK ID
-1. На странице `/login` или `/register` должна появиться кнопка VK
-2. Кнопка должна иметь официальный дизайн VK ID
-3. Если VK_APP_ID не настроен, должна появиться заглушка: "VK вход не настроен"
+### Тест 2: Проверка кнопки VK ID (PKCE)
+1. На странице `/login` или `/register` кнопка "Войти через VK ID"
+2. При клике происходит redirect на `id.vk.ru/authorize` с параметрами `code_challenge`, `state`
+3. После логина/разрешения доступов происходит возврат на `/vk/callback?code=...&state=...`
 
-### Тест 3: Авторизация через VK
-1. Нажмите на кнопку VK Sign-In
-2. Должно открыться окно VK авторизации (или One Tap если пользователь уже авторизован в VK)
-3. Разрешите доступ к данным
+### Тест 3: Авторизация через VK (PKCE)
+1. Нажмите кнопку VK ID
+2. Введите данные VK / примите One Tap → вернёт на `/vk/callback`
+3. Backend `/vk/pkce` обменивает `code` на токены → выдаёт JWT
 4. Проверьте:
-   - Перенаправление на главную страницу `/`
-   - Токен сохранен в localStorage (`auth-storage`)
-   - Пользователь авторизован (можно проверить в Redux/Zustand DevTools)
+   - Перенаправление на `/`
+   - Токен сохранён в localStorage (`auth-storage`)
+   - Пользователь авторизован (Zustand DevTools)
 
 ### Тест 4: Backend endpoint
 Проверьте через curl или Postman:
@@ -182,7 +182,7 @@ curl -X POST http://localhost:8000/api/v1/auth-web/vk \
 ```bash
 # Backend .env
 VK_APP_ID=51234567
-VK_SERVICE_KEY=vk1.a.your-production-service-key
+VK_CLIENT_SECRET=vk1.a.your-production-client-secret
 
 # Frontend .env
 VITE_VK_APP_ID=51234567
@@ -222,11 +222,11 @@ cd /root/ai-media-generator
 3. Убедитесь что CDN доступен: `https://unpkg.com/@vkid/sdk@latest/dist/index.min.js`
 
 ### Проблема: "Invalid VK token" на backend
-**Причина**: VK_SERVICE_KEY неверный или expired
+**Причина**: VK_CLIENT_SECRET неверный или expired
 **Решение**:
-1. Проверьте VK_SERVICE_KEY в `backend/.env`
-2. Создайте новый Service Key в VK Developers
-3. Убедитесь что Service Key имеет права доступа `email`
+1. Проверьте VK_CLIENT_SECRET в `backend/.env`
+2. Создайте новый Client Secret в VK Developers
+3. Убедитесь что ключ имеет права доступа `email`
 
 ### Проблема: "Redirect URI mismatch"
 **Причина**: URL не совпадает с настройками в VK App

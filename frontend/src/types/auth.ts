@@ -55,6 +55,15 @@ export interface VKOAuthRequest {
   uuid: string; // VK ID session UUID
 }
 
+export interface VKOAuthPKCERequest {
+  code: string;
+  code_verifier: string;
+  redirect_uri: string;
+  state?: string;
+  nonce?: string;
+  device_id?: string;
+}
+
 // VK OAuth response is identical to Google OAuth response
 export type VKOAuthResponse = GoogleOAuthResponse;
 

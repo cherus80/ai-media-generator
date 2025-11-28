@@ -13,7 +13,7 @@ Endpoints:
 import secrets
 import time
 from collections import defaultdict, deque
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request
@@ -30,6 +30,7 @@ from app.schemas.auth_web import (
     GoogleOAuthRequest,
     GoogleOAuthResponse,
     VKOAuthRequest,
+    VKOAuthPKCERequest,
     VKOAuthResponse,
     UserProfile,
     UserProfileResponse,
@@ -40,7 +41,12 @@ from app.schemas.auth_web import (
 from app.utils.jwt import create_user_access_token
 from app.utils.password import hash_password, verify_password, is_strong_password
 from app.utils.google_oauth import verify_google_id_token, GoogleOAuthError
-from app.utils.vk_oauth import verify_vk_silent_token, VKOAuthError
+from app.utils.vk_oauth import (
+    verify_vk_silent_token,
+    exchange_vk_authorization_code_pkce,
+    verify_vk_id_token,
+    VKOAuthError,
+)
 from app.services.email import email_service
 from app.models.email_verification import EmailVerificationToken
 
@@ -48,6 +54,10 @@ router = APIRouter(prefix="/auth-web", tags=["Web Authentication"])
 # In-memory rate limit for registrations
 _register_hits: defaultdict[str, deque] = defaultdict(deque)
 _REGISTER_WINDOW_SEC = 60
+# Rate limit for VK PKCE endpoint
+_vk_pkce_hits: defaultdict[str, deque] = defaultdict(deque)
+_VK_PKCE_WINDOW_SEC = 60
+_VK_PKCE_MAX_REQUESTS_PER_WINDOW = 30
 
 # In-memory rate limit for email verification resend
 _verification_resend_hits_per_user: defaultdict[int, deque] = defaultdict(deque)
@@ -493,6 +503,201 @@ async def login_with_google(
 # ============================================================================
 # VK ID OAuth
 # ============================================================================
+
+
+@router.post("/vk/pkce", response_model=VKOAuthResponse, status_code=status.HTTP_200_OK)
+async def login_with_vk_pkce(
+    request: VKOAuthPKCERequest,
+    db: DBSession,
+    raw_request: Request,
+) -> VKOAuthResponse:
+    """
+    Вход/Регистрация через VK ID OAuth 2.1 (PKCE).
+
+    Args:
+        request: Authorization code, code_verifier, redirect_uri, device_id
+        db: Database session
+
+    Returns:
+        VKOAuthResponse: JWT токен, профиль пользователя, флаг is_new_user
+    """
+    if not settings.VK_APP_ID or not settings.VK_CLIENT_SECRET:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="VK OAuth is not configured. Please use email/password authentication.",
+        )
+
+    # Rate limit по client IP
+    client_ip = raw_request.client.host if raw_request.client else "unknown"
+    now = time.time()
+    hits = _vk_pkce_hits[client_ip]
+    while hits and now - hits[0] > _VK_PKCE_WINDOW_SEC:
+        hits.popleft()
+    hits.append(now)
+    if len(hits) > _VK_PKCE_MAX_REQUESTS_PER_WINDOW:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Слишком много попыток входа через VK ID. Попробуйте позже.",
+        )
+
+    # Обмен кода на токены
+    try:
+        token_payload = exchange_vk_authorization_code_pkce(
+            code=request.code,
+            code_verifier=request.code_verifier,
+            redirect_uri=request.redirect_uri,
+            device_id=request.device_id,
+        )
+    except VKOAuthError as e:
+        # Простое логирование для трассировки ошибок обмена кода
+        print(f"[VK_PKCE] code exchange failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid VK authorization code: {str(e)}",
+        )
+
+    access_token = token_payload.get("access_token")
+    refresh_token = token_payload.get("refresh_token")
+    expires_in = token_payload.get("expires_in")
+    if not access_token:
+        print(f"[VK_PKCE] missing access_token in response: {token_payload}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="VK OAuth response missing access_token",
+        )
+
+    # Верифицируем id_token подпись, aud/iss и nonce, если пришёл
+    id_token = token_payload.get("id_token")
+    if id_token:
+        try:
+            verify_vk_id_token(id_token, expected_nonce=request.nonce)
+        except VKOAuthError as e:
+            print(f"[VK_PKCE] id_token verification failed: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Invalid VK id_token: {str(e)}",
+            )
+
+    # Получаем профиль пользователя через user_info endpoint
+    try:
+        vk_user_info = verify_vk_silent_token(access_token, request.device_id or "")
+    except VKOAuthError as e:
+        print(f"[VK_PKCE] user_info fetch failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid VK token: {str(e)}",
+        )
+
+    if not vk_user_info:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="VK user info is empty",
+        )
+
+    vk_user_id = vk_user_info.get("user_id") or token_payload.get("user_id")
+    email = vk_user_info.get("email")  # Может быть None
+    first_name = vk_user_info.get("first_name")
+    last_name = vk_user_info.get("last_name")
+
+    if not vk_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="VK user ID not provided by VK.",
+        )
+
+    vk_user_id_str = str(vk_user_id)
+
+    if email:
+        result = await db.execute(
+            select(User).where(
+                (User.oauth_provider_id == vk_user_id_str) |
+                (User.email == email)
+            )
+        )
+    else:
+        result = await db.execute(
+            select(User).where(User.oauth_provider_id == vk_user_id_str)
+        )
+
+    user = result.scalar_one_or_none()
+
+    is_new_user = False
+
+    if user:
+        if user.auth_provider == AuthProvider.email:
+            user.auth_provider = AuthProvider.vk
+            user.oauth_provider_id = vk_user_id_str
+
+        if email:
+            user.email = email
+            user.email_verified = True
+
+        user.first_name = first_name or user.first_name
+        user.last_name = last_name or user.last_name
+        user.updated_at = datetime.utcnow()
+        if refresh_token:
+            user.oauth_refresh_token = refresh_token
+        if expires_in:
+            user.oauth_access_expires_at = datetime.utcnow() + timedelta(seconds=expires_in)
+
+        if user.email and user.email.lower() in settings.admin_email_list and user.role != UserRole.ADMIN:
+            user.role = UserRole.ADMIN
+
+        user.reset_freemium_if_needed()
+
+        await db.commit()
+        await db.refresh(user)
+
+    else:
+        is_new_user = True
+        username = f"{first_name}_{vk_user_id}" if first_name else f"vk_user_{vk_user_id}"
+
+        user = User(
+            email=email,
+            email_verified=True if email else False,
+            auth_provider=AuthProvider.vk,
+            oauth_provider_id=vk_user_id_str,
+            oauth_refresh_token=refresh_token,
+            oauth_access_expires_at=(datetime.utcnow() + timedelta(seconds=expires_in)) if expires_in else None,
+            first_name=first_name,
+            last_name=last_name,
+            username=username,
+            balance_credits=settings.BILLING_FREE_TRIAL_CREDITS,
+            freemium_actions_used=0,
+            freemium_reset_at=datetime.utcnow(),
+            is_active=True,
+            is_banned=False,
+        )
+
+        if user.email and user.email.lower() in settings.admin_email_list:
+            user.role = UserRole.ADMIN
+
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+
+        if user.balance_credits < settings.BILLING_FREE_TRIAL_CREDITS:
+            user.balance_credits = settings.BILLING_FREE_TRIAL_CREDITS
+            await db.commit()
+            await db.refresh(user)
+
+    if user.is_banned:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User account is blocked",
+        )
+
+    access_token_jwt = create_user_access_token(
+        user_id=user.id,
+        email=user.email,
+    )
+
+    return VKOAuthResponse(
+        access_token=access_token_jwt,
+        token_type="bearer",
+        user=user_to_profile(user),
+        is_new_user=is_new_user,
+    )
 
 
 @router.post("/vk", response_model=VKOAuthResponse, status_code=status.HTTP_200_OK)

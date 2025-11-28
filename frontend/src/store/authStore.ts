@@ -16,10 +16,12 @@ import {
   loginWithEmail as loginEmailAPI,
   loginWithGoogle as loginGoogleAPI,
   loginWithVK as loginVKAPI,
+  loginWithVKPKCE as loginVKPKCEAPI,
   getCurrentUser,
 } from '../api/authWeb';
 import { loginWithTelegram } from '../api/auth'; // Legacy Telegram auth
 import { getTelegramInitData } from '../utils/telegram';
+import type { VKOAuthPKCERequest } from '../types/auth';
 
 interface AuthState {
   // State
@@ -34,6 +36,7 @@ interface AuthState {
   loginWithEmail: (data: LoginRequest) => Promise<void>;
   loginWithGoogle: (idToken: string) => Promise<void>;
   loginWithVK: (token: string, uuid: string) => Promise<void>;
+  loginWithVKPKCE: (payload: VKOAuthPKCERequest) => Promise<void>;
   loginWithTelegram: () => Promise<void>; // Legacy
   logout: () => void;
   refreshProfile: () => Promise<void>;
@@ -106,7 +109,7 @@ export const useAuthStore = create<AuthState>()(
             });
           } catch (error: any) {
             const errorMessage =
-              error.response?.data?.detail || error.message || 'Registration failed';
+              error.response?.data?.detail || error.message || 'Не удалось завершить регистрацию';
             set({
               token: null,
               user: null,
@@ -136,7 +139,7 @@ export const useAuthStore = create<AuthState>()(
               ...computeAccessFlags(response.user),
             });
           } catch (error: any) {
-            const errorMessage = error.response?.data?.detail || error.message || 'Login failed';
+            const errorMessage = error.response?.data?.detail || error.message || 'Ошибка входа';
             set({
               token: null,
               user: null,
@@ -167,7 +170,7 @@ export const useAuthStore = create<AuthState>()(
             });
           } catch (error: any) {
             const errorMessage =
-              error.response?.data?.detail || error.message || 'Google login failed';
+              error.response?.data?.detail || error.message || 'Не удалось войти через Google';
             set({
               token: null,
               user: null,
@@ -198,7 +201,38 @@ export const useAuthStore = create<AuthState>()(
             });
           } catch (error: any) {
             const errorMessage =
-              error.response?.data?.detail || error.message || 'VK login failed';
+              error.response?.data?.detail || error.message || 'Не удалось войти через VK';
+            set({
+              token: null,
+              user: null,
+              isAuthenticated: false,
+              isLoading: false,
+              error: errorMessage,
+              ...computeAccessFlags(null),
+            });
+
+            throw error;
+          }
+        },
+
+        // Login with VK OAuth (PKCE)
+        loginWithVKPKCE: async (payload: VKOAuthPKCERequest) => {
+          set({ isLoading: true, error: null });
+
+          try {
+            const response = await loginVKPKCEAPI(payload);
+
+            set({
+              token: response.access_token,
+              user: response.user,
+              isAuthenticated: true,
+              isLoading: false,
+              error: null,
+              ...computeAccessFlags(response.user),
+            });
+          } catch (error: any) {
+            const errorMessage =
+              error.response?.data?.detail || error.message || 'Не удалось войти через VK';
             set({
               token: null,
               user: null,
@@ -237,7 +271,7 @@ export const useAuthStore = create<AuthState>()(
             });
           } catch (error: any) {
             const errorMessage =
-              error.response?.data?.detail || error.message || 'Telegram login failed';
+              error.response?.data?.detail || error.message || 'Не удалось войти через Telegram';
             set({
               token: null,
               user: null,

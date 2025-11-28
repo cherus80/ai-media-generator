@@ -11,6 +11,7 @@ import { EmailVerificationPage } from './pages/EmailVerificationPage';
 import MockPaymentEmulator from './pages/MockPaymentEmulator';
 import { HistoryPage } from './pages/HistoryPage';
 import { VerifyRequiredPage } from './pages/VerifyRequiredPage';
+import { VKCallbackPage } from './pages/VKCallbackPage';
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/verify" element={<EmailVerificationPage />} />
         <Route path="/verify-required" element={<VerifyRequiredPage />} />
+        <Route path="/vk/callback" element={<VKCallbackPage />} />
 
         {/* Главная страница - выбор функции */}
         <Route path="/" element={<HomePage />} />

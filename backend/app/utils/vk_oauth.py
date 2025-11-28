@@ -7,12 +7,81 @@ Supports silent token validation and user information retrieval.
 
 import requests
 from typing import Optional
+from jose import jwt
 from app.core.config import settings
 
 
 class VKOAuthError(Exception):
     """Exception raised for VK OAuth validation errors"""
     pass
+
+
+_jwks_cache: dict = {}
+_jwks_cache_etag: Optional[str] = None
+_jwks_cache_ts: Optional[float] = None
+
+
+def _get_vk_jwks() -> dict:
+    """
+    Fetch VK ID JWKS for id_token verification (with simple caching).
+    """
+    import time
+
+    global _jwks_cache, _jwks_cache_etag, _jwks_cache_ts
+
+    # 5 minute cache
+    if _jwks_cache and _jwks_cache_ts and (time.time() - _jwks_cache_ts) < 300:
+        return _jwks_cache
+
+    headers = {"Accept": "application/json"}
+    if _jwks_cache_etag:
+        headers["If-None-Match"] = _jwks_cache_etag
+
+    resp = requests.get(settings.VK_JWKS_URL, headers=headers, timeout=5)
+
+    if resp.status_code == 304 and _jwks_cache:
+        _jwks_cache_ts = time.time()
+        return _jwks_cache
+
+    if resp.status_code != 200:
+        raise VKOAuthError(f"Failed to fetch VK JWKS: HTTP {resp.status_code}")
+
+    data = resp.json()
+    if "keys" not in data:
+        raise VKOAuthError("VK JWKS response missing 'keys'")
+
+    _jwks_cache = data
+    _jwks_cache_etag = resp.headers.get("ETag")
+    _jwks_cache_ts = time.time()
+
+    return data
+
+
+def verify_vk_id_token(id_token: str, expected_nonce: Optional[str] = None) -> dict:
+    """
+    Verify VK ID id_token using JWKS (signature + claims).
+    """
+    if not settings.VK_APP_ID:
+        raise VKOAuthError("VK OAuth is not configured (missing VK_APP_ID)")
+
+    jwks = _get_vk_jwks()
+
+    try:
+        claims = jwt.decode(
+            id_token,
+            jwks,
+            algorithms=["RS256"],
+            audience=settings.VK_APP_ID,
+            issuer="https://id.vk.com",
+            options={"require_exp": True, "require_iat": True},
+        )
+    except Exception as e:
+        raise VKOAuthError(f"id_token verification failed: {str(e)}")
+
+    if expected_nonce and claims.get("nonce") != expected_nonce:
+        raise VKOAuthError("id_token nonce mismatch")
+
+    return claims
 
 
 def verify_vk_silent_token(silent_token: str, uuid: str) -> dict:
@@ -203,6 +272,66 @@ def get_vk_user_info(silent_token: str, uuid: str) -> Optional[dict]:
         return verify_vk_silent_token(silent_token, uuid)
     except VKOAuthError:
         return None
+
+
+def exchange_vk_authorization_code_pkce(code: str, code_verifier: str, redirect_uri: str, device_id: Optional[str] = None) -> dict:
+    """
+    Exchange VK OAuth 2.1 authorization code for tokens using PKCE.
+
+    Args:
+        code: Authorization code from VK ID
+        code_verifier: PKCE code_verifier generated on frontend
+        redirect_uri: Redirect URI used in the authorize request
+        device_id: Optional device identifier from VK ID SDK
+
+    Returns:
+        dict: Token payload from VK ID (access_token, refresh_token, id_token, user_id, scope, state, expires_in)
+    """
+    if not settings.VK_APP_ID:
+        raise VKOAuthError("VK OAuth is not configured (missing VK_APP_ID)")
+
+    try:
+        url = "https://id.vk.ru/oauth2/auth"
+        data = {
+            "grant_type": "authorization_code",
+            "code": code,
+            "client_id": settings.VK_APP_ID,
+            "code_verifier": code_verifier,
+            "redirect_uri": redirect_uri,
+        }
+
+        # device_id is recommended for additional binding
+        if device_id:
+            data["device_id"] = device_id
+
+        # client_secret is optional for PKCE, but we include it for server-side exchange
+        if settings.VK_CLIENT_SECRET:
+            data["client_secret"] = settings.VK_CLIENT_SECRET
+
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded",
+        }
+
+        response = requests.post(url, data=data, headers=headers, timeout=10)
+
+        if response.status_code != 200:
+            error_data = response.json() if response.headers.get("Content-Type", "").startswith("application/json") else {}
+            error_message = error_data.get("error_description", f"HTTP {response.status_code}")
+            raise VKOAuthError(f"VK OAuth error: {error_message}")
+
+        token_data = response.json()
+
+        if "access_token" not in token_data:
+            raise VKOAuthError("VK OAuth response missing access_token")
+
+        return token_data
+
+    except requests.exceptions.Timeout:
+        raise VKOAuthError("VK OAuth request timeout")
+    except requests.exceptions.RequestException as e:
+        raise VKOAuthError(f"VK OAuth request failed: {str(e)}")
+    except Exception as e:
+        raise VKOAuthError(f"Failed to exchange VK authorization code: {str(e)}")
 
 
 def exchange_vk_code_for_token(code: str, redirect_uri: str) -> dict:

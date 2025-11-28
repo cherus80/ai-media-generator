@@ -111,6 +111,20 @@ class User(Base, TimestampMixin):
         comment="OAuth provider user ID (Google sub, etc.)",
     )
 
+    # OAuth refresh token (server-side storage)
+    oauth_refresh_token: Mapped[Optional[str]] = mapped_column(
+        String(512),
+        nullable=True,
+        comment="OAuth provider refresh token (stored server-side only)",
+    )
+
+    # OAuth access token expiry (from provider)
+    oauth_access_expires_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="Access token expiry (from OAuth provider)",
+    )
+
     # === Telegram авторизация (legacy, для обратной совместимости) ===
 
     # Telegram ID (опционально для веб-пользователей)
