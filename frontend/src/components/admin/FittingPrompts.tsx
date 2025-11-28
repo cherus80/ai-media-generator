@@ -167,11 +167,11 @@ export const FittingPrompts: React.FC = () => {
                 </button>
                 <button
                   onClick={() => handleReset(zone)}
-                  disabled={savingZone === zone || data.is_default}
+                  disabled={savingZone === zone || (data.is_default && !isDirty)}
                   className={`
                     px-4 py-2 rounded-lg text-sm font-semibold transition-colors
                     ${
-                      savingZone === zone || data.is_default
+                      savingZone === zone || (data.is_default && !isDirty)
                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }

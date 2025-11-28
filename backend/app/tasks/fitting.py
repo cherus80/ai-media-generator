@@ -262,8 +262,7 @@ def generate_fitting_task(
                     generation.image_url = final_image_url
                     generation.has_watermark = has_watermark
                     generation.prompt = prompt
-                    if not settings.BILLING_V4_ENABLED:
-                        generation.credits_spent = credits_cost
+                    generation.credits_spent = credits_cost
                     await session.commit()
 
                 logger.info(

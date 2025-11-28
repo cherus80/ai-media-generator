@@ -515,16 +515,17 @@ export const ProfilePage: React.FC = () => {
                 <label className="block text-sm font-bold text-dark-800 mb-3">
                   Ваша реферальная ссылка
                 </label>
-                <div className="flex items-center space-x-2">
+                <div className="flex flex-wrap items-stretch gap-2">
                   <input
                     type="text"
                     value={referralStats.referral_link}
                     readOnly
-                    className="flex-1 px-4 py-3 border-2 border-dark-200 rounded-xl bg-dark-50 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    className="w-full sm:flex-1 min-w-0 px-4 py-3 border-2 border-dark-200 rounded-xl bg-dark-50 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   />
                   <Button
                     variant="primary"
                     size="md"
+                    className="flex-shrink-0 w-full sm:w-auto"
                     onClick={async () => {
                       const success = await copyReferralLink(referralStats.referral_link);
                       if (success) {
@@ -542,6 +543,7 @@ export const ProfilePage: React.FC = () => {
                   <Button
                     variant="success"
                     size="md"
+                    className="flex-shrink-0 w-full sm:w-auto"
                     onClick={async () => {
                       await shareReferralLink(
                         referralStats.referral_link,

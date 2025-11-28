@@ -93,18 +93,18 @@ apiClient.interceptors.response.use(
 
     // Handle 403 Forbidden - user is banned
     if (error.response?.status === 403) {
-      console.error('User is banned or forbidden');
-      // Could show a modal or redirect to error page
+      console.error('Доступ запрещён или пользователь заблокирован');
+      // Здесь можно показать отдельную страницу или всплывающее окно
     }
 
     // Handle network errors
     if (error.message === 'Network Error') {
-      console.error('Network error - check your connection');
+      console.error('Проблемы с сетью — проверьте подключение к интернету');
     }
 
     // Handle timeout errors
     if (error.code === 'ECONNABORTED') {
-      console.error('Request timeout');
+      console.error('Время ожидания запроса истекло');
     }
 
     return Promise.reject(error);

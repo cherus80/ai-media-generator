@@ -253,7 +253,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     try {
       console.log('[chatStore] Calling API /editing/generate...');
-      // Запускаем генерацию (списывает 1 кредит)
+      // Запускаем генерацию (списывает 2 кредита)
       const response = await generateEditedImage({
         session_id: sessionId,
         prompt,
@@ -381,12 +381,12 @@ const createPreview = (file: File): Promise<string> => {
       if (e.target?.result) {
         resolve(e.target.result as string);
       } else {
-        reject(new Error('Failed to read file'));
+        reject(new Error('Не удалось прочитать файл'));
       }
     };
 
     reader.onerror = () => {
-      reject(new Error('Failed to read file'));
+      reject(new Error('Не удалось прочитать файл'));
     };
 
     reader.readAsDataURL(file);

@@ -12,6 +12,7 @@ from sqlalchemy import select
 from app.core.config import settings
 from app.db.session import async_session
 from app.models.user import User
+from app.models.generation import Generation
 from app.models.chat import ChatHistory
 from app.services.file_storage import save_upload_file_by_content, get_file_by_id
 from app.services.openrouter import OpenRouterClient, OpenRouterError
@@ -302,11 +303,14 @@ def generate_editing_task(
                             },
                             cost_credits=generation_cost,
                         )
+                        generation_record = await session.get(Generation, generation_id)
+                        if generation_record:
+                            generation_record.credits_spent = generation_cost
+                            await session.commit()
                         logger.info(f"Charged {generation_cost} credits for generation {generation_id} (Billing v4)")
                     else:
                         # Billing v3
                         from app.services.credits import deduct_credits
-                        from app.models.generation import Generation
 
                         # Получаем User и Generation для обновления
                         user = await session.get(User, user_id)

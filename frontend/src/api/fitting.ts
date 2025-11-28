@@ -127,7 +127,7 @@ export const pollFittingStatus = async (
 
         // Если превышено количество попыток
         if (attempts >= maxAttempts) {
-          reject(new Error('Timeout: Generation took too long'));
+          reject(new Error('Таймаут: генерация заняла слишком много времени'));
           return;
         }
 

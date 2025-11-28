@@ -213,7 +213,7 @@ export const PromptSelector: React.FC<PromptSelectorProps> = ({
             </div>
             <div className="flex-1">
               <p className="text-sm text-dark-700 leading-relaxed">
-                <span className="font-semibold">Генерация изображения списывает 1 кредит.</span> AI-ассистент уже списал 1 кредит за улучшение промпта — выберите или отредактируйте вариант перед стартом.
+                <span className="font-semibold">Генерация изображения списывает 2 кредит.</span> AI-ассистент уже списал 1 кредит за улучшение промпта — выберите или отредактируйте вариант перед стартом.
               </p>
             </div>
           </div>

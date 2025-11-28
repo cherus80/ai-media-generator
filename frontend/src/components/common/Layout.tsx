@@ -163,7 +163,12 @@ export const Layout: React.FC<LayoutProps> = ({
       <EmailVerificationBanner />
 
       {/* Main content */}
-      <main className="flex-1 w-full">{children}</main>
+      <main
+        className="flex-1 w-full overflow-y-auto min-h-0"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
+        {children}
+      </main>
 
       {/* Mobile Menu */}
       <MobileMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />

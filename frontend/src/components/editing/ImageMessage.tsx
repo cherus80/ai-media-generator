@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import toast from 'react-hot-toast';
 import type { ChatMessage } from '../../types/editing';
 
 interface ImageMessageProps {
@@ -17,9 +18,19 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({ message }) => {
     return null;
   }
 
+  const getAbsoluteUrl = (url: string) => {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    const base = window.location.origin.replace(/\/$/, '');
+    const normalized = url.startsWith('/') ? url : `/${url}`;
+    return `${base}${normalized}`;
+  };
+
   const handleDownload = async () => {
+    const downloadUrl = getAbsoluteUrl(message.image_url!);
+
     try {
-      const response = await fetch(message.image_url!);
+      const response = await fetch(downloadUrl, { mode: 'cors' });
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -29,8 +40,55 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({ message }) => {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
+      toast.success('Изображение скачивается');
     } catch (error) {
-      console.error('Download failed:', error);
+      try {
+        const fallbackLink = document.createElement('a');
+        fallbackLink.href = downloadUrl;
+        fallbackLink.target = '_blank';
+        fallbackLink.rel = 'noopener noreferrer';
+        fallbackLink.download = `edited-image-${Date.now()}.png`;
+        document.body.appendChild(fallbackLink);
+        fallbackLink.click();
+        document.body.removeChild(fallbackLink);
+        toast.success('Скачивание открыто в новом окне');
+      } catch (fallbackError) {
+        console.error('Не удалось скачать изображение:', fallbackError);
+        toast.error('Не удалось скачать изображение');
+      }
+    }
+  };
+
+  const handleShare = async () => {
+    const shareUrl = getAbsoluteUrl(message.image_url!);
+
+    if (window.Telegram?.WebApp?.openTelegramLink) {
+      const tgLink = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}`;
+      window.Telegram.WebApp.openTelegramLink(tgLink);
+      return;
+    }
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Моё отредактированное фото',
+          text: 'Посмотрите результат редактирования!',
+          url: shareUrl,
+        });
+        toast.success('Успешно поделились');
+        return;
+      } catch (error: any) {
+        if (error?.name === 'AbortError') {
+          return;
+        }
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success('Ссылка скопирована в буфер обмена');
+    } catch {
+      toast.error('Не удалось поделиться изображением');
     }
   };
 
@@ -71,7 +129,7 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({ message }) => {
                 />
               </svg>
             </div>
-            <span className="text-xs font-semibold text-gray-600">AI Assistant</span>
+            <span className="text-xs font-semibold text-gray-600">AI-ассистент</span>
           </div>
 
           {/* Текст сообщения */}
@@ -111,7 +169,7 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({ message }) => {
           </div>
 
           {/* Кнопки действий */}
-          <div className="mt-3 flex items-center space-x-2">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             <button
               onClick={handleDownload}
               className="flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
@@ -130,6 +188,25 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({ message }) => {
                 />
               </svg>
               Скачать
+            </button>
+            <button
+              onClick={handleShare}
+              className="flex items-center px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <svg
+                className="w-4 h-4 mr-1.5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                />
+              </svg>
+              Поделиться
             </button>
           </div>
 

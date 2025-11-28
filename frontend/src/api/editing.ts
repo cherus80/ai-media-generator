@@ -75,7 +75,7 @@ export const sendChatMessage = async (
 /**
  * Генерация изображения по промпту
  * POST /api/v1/editing/generate
- * Списывает 1 кредит
+ * Списывает 2 кредита
  */
 export const generateEditedImage = async (
   request: GenerateImageRequest
@@ -170,7 +170,7 @@ export const pollEditingStatus = async (
 
         // Если превышено количество попыток
         if (attempts >= maxAttempts) {
-          reject(new Error('Timeout: Generation took too long'));
+          reject(new Error('Таймаут: генерация заняла слишком много времени'));
           return;
         }
 

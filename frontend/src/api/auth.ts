@@ -33,7 +33,7 @@ export const loginWithTelegram = async (
     return response.data;
   } catch (error: any) {
     const authError: AuthError = {
-      detail: error.response?.data?.detail || 'Authentication failed',
+      detail: error.response?.data?.detail || 'Ошибка авторизации',
     };
     throw authError;
   }
@@ -54,7 +54,7 @@ export const getCurrentUser = async (): Promise<UserProfile> => {
     return response.data.user;
   } catch (error: any) {
     const authError: AuthError = {
-      detail: error.response?.data?.detail || 'Failed to fetch user profile',
+      detail: error.response?.data?.detail || 'Не удалось получить профиль пользователя',
     };
     throw authError;
   }

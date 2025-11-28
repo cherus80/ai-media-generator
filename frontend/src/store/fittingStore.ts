@@ -263,12 +263,12 @@ const createPreview = (file: File): Promise<string> => {
       if (e.target?.result) {
         resolve(e.target.result as string);
       } else {
-        reject(new Error('Failed to read file'));
+        reject(new Error('Не удалось прочитать файл'));
       }
     };
 
     reader.onerror = () => {
-      reject(new Error('Failed to read file'));
+      reject(new Error('Не удалось прочитать файл'));
     };
 
     reader.readAsDataURL(file);

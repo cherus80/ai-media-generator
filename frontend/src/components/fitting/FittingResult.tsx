@@ -20,11 +20,21 @@ export const FittingResult: React.FC<FittingResultProps> = ({ onNewFitting }) =>
     return null;
   }
 
+  const getAbsoluteUrl = (url: string) => {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    const base = window.location.origin.replace(/\/$/, '');
+    const normalized = url.startsWith('/') ? url : `/${url}`;
+    return `${base}${normalized}`;
+  };
+
   const handleDownload = async () => {
     if (!result.image_url) return;
 
+    const downloadUrl = getAbsoluteUrl(result.image_url);
+
     try {
-      const response = await fetch(result.image_url);
+      const response = await fetch(downloadUrl, { mode: 'cors' });
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -36,33 +46,54 @@ export const FittingResult: React.FC<FittingResultProps> = ({ onNewFitting }) =>
       window.URL.revokeObjectURL(url);
       toast.success('Изображение скачано!');
     } catch (error) {
-      toast.error('Ошибка при скачивании');
+      try {
+        const fallbackLink = document.createElement('a');
+        fallbackLink.href = downloadUrl;
+        fallbackLink.target = '_blank';
+        fallbackLink.rel = 'noopener noreferrer';
+        fallbackLink.download = `fitting-${result.task_id}.png`;
+        document.body.appendChild(fallbackLink);
+        fallbackLink.click();
+        document.body.removeChild(fallbackLink);
+        toast.success('Скачивание началось в новом окне');
+      } catch (fallbackError) {
+        console.error('Не удалось скачать изображение:', fallbackError);
+        toast.error('Ошибка при скачивании изображения');
+      }
     }
   };
 
   const handleShare = async () => {
     if (!result.image_url) return;
 
+    const shareUrl = getAbsoluteUrl(result.image_url);
+
     // Telegram WebApp Share
     if (window.Telegram?.WebApp?.openTelegramLink) {
-      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(result.image_url)}`;
-      window.Telegram.WebApp.openTelegramLink(shareUrl);
+      const tgLink = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}`;
+      window.Telegram.WebApp.openTelegramLink(tgLink);
     } else if (navigator.share) {
       // Web Share API
       try {
         await navigator.share({
           title: 'Моя примерка',
           text: 'Посмотрите на мою виртуальную примерку!',
-          url: result.image_url,
+          url: shareUrl,
         });
         toast.success('Успешно поделились!');
       } catch (error) {
-        // User cancelled
+        if (error) {
+          toast.error('Не удалось поделиться изображением');
+        }
       }
     } else {
       // Fallback: copy to clipboard
-      navigator.clipboard.writeText(result.image_url);
-      toast.success('Ссылка скопирована в буфер обмена');
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success('Ссылка скопирована в буфер обмена');
+      } catch {
+        toast.error('Не удалось скопировать ссылку');
+      }
     }
   };
 

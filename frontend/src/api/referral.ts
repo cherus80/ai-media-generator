@@ -109,7 +109,7 @@ export const copyReferralLink = async (link: string): Promise<boolean> => {
     await navigator.clipboard.writeText(link);
     return true;
   } catch (error) {
-    console.error('Failed to copy referral link:', error);
+    console.error('Не удалось скопировать реферальную ссылку:', error);
     return false;
   }
 };
@@ -121,7 +121,7 @@ export const copyReferralLink = async (link: string): Promise<boolean> => {
  * @param text - Текст сообщения
  */
 export const shareReferralLink = async (link: string, text?: string): Promise<void> => {
-  const message = text || 'Join AI Image Generator and get bonus credits!';
+  const message = text || 'Присоединяйся к AI Image Generator и получай бонусные кредиты!';
 
   // Проверяем поддержку Web Share API
   if (navigator.share) {
@@ -131,16 +131,16 @@ export const shareReferralLink = async (link: string, text?: string): Promise<vo
         text: message,
         url: link,
       });
-      console.log('Successfully shared via Web Share API');
+      console.log('Ссылка успешно отправлена через Web Share API');
     } catch (error) {
       // Пользователь отменил шаринг или произошла ошибка
-      console.log('Share cancelled or failed:', error);
+      console.log('Не удалось поделиться ссылкой:', error);
       // Fallback: копируем в буфер обмена
       await copyReferralLink(link);
     }
   } else {
     // Fallback: копируем в буфер обмена
     await copyReferralLink(link);
-    alert('Link copied to clipboard! Share it with your friends.');
+    alert('Ссылка скопирована в буфер обмена! Поделитесь ею с друзьями.');
   }
 };
