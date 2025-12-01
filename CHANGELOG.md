@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.15.2] - 2025-12-01
+
+### Fixed - VK/Google OAuth стабильность
+
+#### Что изменили
+- **VK PKCE state/nonce**: теперь генерируются только из букв/цифр (без `.`/`~`), чтобы VK не урезал `state` в callback.  
+  - Файл: [frontend/src/utils/pkce.ts](frontend/src/utils/pkce.ts)
+- **VK JWKS 404**: если `https://id.vk.com/.well-known/jwks` отвечает 404, вход не падает — продолжаем по `access_token`/`user_info` и логируем предупреждение.  
+  - Файл: [backend/app/api/v1/endpoints/auth_web.py](backend/app/api/v1/endpoints/auth_web.py)
+- **Google 500 из-за БД**: при ошибке `InvalidPasswordError: password authentication failed for user "postgres"` (видно в логах при POST /auth-web/google) — пароль пользователя `postgres` в БД не совпадает с `.env`. Нужно синхронизировать пароль и перезапустить backend/celery.
+
+#### Быстрые шаги восстановления VK
+1) Проверить .env (VPS и build args фронта):  
+   - `VITE_VK_REDIRECT_URI=https://<домен>/vk/callback`  
+   - `VITE_VK_APP_ID=<app_id>`  
+   - `VK_APP_ID=<app_id>`, `VK_CLIENT_SECRET=<secret>`  
+   - JWKS: по умолчанию `https://id.vk.com/.well-known/jwks`; 404 допустим — есть fallback.
+2) Очистить локальные ключи на фронте и заново зайти одной вкладкой:  
+   ```js
+   Object.keys(localStorage)
+     .filter(k => k.startsWith('vk_pkce') || k === 'vk_device_id')
+     .forEach(k => localStorage.removeItem(k));
+   ```
+3) Пересобрать фронтенд без кэша (чтобы точно применить фикс state):  
+   ```bash
+   DOCKER_BUILDKIT=1 docker compose -f docker-compose.prod.yml build --no-cache frontend
+   docker compose -f docker-compose.prod.yml up -d frontend
+   ```
+4) Если в логах backend только `[VK_PKCE] id_token verification failed: Failed to fetch VK JWKS: HTTP 404` — это ожидаемо, т.к. включён fallback. Другие 401 → перепроверьте `VK_APP_ID/VK_CLIENT_SECRET` и `redirect_uri`.
+
+#### Быстрые шаги восстановления Google
+1) Убедиться, что пароль пользователя `postgres` в БД совпадает с `.env`.  
+2) При несовпадении выполнить:  
+   ```bash
+   docker compose -f docker-compose.prod.yml exec -T postgres psql -U postgres -c "ALTER USER postgres WITH PASSWORD '<пароль из .env>';";
+   docker compose -f docker-compose.prod.yml restart backend celery_worker celery_beat
+   ```
+3) Проверить health: `curl -f http://localhost:8000/health`.
+
+---
+
 ## [0.15.1] - 2025-11-27
 
 ### Fixed - Virtual Try-On Generation
