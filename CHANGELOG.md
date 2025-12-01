@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.15.3] - 2025-12-01
+
+### Fixed - VK аккаунты без email
+- **VK = верифицирован**: теперь пользователи, вошедшие через VK ID, автоматически помечаются `email_verified=True` и получают `email_verified_at`, даже если VK не выдал email (аккаунты, созданные по телефону). Файлы:  
+  - [backend/app/api/v1/endpoints/auth_web.py](backend/app/api/v1/endpoints/auth_web.py)  
+  - [backend/app/api/dependencies.py](backend/app/api/dependencies.py)
+- **Доступ без письма-подтверждения**: `require_verified_email` пропускает VK/Google аккаунты, чтобы генерация/примерка не блокировалась сообщением "Email verification required".
+- **Миграция существующих VK-пользователей**: достаточно перелогиниться через VK — флаг `email_verified` и `email_verified_at` проставятся автоматически.
+- **Если видите VK ошибку "client_secret is incorrect [5]"**: это приходит от VK при обмене кода на токен. Проверьте на VPS `.env` значения `VK_APP_ID` и `VK_CLIENT_SECRET` (совпадают ли с консолей VK ID), затем перезапустите backend/celery (можно `docker compose -f docker-compose.prod.yml up -d --force-recreate backend celery_worker`). При PKCE секрет обязателен только на сервере; фронт его не отправляет.
+
 ## [0.15.2] - 2025-12-01
 
 ### Fixed - VK/Google OAuth стабильность

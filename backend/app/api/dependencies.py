@@ -194,8 +194,8 @@ async def require_verified_email(
     if current_user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
         return current_user
 
-    # OAuth пользователи (Google) считаются верифицированными автоматически
-    if current_user.auth_provider == AuthProvider.google:
+    # OAuth пользователи (Google/VK) считаются верифицированными автоматически
+    if current_user.auth_provider in [AuthProvider.google, AuthProvider.vk]:
         return current_user
 
     # Проверка email_verified для обычных пользователей

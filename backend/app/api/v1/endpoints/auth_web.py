@@ -627,7 +627,14 @@ async def login_with_vk_pkce(
 
         if email:
             user.email = email
+
+        # VK подтверждает личность — считаем аккаунт верифицированным,
+        # даже если пользователь не отдал email
+        if not user.email_verified:
             user.email_verified = True
+            user.email_verified_at = datetime.utcnow()
+        elif not user.email_verified_at:
+            user.email_verified_at = datetime.utcnow()
 
         user.first_name = first_name or user.first_name
         user.last_name = last_name or user.last_name
@@ -651,7 +658,9 @@ async def login_with_vk_pkce(
 
         user = User(
             email=email,
-            email_verified=True if email else False,
+            # Считаем VK-пользователя верифицированным, даже если email не выдан
+            email_verified=True,
+            email_verified_at=datetime.utcnow(),
             auth_provider=AuthProvider.vk,
             oauth_provider_id=vk_user_id_str,
             oauth_refresh_token=refresh_token,
@@ -776,9 +785,14 @@ async def login_with_vk(
         # Обновляем данные профиля
         if email:
             user.email = email
-            # VK не гарантирует email verification, но мы можем установить в True
-            # так как VK сам верифицирует пользователей
+
+        # VK подтверждает личность — считаем аккаунт верифицированным,
+        # даже если email не отдан
+        if not user.email_verified:
             user.email_verified = True
+            user.email_verified_at = datetime.utcnow()
+        elif not user.email_verified_at:
+            user.email_verified_at = datetime.utcnow()
 
         user.first_name = first_name or user.first_name
         user.last_name = last_name or user.last_name
@@ -806,7 +820,8 @@ async def login_with_vk(
 
         user = User(
             email=email,  # Может быть None
-            email_verified=True if email else False,  # Если email есть, считаем верифицированным
+            email_verified=True,  # VK подтверждает личность, даже без email
+            email_verified_at=datetime.utcnow(),
             auth_provider=AuthProvider.vk,
             oauth_provider_id=vk_user_id_str,
             first_name=first_name,
