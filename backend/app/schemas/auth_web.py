@@ -56,13 +56,21 @@ class UserProfile(BaseModel):
 
     # Balance & Subscription
     balance_credits: int = Field(..., description="Credit balance")
-    subscription_type: Optional[str] = Field(None, description="Subscription type (basic, pro, premium)")
+    subscription_type: Optional[str] = Field(None, description="Subscription type (basic, standard, premium)")
+    subscription_started_at: Optional[datetime] = Field(None, description="Subscription activation date")
     subscription_expires_at: Optional[datetime] = Field(None, description="Subscription expiration date")
+    subscription_ops_limit: Optional[int] = Field(None, description="Actions limit for the plan")
+    subscription_ops_used: Optional[int] = Field(None, description="Actions used from the plan")
+    subscription_ops_remaining: Optional[int] = Field(None, description="Actions remaining in the plan")
+    subscription_ops_reset_at: Optional[datetime] = Field(None, description="Last counter reset date")
 
     # Freemium
     freemium_actions_used: int = Field(..., description="Freemium actions used this month")
     freemium_reset_at: datetime = Field(..., description="Freemium counter reset date")
     can_use_freemium: bool = Field(..., description="Can use Freemium actions")
+    freemium_actions_remaining: int = Field(default=0, description="Freemium remaining (v5: 0)")
+    freemium_actions_limit: int = Field(default=0, description="Freemium limit (v5: 0)")
+    free_trial_granted: bool = Field(default=False, description="Welcome credits already granted")
 
     # Status
     is_blocked: bool = Field(..., description="Is user blocked/banned")

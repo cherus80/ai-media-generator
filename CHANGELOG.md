@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.15.5] - 2025-12-04
+
+### Added - Billing v5 (действия + кредиты)
+- Новая модель биллинга: действия по подписке + кредиты, без freemium; welcome-бонус +10 кредитов при регистрации (однократно).
+- Миграция `20251201_1500_billing_v5_actions_and_credits` (free_trial_granted, subscription_started_at, unit в ledger).
+
+### Changed
+- Подписки: basic 299₽/80 действий, standard 499₽/130 действий (pro = legacy alias), premium 899₽/250 действий; покупка подписки больше не начисляет кредиты, а задаёт лимит действий.
+- Пакеты кредитов: 20/50/100/250 кредитов; стоимость операций — генерация 1 действие или 2 кредита, ассистент 1 кредит.
+- API/схемы: обновлённые billing state, payment tariffs, user profile поля (actions_remaining, free_trial_granted), тексты ошибок NOT_ENOUGH_BALANCE.
+- Логика списаний/ledger: новые типы операций (generation/assistant/subscription_purchase/credit_pack_purchase/free_trial_grant) и unit (credits/actions).
+- Фронт: отображение балансов действий/кредитов, тексты стоимости, профиль и сторы приведены к новой схеме.
+
+### Removed
+- Freemium-лимиты и тексты скрыты/обнулены для v5.
+
 ## [0.15.4] - 2025-12-03
 
 ### Added - Публичные страницы и соответствие требованиям ЮKassa

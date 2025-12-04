@@ -6,32 +6,34 @@ from pydantic import BaseModel, Field
 
 
 class BillingState(BaseModel):
-    billing_v4_enabled: bool = Field(..., description="Флаг включённого биллинга v4")
-    balance_credits: int = Field(..., description="Текущий баланс кредитов")
+    billing_v5_enabled: bool = Field(..., description="Флаг включённого биллинга v5")
+    credits_balance: int = Field(..., description="Баланс кредитов")
 
-    subscription_type: Optional[str] = Field(None, description="Активный тариф подписки")
-    subscription_ops_limit: int = Field(..., description="Лимит операций по подписке за период")
-    subscription_ops_used: int = Field(..., description="Использовано операций подписки")
-    subscription_ops_remaining: int = Field(..., description="Остаток операций подписки")
-    subscription_ops_reset_at: Optional[datetime] = Field(
-        None,
-        description="Дата последнего сброса лимита подписки",
-    )
+    plan_id: Optional[str] = Field(None, description="Активный план подписки")
+    plan_active: bool = Field(..., description="Подписка активна")
+    plan_started_at: Optional[datetime] = Field(None, description="Дата активации плана")
+    plan_expires_at: Optional[datetime] = Field(None, description="Дата окончания плана")
 
-    freemium_ops_limit: int = Field(..., description="Лимит freemium операций в периоде")
-    freemium_ops_used: int = Field(..., description="Использовано freemium операций")
-    freemium_ops_remaining: int = Field(..., description="Остаток freemium операций")
-    freemium_reset_at: Optional[datetime] = Field(
-        None,
-        description="Дата последнего сброса freemium лимита",
-    )
+    actions_limit: int = Field(..., description="Доступно действий по подписке")
+    actions_used: int = Field(..., description="Сколько действий израсходовано")
+    actions_remaining: int = Field(..., description="Сколько действий осталось")
 
 
 class LedgerItem(BaseModel):
     id: int
-    type: Literal["tryon", "edit", "assistant", "subscription", "credit_purchase"]
+    type: Literal[
+        "tryon_generation",
+        "edit_generation",
+        "assistant_call",
+        "subscription_actions_spent",
+        "subscription_purchase",
+        "subscription_renew",
+        "credit_pack_purchase",
+        "free_trial_grant",
+    ]
     amount: int
-    source: Literal["subscription", "freemium", "credits"]
+    unit: Literal["credits", "actions"]
+    source: Literal["subscription", "credits", "free_trial", "admin"]
     meta: Optional[dict]
     idempotency_key: Optional[str]
     created_at: datetime

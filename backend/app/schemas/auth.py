@@ -44,6 +44,26 @@ class UserProfile(BaseModel):
         None,
         description="Дата окончания подписки"
     )
+    subscription_started_at: Optional[datetime] = Field(
+        None,
+        description="Дата активации подписки"
+    )
+    subscription_ops_limit: Optional[int] = Field(
+        None,
+        description="Лимит действий по подписке",
+    )
+    subscription_ops_used: Optional[int] = Field(
+        None,
+        description="Использовано действий по подписке",
+    )
+    subscription_ops_remaining: Optional[int] = Field(
+        None,
+        description="Остаток действий по подписке",
+    )
+    subscription_ops_reset_at: Optional[datetime] = Field(
+        None,
+        description="Дата последнего сброса счётчика действий",
+    )
 
     # Freemium
     freemium_actions_used: int = Field(
@@ -54,9 +74,21 @@ class UserProfile(BaseModel):
         ...,
         description="Дата сброса бесплатных действий"
     )
+    freemium_actions_remaining: int = Field(
+        default=0,
+        description="Остаток бесплатных действий (v5: 0)",
+    )
+    freemium_actions_limit: int = Field(
+        default=0,
+        description="Лимит бесплатных действий (v5: 0)",
+    )
     can_use_freemium: bool = Field(
         ...,
         description="Может ли использовать бесплатные действия"
+    )
+    free_trial_granted: bool = Field(
+        default=False,
+        description="Выдан ли приветственный бонус кредитов",
     )
 
     # Метаданные

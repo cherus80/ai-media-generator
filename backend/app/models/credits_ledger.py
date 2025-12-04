@@ -8,7 +8,6 @@ from typing import Optional
 from sqlalchemy import (
     Integer,
     ForeignKey,
-    Enum,
     JSON,
     Index,
     String,
@@ -19,21 +18,32 @@ from app.db.base import Base, TimestampMixin
 
 
 class LedgerEntryType(str, enum.Enum):
-    """Тип операции в журнале."""
+    """Тип операции в журнале (v5)."""
 
-    TRYON = "tryon"
-    EDIT = "edit"
-    ASSISTANT = "assistant"
-    SUBSCRIPTION = "subscription"
-    CREDIT_PURCHASE = "credit_purchase"
+    TRYON_GENERATION = "tryon_generation"
+    EDIT_GENERATION = "edit_generation"
+    ASSISTANT_CALL = "assistant_call"
+    SUBSCRIPTION_ACTIONS_SPENT = "subscription_actions_spent"
+    SUBSCRIPTION_PURCHASE = "subscription_purchase"
+    SUBSCRIPTION_RENEW = "subscription_renew"
+    CREDIT_PACK_PURCHASE = "credit_pack_purchase"
+    FREE_TRIAL_GRANT = "free_trial_grant"
+
+
+class LedgerUnit(str, enum.Enum):
+    """Единица учёта операции: действия или кредиты."""
+
+    CREDITS = "credits"
+    ACTIONS = "actions"
 
 
 class LedgerSource(str, enum.Enum):
-    """Источник списания/начисления."""
+    """Источник операции."""
 
     SUBSCRIPTION = "subscription"
-    FREEMIUM = "freemium"
     CREDITS = "credits"
+    FREE_TRIAL = "free_trial"
+    ADMIN = "admin"
 
 
 class CreditsLedger(Base, TimestampMixin):
@@ -54,8 +64,8 @@ class CreditsLedger(Base, TimestampMixin):
         nullable=False,
         index=True,
     )
-    type: Mapped[LedgerEntryType] = mapped_column(
-        Enum(LedgerEntryType, name="ledger_entry_type_enum", native_enum=False),
+    type: Mapped[str] = mapped_column(
+        String(64),
         nullable=False,
     )
     amount: Mapped[int] = mapped_column(
@@ -63,10 +73,15 @@ class CreditsLedger(Base, TimestampMixin):
         nullable=False,
         comment="Положительное число для начисления, отрицательное для списания",
     )
-    source: Mapped[LedgerSource] = mapped_column(
-        Enum(LedgerSource, name="ledger_source_enum", native_enum=False),
+    unit: Mapped[str] = mapped_column(
+        String(16),
         nullable=False,
-        comment="Источник операции: подписка, freemium или кредиты",
+        comment="Единица: credits или actions",
+    )
+    source: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        comment="Источник операции: подписка, кредиты, free_trial, admin",
     )
     meta: Mapped[Optional[dict]] = mapped_column(
         JSON,

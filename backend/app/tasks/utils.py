@@ -60,10 +60,10 @@ async def update_generation_status(
 
 def should_add_watermark(user: User) -> bool:
     """
-    Determine if a freemium watermark should be applied for the user.
+    Determine if a watermark should be applied (нет оплаченных балансов).
 
     Returns:
-        True when the user lacks paid credits/subscription and should get a watermark.
+        True when the user lacks оплаченные кредиты/действия.
     """
     if user.balance_credits > 0:
         return False

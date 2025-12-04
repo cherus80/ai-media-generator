@@ -6,6 +6,7 @@ Endpoints:
 - GET /auth/me - Получение текущего профиля пользователя
 """
 
+import logging
 import secrets
 from datetime import datetime
 from typing import Annotated
@@ -25,6 +26,7 @@ from app.schemas.auth import (
 )
 from app.utils.jwt import create_user_access_token
 from app.utils.telegram import TelegramInitDataError, validate_telegram_init_data
+from app.services.billing_v4 import BillingV5Service
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -66,10 +68,18 @@ def user_to_profile(user: User) -> UserProfile:
         language_code=None,  # Добавим в модель позже
         balance_credits=user.balance_credits,
         subscription_type=user.subscription_type.value if user.subscription_type else None,
+        subscription_started_at=user.subscription_started_at,
         subscription_expires_at=user.subscription_end,
+        subscription_ops_limit=user.subscription_ops_limit,
+        subscription_ops_used=user.subscription_ops_used,
+        subscription_ops_remaining=user.actions_remaining,
+        subscription_ops_reset_at=user.subscription_ops_reset_at,
         freemium_actions_used=user.freemium_actions_used,
         freemium_reset_at=user.freemium_reset_at or datetime.utcnow(),
-        can_use_freemium=user.can_use_freemium,
+        freemium_actions_remaining=0,
+        freemium_actions_limit=0,
+        can_use_freemium=False,
+        free_trial_granted=user.free_trial_granted,
         is_premium=False,  # Добавим в модель позже
         is_blocked=user.is_banned,
         created_at=user.created_at,
@@ -112,6 +122,8 @@ async def login_with_telegram(
             detail=f"Invalid Telegram initData: {str(e)}",
         )
 
+    created_new_user = False
+
     # Ищем существующего пользователя
     result = await db.execute(
         select(User).where(User.telegram_id == telegram_data["telegram_id"])
@@ -145,9 +157,22 @@ async def login_with_telegram(
             is_banned=False,
         )
 
+        created_new_user = True
         db.add(user)
         await db.commit()
         await db.refresh(user)
+
+    # Free trial при регистрации (однократно)
+    if created_new_user:
+        billing = BillingV5Service(db)
+        try:
+            await billing.grant_free_trial(
+                user,
+                meta={"reason": "telegram_signup"},
+            )
+        except Exception as e:  # не блокируем вход из-за бонуса
+            logger = logging.getLogger(__name__)
+            logger.error("Failed to grant free trial for user %s: %s", user.id, e)
 
     # Создаём JWT токен
     access_token = create_user_access_token(

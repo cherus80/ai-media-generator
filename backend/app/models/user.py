@@ -25,9 +25,10 @@ from app.db.base import Base, TimestampMixin
 
 class SubscriptionType(str, enum.Enum):
     """Типы подписок"""
-    BASIC = "basic"      # 299₽/месяц — 50 действий
-    PRO = "pro"          # 499₽/месяц — 150 действий
-    PREMIUM = "premium"  # 899₽/месяц — 500 действий
+    BASIC = "basic"      # 299₽/месяц — 80 действий
+    STANDARD = "standard"  # 499₽/месяц — 130 действий
+    PRO = "pro"          # legacy алиас для standard
+    PREMIUM = "premium"  # 899₽/месяц — 250 действий
 
 
 class AuthProvider(str, enum.Enum):
@@ -177,6 +178,12 @@ class User(Base, TimestampMixin):
         comment="Дата окончания подписки",
     )
 
+    subscription_started_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="Дата активации текущей подписки",
+    )
+
     # Лимиты подписки (Billing v4)
     subscription_ops_limit: Mapped[int] = mapped_column(
         Integer,
@@ -208,6 +215,14 @@ class User(Base, TimestampMixin):
         DateTime(timezone=True),
         nullable=True,
         comment="Дата последнего сброса Freemium счётчика",
+    )
+
+    # Free Trial (одноразово)
+    free_trial_granted: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+        comment="Выдан ли welcome-бонус кредитов",
     )
 
     # Активность
@@ -316,9 +331,20 @@ class User(Base, TimestampMixin):
 
     @property
     def can_use_freemium(self) -> bool:
-        """Проверка доступности Freemium"""
-        from app.core.config import settings
-        return self.freemium_actions_used < settings.FREEMIUM_ACTIONS_PER_MONTH
+        """Freemium отключён в биллинге v5."""
+        return False
+
+    @property
+    def actions_remaining(self) -> int:
+        """Оставшиеся действия по подписке (если активна)."""
+        if not self.has_active_subscription:
+            return 0
+        return max(self.subscription_ops_limit - self.subscription_ops_used, 0)
+
+    @property
+    def is_admin(self) -> bool:
+        """True для администраторов любой ступени."""
+        return self.role in [UserRole.ADMIN, getattr(UserRole, "SUPER_ADMIN", UserRole.ADMIN)]
 
     def reset_freemium_if_needed(self) -> None:
         """Сброс Freemium счётчика, если прошёл месяц"""

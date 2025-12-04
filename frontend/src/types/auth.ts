@@ -110,6 +110,7 @@ export interface UserProfile {
   balance_credits: number;
   subscription_type?: SubscriptionType | null;
   subscription_expires_at?: string | null;
+  subscription_started_at?: string | null;
   subscription_ops_limit?: number | null;
   subscription_ops_used?: number | null;
   subscription_ops_remaining?: number | null;
@@ -122,6 +123,7 @@ export interface UserProfile {
   freemium_actions_limit?: number;
   freemium_last_reset?: string | null;
   can_use_freemium: boolean;
+  free_trial_granted?: boolean;
 
   // Status
   is_blocked: boolean;

@@ -55,38 +55,22 @@ async def check_user_can_perform_action(
         logger.info(f"✅ Admin bypass for user {user.id} (role={user.role.value})")
         return True, "admin"
 
-    # 1. Проверка кредитов
-    if user.balance_credits >= credits_cost:
-        return True, "credits"
-
-    # 2. Проверка подписки
+    # 1. Проверка подписки (1 действие)
     if user.subscription_type and user.subscription_end:
         if user.subscription_end > datetime.utcnow():
-            return True, "subscription"
+            if user.subscription_ops_used < user.subscription_ops_limit:
+                return True, "subscription"
 
-    # 3. Проверка Freemium
-    freemium_limit = getattr(settings, "FREEMIUM_ACTIONS_PER_MONTH", 10)
-
-    # Проверка, нужен ли сброс счетчика
-    if user.freemium_reset_at:
-        days_since_reset = (datetime.utcnow() - user.freemium_reset_at).days
-        if days_since_reset >= 30:
-            # Сброс счетчика
-            user.freemium_actions_used = 0
-            user.freemium_reset_at = datetime.utcnow()
-    else:
-        # Первый раз - установка даты
-        user.freemium_reset_at = datetime.utcnow()
-
-    if user.freemium_actions_used < freemium_limit:
-        return True, "freemium"
+    # 2. Проверка кредитов
+    if user.balance_credits >= credits_cost:
+        return True, "credits"
 
     # Пользователь не может выполнить действие
     raise HTTPException(
         status_code=status.HTTP_402_PAYMENT_REQUIRED,
         detail={
-            "error": "insufficient_credits",
-            "message": "Not enough credits. Please purchase credits or subscribe.",
+            "error": "NOT_ENOUGH_BALANCE",
+            "message": "Not enough credits/actions. Please purchase credits or subscribe.",
             "balance_credits": user.balance_credits,
             "credits_required": credits_cost,
         }
@@ -142,11 +126,7 @@ async def deduct_credits(
         user.balance_credits -= credits_cost
 
     elif payment_method == "subscription":
-        # Подписка - не списываем кредиты, но считаем использование
-        pass
-
-    elif payment_method == "freemium":
-        user.freemium_actions_used += 1
+        user.subscription_ops_used += 1
 
     await session.commit()
     await session.refresh(user)
@@ -253,13 +233,17 @@ async def award_subscription(
         )
 
     # Установка подписки
-    user.subscription_type = subscription_type
+    plan_key = "standard" if subscription_type == "pro" else subscription_type
+    tiers = settings.BILLING_SUBSCRIPTION_TIERS or {}
+    plan = tiers.get(plan_key, {})
+    ops_limit = plan.get("ops_limit") or plan.get("actions_limit") or user.subscription_ops_limit
 
-    # Если подписка уже есть и не истекла - продляем
-    if user.subscription_end and user.subscription_end > datetime.utcnow():
-        user.subscription_end += timedelta(days=duration_days)
-    else:
-        user.subscription_end = datetime.utcnow() + timedelta(days=duration_days)
+    user.subscription_type = plan_key
+    user.subscription_ops_limit = ops_limit
+    user.subscription_ops_used = 0
+    user.subscription_ops_reset_at = datetime.utcnow()
+    user.subscription_started_at = datetime.utcnow()
+    user.subscription_end = datetime.utcnow() + timedelta(days=duration_days)
 
     await session.commit()
     await session.refresh(user)
@@ -282,10 +266,14 @@ def calculate_credits_for_tariff(tariff: str) -> int:
         int: Количество кредитов
     """
     tariffs = {
-        "basic": 50,
-        "pro": 150,
-        "premium": 500,
+        "basic": 80,
+        "standard": 130,
+        "pro": 130,
+        "premium": 250,
+        "credits_20": 20,
+        "credits_50": 50,
         "credits_100": 100,
+        "credits_250": 250,
     }
 
     return tariffs.get(tariff, 0)
@@ -303,9 +291,13 @@ def calculate_price_for_tariff(tariff: str) -> Decimal:
     """
     prices = {
         "basic": Decimal("299.00"),
+        "standard": Decimal("499.00"),
         "pro": Decimal("499.00"),
         "premium": Decimal("899.00"),
-        "credits_100": Decimal("199.00"),
+        "credits_20": Decimal("100.00"),
+        "credits_50": Decimal("230.00"),
+        "credits_100": Decimal("400.00"),
+        "credits_250": Decimal("900.00"),
     }
 
     return prices.get(tariff, Decimal("0.00"))

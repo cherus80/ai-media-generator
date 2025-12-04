@@ -1,5 +1,5 @@
 """
-Billing v4 endpoints.
+Billing v5 endpoints.
 
 - GET /billing/state — текущее состояние лимитов/кредитов
 - GET /billing/ledger — история списаний/начислений
@@ -14,7 +14,7 @@ from app.core.config import settings
 from app.models.credits_ledger import CreditsLedger
 from app.models.user import User
 from app.schemas.billing import BillingState, LedgerResponse, LedgerItem
-from app.services.billing_v4 import BillingV4Service
+from app.services.billing_v4 import BillingV5Service
 
 router = APIRouter()
 
@@ -23,7 +23,7 @@ router = APIRouter()
     "/state",
     response_model=BillingState,
     summary="Текущее состояние биллинга",
-    description="Возвращает баланс кредитов, остатки подписки и freemium лимитов.",
+    description="Возвращает баланс кредитов и остатки действий по подписке.",
 )
 async def get_billing_state(
     current_user: User = Depends(get_current_active_user),
@@ -32,39 +32,34 @@ async def get_billing_state(
     if not settings.BILLING_V4_ENABLED:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Billing v4 is disabled",
+            detail="Billing v5 is disabled",
         )
 
-    service = BillingV4Service(db)
-    # Обновляем лимиты при необходимости (сброс по времени)
-    service._reset_limits_if_needed(current_user)  # type: ignore[attr-defined]
+    service = BillingV5Service(db)
+    # Синхронизируем лимит с конфигом и проверяем истечение
+    service._sync_plan_state(current_user)  # type: ignore[attr-defined]
     await db.commit()
     await db.refresh(current_user)
 
-    subscription_type = (
+    plan_id = (
         current_user.subscription_type.value
         if hasattr(current_user.subscription_type, "value")
         else current_user.subscription_type
     )
+    plan_active = service._has_active_plan(current_user)  # type: ignore[attr-defined]
+    actions_limit = current_user.subscription_ops_limit if plan_active else 0
+    actions_used = current_user.subscription_ops_used if plan_active else 0
 
     return BillingState(
-        billing_v4_enabled=True,
-        balance_credits=current_user.balance_credits,
-        subscription_type=subscription_type,
-        subscription_ops_limit=current_user.subscription_ops_limit,
-        subscription_ops_used=current_user.subscription_ops_used,
-        subscription_ops_remaining=max(
-            current_user.subscription_ops_limit - current_user.subscription_ops_used,
-            0,
-        ),
-        subscription_ops_reset_at=current_user.subscription_ops_reset_at,
-        freemium_ops_limit=settings.BILLING_FREEMIUM_OPS_LIMIT,
-        freemium_ops_used=current_user.freemium_actions_used,
-        freemium_ops_remaining=max(
-            settings.BILLING_FREEMIUM_OPS_LIMIT - current_user.freemium_actions_used,
-            0,
-        ),
-        freemium_reset_at=current_user.freemium_reset_at,
+        billing_v5_enabled=True,
+        credits_balance=current_user.balance_credits,
+        plan_id=plan_id,
+        plan_active=plan_active,
+        plan_started_at=current_user.subscription_started_at,
+        plan_expires_at=current_user.subscription_end,
+        actions_limit=actions_limit,
+        actions_used=actions_used,
+        actions_remaining=max(actions_limit - actions_used, 0),
     )
 
 
@@ -103,9 +98,10 @@ async def get_ledger(
     items = [
         LedgerItem(
             id=entry.id,
-            type=entry.type.value,
+            type=entry.type,
             amount=entry.amount,
-            source=entry.source.value,
+            unit=entry.unit,
+            source=entry.source,
             meta=entry.meta,
             idempotency_key=entry.idempotency_key,
             created_at=entry.created_at,

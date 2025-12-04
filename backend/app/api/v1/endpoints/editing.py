@@ -154,7 +154,7 @@ async def create_session(
         "1. Короткий (1-2 предложения)\n"
         "2. Средний (2-3 предложения)\n"
         "3. Детальный (3-4 предложения)\n\n"
-        "Стоимость: 1 кредит (или Freemium)\n\n"
+        "Стоимость: 1 кредит\n\n"
         "Требуется подтверждённый email для доступа.\n\n"
         "История чата: отправляются последние 10 сообщений для контекста."
     )
@@ -185,7 +185,7 @@ async def send_message(
             )
     else:
         # Для Billing v4 проверяем наличие кредитов
-        if current_user.balance_credits < assistant_cost:
+        if not getattr(current_user, "is_admin", False) and current_user.balance_credits < assistant_cost:
             raise HTTPException(
                 status_code=status.HTTP_402_PAYMENT_REQUIRED,
                 detail="Insufficient credits for AI assistant"
@@ -306,13 +306,13 @@ async def send_message(
     summary="Сгенерировать изображение по промпту",
     description=(
         "Запускает генерацию отредактированного изображения через OpenRouter API.\n\n"
-        "Стоимость: 2 кредита (списываются после успешной генерации)\n\n"
+        "Стоимость: 1 действие по подписке или 2 кредита (списываются после успешной генерации)\n\n"
         "Требуется подтверждённый email для доступа.\n\n"
         "Процесс:\n"
         "1. Проверка баланса кредитов\n"
         "2. Создание записи Generation\n"
         "3. Запуск Celery задачи\n"
-        "4. Списание 2 кредитов после успешной генерации\n"
+        "4. Списание 1 действия или 2 кредитов после успешной генерации\n"
         "5. Возврат task_id для отслеживания прогресса\n\n"
         "Используйте /fitting/status/{task_id} для проверки статуса."
     )
@@ -326,7 +326,7 @@ async def generate_image(
     Сгенерировать отредактированное изображение по промпту.
     """
     billing_v4_enabled = settings.BILLING_V4_ENABLED
-    generation_cost = 2  # Всегда 2 кредита (как указано в config)
+    generation_cost = settings.BILLING_GENERATION_COST_CREDITS if billing_v4_enabled else 2
 
     # Проверяем баланс, но НЕ списываем кредиты (списание будет в Celery task после успеха)
     if not billing_v4_enabled:
@@ -342,11 +342,12 @@ async def generate_image(
                 detail=reason or "Insufficient credits"
             )
     else:
-        # Для Billing v4 проверяем наличие кредитов
-        if current_user.balance_credits < generation_cost:
+        billing = BillingV4Service(db)
+        can_use_actions = billing._has_active_plan(current_user) and billing._actions_remaining(current_user) > 0  # type: ignore[attr-defined]
+        if not (getattr(current_user, "is_admin", False) or can_use_actions or current_user.balance_credits >= generation_cost):
             raise HTTPException(
                 status_code=status.HTTP_402_PAYMENT_REQUIRED,
-                detail="Insufficient credits for image generation"
+                detail={"error": "NOT_ENOUGH_BALANCE"},
             )
 
     try:

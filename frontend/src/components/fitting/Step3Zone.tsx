@@ -26,6 +26,15 @@ export const Step3Zone: React.FC<Step3ZoneProps> = ({ onBack, onGenerate }) => {
   const { accessoryZone, setAccessoryZone } = useFittingStore();
   const { user } = useAuthStore();
 
+  const hasActiveSubscription = !!(
+    user?.subscription_type &&
+    user.subscription_type !== 'none' &&
+    user.subscription_expires_at &&
+    new Date(user.subscription_expires_at) > new Date() &&
+    (user.subscription_ops_remaining ?? 0) > 0
+  );
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+
   const handleGenerate = () => {
     // Проверка баланса
     if (!user) {
@@ -34,11 +43,9 @@ export const Step3Zone: React.FC<Step3ZoneProps> = ({ onBack, onGenerate }) => {
     }
 
     const hasCredits = user.balance_credits >= 2;
-    const hasSubscription = !!user.subscription_type && user.subscription_type !== 'none';
-    const hasFreemium = (user.freemium_actions_remaining ?? 0) > 0;
 
-    if (!hasCredits && !hasSubscription && !hasFreemium) {
-      toast.error('Недостаточно кредитов для генерации');
+    if (!hasCredits && !hasActiveSubscription && !isAdmin) {
+      toast.error('Недостаточно баланса: купите подписку или кредиты');
       return;
     }
 
@@ -109,19 +116,16 @@ export const Step3Zone: React.FC<Step3ZoneProps> = ({ onBack, onGenerate }) => {
           </svg>
           <div className="flex-1">
             <p className="text-sm font-semibold text-gray-900 mb-1">
-              Стоимость генерации: 2 кредита
+              Стоимость генерации: 1 действие по подписке или 2 кредита
             </p>
             <p className="text-xs text-gray-600">
-              Ваш баланс: {user?.balance_credits || 0} кредитов
-              {user?.subscription_type && user.subscription_type !== 'none' && (
+              Кредиты: {user?.balance_credits || 0}
+              {hasActiveSubscription && user?.subscription_ops_limit ? (
                 <span className="ml-2 text-blue-600">
-                  + подписка ({user.subscription_type})
+                  Действия: {Math.max(user.subscription_ops_remaining || 0, 0)} / {user.subscription_ops_limit}
                 </span>
-              )}
-              {user?.freemium_actions_remaining && user.freemium_actions_remaining > 0 && (
-                <span className="ml-2 text-green-600">
-                  + {user.freemium_actions_remaining} бесплатных действий
-                </span>
+              ) : (
+                <span className="ml-2 text-gray-500">Подписка не активна</span>
               )}
             </p>
           </div>

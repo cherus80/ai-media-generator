@@ -215,7 +215,7 @@ async def get_dashboard_stats(
     active_subscriptions_pro = await db.scalar(
         select(func.count(User.id)).where(
             and_(
-                User.subscription_type == "pro",
+                User.subscription_type.in_(["pro", "standard"]),
                 User.subscription_end > now
             )
         )
@@ -235,18 +235,9 @@ async def get_dashboard_stats(
         select(func.count(Referral.id)).where(Referral.is_awarded == True)
     )
 
-    # Freemium
-    freemium_users = await db.scalar(
-        select(func.count(User.id)).where(User.freemium_actions_used < 10)
-    )
-    freemium_generations_today = await db.scalar(
-        select(func.count(Generation.id)).where(
-            and_(
-                Generation.has_watermark == True,
-                Generation.created_at >= today_start
-            )
-        )
-    )
+    # Freemium отключён в billing v5
+    freemium_users = 0
+    freemium_generations_today = 0
 
     return AdminStats(
         total_users=total_users or 0,
@@ -504,7 +495,7 @@ async def get_admin_users(
                 balance_credits=user.balance_credits,
                 subscription_type=user.subscription_type,
                 subscription_expires_at=user.subscription_end,
-                freemium_actions_remaining=10 - user.freemium_actions_used if user.can_use_freemium else 0,
+                freemium_actions_remaining=0,
                 freemium_reset_at=user.freemium_reset_at,
                 created_at=user.created_at,
                 last_active_at=user.last_active_at,
@@ -793,7 +784,7 @@ async def get_user_details(
         balance_credits=user.balance_credits,
         subscription_type=user.subscription_type,
         subscription_expires_at=user.subscription_end,
-        freemium_actions_remaining=10 - user.freemium_actions_used if user.can_use_freemium else 0,
+        freemium_actions_remaining=0,
         freemium_reset_at=user.freemium_reset_at,
         created_at=user.created_at,
         last_active_at=user.last_active_at,

@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.models.user import User
 from app.models.payment import Payment
+from app.services.billing_v4 import BillingV5Service
 
 
 logger = logging.getLogger(__name__)
@@ -24,45 +25,54 @@ DEFAULT_SUBSCRIPTION_TARIFFS = {
     "basic": {
         "name": "Basic",
         "price": Decimal("299.00"),
-        "credits_amount": 50,
+        "credits_amount": 80,
+        "actions_limit": 80,
         "duration_days": 30,
-        "description": "50 действий в месяц",
+        "description": "80 действий в месяц",
+    },
+    "standard": {
+        "name": "Standard",
+        "price": Decimal("499.00"),
+        "credits_amount": 130,
+        "actions_limit": 130,
+        "duration_days": 30,
+        "description": "130 действий в месяц",
+        "is_popular": True,
     },
     "premium": {
         "name": "Premium",
-        "price": Decimal("499.00"),
-        "credits_amount": 150,
-        "duration_days": 30,
-        "description": "150 действий в месяц",
-        "is_popular": True,
-    },
-    "pro": {
-        "name": "Pro",
         "price": Decimal("899.00"),
-        "credits_amount": 500,
+        "credits_amount": 250,
+        "actions_limit": 250,
         "duration_days": 30,
-        "description": "500 действий в месяц",
+        "description": "250 действий в месяц",
     },
 }
 
 # Пакеты кредитов
 DEFAULT_CREDITS_PACKAGES = {
-    "credits_100": {
+    "small": {
+        "name": "20 кредитов",
+        "price": Decimal("100.00"),
+        "credits_amount": 20,
+        "description": "Разовая покупка кредитов",
+    },
+    "medium": {
+        "name": "50 кредитов",
+        "price": Decimal("230.00"),
+        "credits_amount": 50,
+        "description": "Разовая покупка кредитов",
+    },
+    "large": {
         "name": "100 кредитов",
-        "price": Decimal("199.00"),
+        "price": Decimal("400.00"),
         "credits_amount": 100,
         "description": "Разовая покупка кредитов",
     },
-    "credits_300": {
-        "name": "300 кредитов",
-        "price": Decimal("499.00"),
-        "credits_amount": 300,
-        "description": "Разовая покупка кредитов",
-    },
-    "credits_1000": {
-        "name": "1000 кредитов",
-        "price": Decimal("1499.00"),
-        "credits_amount": 1000,
+    "pro": {
+        "name": "250 кредитов",
+        "price": Decimal("900.00"),
+        "credits_amount": 250,
         "description": "Разовая покупка кредитов",
         "is_popular": True,
     },
@@ -79,12 +89,13 @@ def _build_subscription_tariffs() -> dict:
 
     tariffs: dict = {}
     for tariff_id, data in config.items():
-        actions = data.get("ops_limit") or data.get("credits_amount") or data.get("credits") or 0
+        actions = data.get("ops_limit") or data.get("actions_limit") or data.get("credits_amount") or data.get("credits") or 0
         price = Decimal(str(data.get("price", 0)))
         tariffs[tariff_id] = {
             "name": data.get("name") or tariff_id.capitalize(),
             "price": price,
             "credits_amount": actions,
+            "actions_limit": actions,
             "duration_days": data.get("duration_days", 30),
             "description": data.get("description") or f"{actions} действий на {data.get('duration_days', 30)} дней",
             "is_popular": data.get("is_popular", False),
@@ -139,7 +150,9 @@ def calculate_credits_for_tariff(
     tariff_id: str
 ) -> int:
     """
-    Рассчитать количество кредитов для тарифа.
+    Рассчитать количество единиц для тарифа.
+
+    Для подписки возвращает лимит действий, для пакета кредитов — количество кредитов.
 
     Args:
         payment_type: Тип платежа ("subscription" или "credits")
@@ -239,25 +252,35 @@ async def award_credits(
             f"Payment {payment_id} already processed"
         )
 
-    # Получение пользователя
-    stmt = select(User).where(User.id == user_id)
+    # Получение пользователя с блокировкой
+    stmt = (
+        select(User)
+        .where(User.id == user_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
     result = await session.execute(stmt)
     user = result.scalar_one_or_none()
 
     if not user:
         raise ValueError(f"User {user_id} not found")
 
-    # Начисление кредитов
-    user.balance_credits += credits
+    # Обновление платежа заранее, commit произойдёт внутри биллинга
     payment.status = "succeeded"
     payment.completed_at = datetime.utcnow()
     payment.idempotency_key = idempotency_key
+    payment.credits_awarded = credits
 
-    await session.commit()
-    await session.refresh(user)
+    billing = BillingV5Service(session)
+    await billing.award_credits(
+        user,
+        credits,
+        idempotency_key=idempotency_key,
+        meta={"payment_id": payment_id},
+    )
 
     logger.info(
-        f"Awarded {credits} credits to user {user_id} (payment: {payment_id})"
+        "Awarded %s credits to user %s (payment: %s)", credits, user_id, payment_id
     )
 
     return user
@@ -308,37 +331,39 @@ async def award_subscription(
             f"Payment {payment_id} already processed"
         )
 
-    # Получение пользователя
-    stmt = select(User).where(User.id == user_id)
+    # Получение пользователя с блокировкой
+    stmt = (
+        select(User)
+        .where(User.id == user_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
     result = await session.execute(stmt)
     user = result.scalar_one_or_none()
 
     if not user:
         raise ValueError(f"User {user_id} not found")
 
-    # Начисление подписки
-    user.subscription_type = subscription_type
-
-    # Продление подписки (если уже есть активная)
-    if user.subscription_end and user.subscription_end > datetime.utcnow():
-        user.subscription_end += timedelta(days=duration_days)
-    else:
-        user.subscription_end = datetime.utcnow() + timedelta(days=duration_days)
-
-    # Начисление кредитов по подписке
-    credits = calculate_credits_for_tariff("subscription", subscription_type)
-    user.balance_credits += credits
-
     payment.status = "succeeded"
     payment.completed_at = datetime.utcnow()
     payment.idempotency_key = idempotency_key
+    payment.subscription_type_awarded = subscription_type
+    payment.subscription_duration_days = duration_days
 
-    await session.commit()
-    await session.refresh(user)
+    billing = BillingV5Service(session)
+    await billing.activate_subscription(
+        user,
+        subscription_type,
+        duration_days=duration_days,
+        idempotency_key=idempotency_key,
+        meta={"payment_id": payment_id},
+    )
 
     logger.info(
-        f"Awarded subscription {subscription_type} ({duration_days} days) "
-        f"and {credits} credits to user {user_id} (payment: {payment_id})"
+        "Activated subscription %s for user %s (payment: %s)",
+        subscription_type,
+        user_id,
+        payment_id,
     )
 
     return user

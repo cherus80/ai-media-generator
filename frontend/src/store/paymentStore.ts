@@ -160,11 +160,11 @@ export const usePaymentStore = create<PaymentState>()(
             description: tariff.description,
             price: Number(tariff.price),
             currency: '₽',
-            actions_count: tariff.credits_amount ?? 0,
+            actions_count: tariff.actions_limit ?? tariff.credits_amount ?? 0,
             duration_days: tariff.duration_days ?? 30,
             is_recommended: tariff.is_popular ?? false,
             features: [
-              `${tariff.credits_amount ?? 0} действий`,
+              `${tariff.actions_limit ?? tariff.credits_amount ?? 0} действий`,
               `Срок ${tariff.duration_days ?? 30} дней`,
             ],
           });

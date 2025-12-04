@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field, field_validator
 PaymentType = Literal["subscription", "credits"]
 
 # Типы подписок
-SubscriptionType = Literal["basic", "premium", "pro"]
+SubscriptionType = Literal["basic", "standard", "premium", "pro"]
 
 
 class PaymentCreateRequest(BaseModel):
@@ -32,7 +32,7 @@ class PaymentCreateRequest(BaseModel):
     credits_amount: Optional[int] = Field(
         None,
         description="Количество кредитов (только для payment_type=credits)",
-        ge=100,
+        ge=20,
         le=10000,
     )
 
@@ -193,6 +193,10 @@ class TariffInfo(BaseModel):
     credits_amount: Optional[int] = Field(
         None,
         description="Количество кредитов/действий",
+    )
+    actions_limit: Optional[int] = Field(
+        None,
+        description="Количество действий по подписке (если subscription)",
     )
     duration_days: Optional[int] = Field(
         None,

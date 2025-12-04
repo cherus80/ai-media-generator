@@ -109,8 +109,8 @@ class Settings(BaseSettings):
 
     # Монетизация
     BILLING_V4_ENABLED: bool = Field(
-        default=False,
-        description="Включить новую систему биллинга (Freemium + Subscription + Credits)",
+        default=True,
+        description="Включить биллинг v5 (действия по подписке + кредиты, без freemium)",
     )
     BILLING_GENERATION_COST_CREDITS: int = Field(
         default=2,
@@ -130,10 +130,11 @@ class Settings(BaseSettings):
     )
     BILLING_SUBSCRIPTION_TIERS: dict = Field(
         default_factory=lambda: {
-            "basic": {"price": 299, "ops_limit": 80},
-            "standard": {"price": 499, "ops_limit": 130},
-            "pro": {"price": 499, "ops_limit": 130},  # alias для старого enum значения
-            "premium": {"price": 899, "ops_limit": 250},
+            "basic": {"price": 299, "ops_limit": 80, "period_days": 30},
+            "standard": {"price": 499, "ops_limit": 130, "period_days": 30},
+            # legacy alias для старого значения
+            "pro": {"price": 499, "ops_limit": 130, "period_days": 30},
+            "premium": {"price": 899, "ops_limit": 250, "period_days": 30},
         },
         description="Тарифы подписок: цена в рублях и лимит операций",
     )
@@ -158,7 +159,7 @@ class Settings(BaseSettings):
         default="Idempotence-Key",
         description="Заголовок для идемпотентности ЮKassa",
     )
-    FREEMIUM_ACTIONS_PER_MONTH: int = Field(default=10)
+    FREEMIUM_ACTIONS_PER_MONTH: int = Field(default=0)
     FREEMIUM_WATERMARK_TEXT: str = Field(default="AI Image Generator")
 
     # Налоги и комиссии

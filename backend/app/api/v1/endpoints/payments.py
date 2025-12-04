@@ -41,7 +41,6 @@ from app.services.billing import (
     SUBSCRIPTION_TARIFFS,
     CREDITS_PACKAGES,
 )
-from app.utils.tax import format_tax_breakdown
 
 
 logger = logging.getLogger(__name__)
@@ -67,20 +66,23 @@ async def create_payment(
     5. Возврат confirmation_url для редиректа
 
     Стоимость:
-    - Подписки: от 299₽ (basic) до 899₽ (pro)
-    - Кредиты: от 199₽ (100 кредитов) до 1499₽ (1000 кредитов)
+    - Подписки: от 299₽ (basic) до 899₽ (premium)
+    - Кредиты: пакеты 20 / 50 / 100 / 250 кредитов
     """
     try:
         # Определяем tariff_id
         if request.payment_type == "subscription":
             tariff_id = request.subscription_type
         else:
-            # Формируем tariff_id для кредитов
-            tariff_id = f"credits_{request.credits_amount}"
-            # Проверяем, что такой пакет существует
-            if tariff_id not in CREDITS_PACKAGES:
-                # Находим ближайший доступный пакет
-                available_amounts = [int(k.split("_")[1]) for k in CREDITS_PACKAGES.keys()]
+            # Находим пакет по количеству кредитов
+            tariff_id = None
+            for pkg_id, pkg in CREDITS_PACKAGES.items():
+                if pkg.get("credits_amount") == request.credits_amount:
+                    tariff_id = pkg_id
+                    break
+
+            if not tariff_id:
+                available_amounts = sorted({pkg.get("credits_amount", 0) for pkg in CREDITS_PACKAGES.values()})
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Invalid credits amount. Available: {available_amounts}",
@@ -331,8 +333,8 @@ async def get_tariffs():
     Получение списка доступных тарифов.
 
     Возвращает:
-    - Подписки (basic, premium, pro)
-    - Пакеты кредитов (100, 300, 1000)
+    - Подписки (basic, standard, premium)
+    - Пакеты кредитов (20, 50, 100, 250)
 
     Включает информацию о ценах, количестве кредитов и налогах.
     """
@@ -341,7 +343,6 @@ async def get_tariffs():
     # Формируем список подписок
     subscriptions = []
     for tariff_id, tariff_data in all_tariffs["subscriptions"].items():
-        tax_info = format_tax_breakdown(tariff_data["price"])
         subscriptions.append(
             TariffInfo(
                 tariff_id=tariff_id,
@@ -350,6 +351,7 @@ async def get_tariffs():
                 description=tariff_data["description"],
                 price=tariff_data["price"],
                 credits_amount=tariff_data["credits_amount"],
+                actions_limit=tariff_data.get("actions_limit"),
                 duration_days=tariff_data["duration_days"],
                 is_popular=tariff_data.get("is_popular", False),
             )
@@ -358,7 +360,6 @@ async def get_tariffs():
     # Формируем список пакетов кредитов
     credits_packages = []
     for tariff_id, tariff_data in all_tariffs["credits_packages"].items():
-        tax_info = format_tax_breakdown(tariff_data["price"])
         credits_packages.append(
             TariffInfo(
                 tariff_id=tariff_id,
@@ -367,6 +368,7 @@ async def get_tariffs():
                 description=tariff_data["description"],
                 price=tariff_data["price"],
                 credits_amount=tariff_data["credits_amount"],
+                actions_limit=None,
                 duration_days=None,
                 is_popular=tariff_data.get("is_popular", False),
             )

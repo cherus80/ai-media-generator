@@ -133,6 +133,7 @@ export interface BackendTariff {
   description: string;
   price: number;
   credits_amount?: number;
+   actions_limit?: number;
   duration_days?: number;
   is_popular?: boolean;
 }

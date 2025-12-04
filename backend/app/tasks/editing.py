@@ -287,15 +287,16 @@ def generate_editing_task(
                     logger.info(f"Added result to chat history {session_id}")
 
                 # ✅ СПИСЫВАЕМ КРЕДИТЫ ПОСЛЕ УСПЕШНОЙ ГЕНЕРАЦИИ
-                generation_cost = 2  # Стоимость генерации изображения
+                generation_cost = settings.BILLING_GENERATION_COST_CREDITS
                 billing_v4_enabled = settings.BILLING_V4_ENABLED
 
                 try:
                     if billing_v4_enabled:
                         from app.services.billing_v4 import BillingV4Service
                         billing = BillingV4Service(session)
-                        await billing.charge_generation(
+                        charge_info = await billing.charge_generation(
                             user_id,
+                            kind="edit",
                             meta={
                                 "generation_id": generation_id,
                                 "feature": "editing_generation",
@@ -305,7 +306,11 @@ def generate_editing_task(
                         )
                         generation_record = await session.get(Generation, generation_id)
                         if generation_record:
-                            generation_record.credits_spent = generation_cost
+                            generation_record.credits_spent = (
+                                generation_cost
+                                if charge_info and charge_info.get("payment_source") == "credits"
+                                else 0
+                            )
                             await session.commit()
                         logger.info(f"Charged {generation_cost} credits for generation {generation_id} (Billing v4)")
                     else:

@@ -99,19 +99,18 @@ export const ProfilePage: React.FC = () => {
     });
   };
 
-  const freemiumLimit = user.freemium_actions_limit ?? 10;
-  const freemiumRemaining = user.freemium_actions_remaining ?? Math.max(0, freemiumLimit - (user.freemium_actions_used ?? 0));
-  const freemiumUsed = user.freemium_actions_used ?? Math.max(0, freemiumLimit - freemiumRemaining);
-  const freemiumProgress = freemiumLimit ? Math.min(100, Math.max(0, (freemiumUsed / freemiumLimit) * 100)) : 0;
-  const freemiumResetAt = user.freemium_reset_at ? new Date(user.freemium_reset_at) : null;
-  const freemiumExpiresAt = freemiumResetAt || (user.created_at ? new Date(new Date(user.created_at).getTime() + 7 * 24 * 60 * 60 * 1000) : null);
-  const hasFreemium = (user.can_use_freemium ?? false) || freemiumRemaining > 0 || freemiumUsed > 0;
+  const freemiumLimit = 0;
+  const freemiumRemaining = 0;
+  const freemiumUsed = 0;
+  const freemiumProgress = 0;
+  const freemiumResetAt = null;
+  const freemiumExpiresAt = null;
+  const hasFreemium = false;
   const hasPaidSubscription = !!user.subscription_type && user.subscription_type !== 'none';
+  const trialCredits = 10;
   const subscriptionLabel = hasPaidSubscription
     ? user.subscription_type
-    : hasFreemium
-      ? 'Freemium'
-      : 'Не активна';
+    : 'Не активна';
 
   // Получение статуса подписки
   const getSubscriptionStatus = () => {
@@ -161,10 +160,7 @@ export const ProfilePage: React.FC = () => {
     );
   };
 
-  const isTrialUser =
-    (hasFreemium || !user.subscription_type || user.subscription_type === 'none') &&
-    user.created_at &&
-    Date.now() - new Date(user.created_at).getTime() < 7 * 24 * 60 * 60 * 1000;
+  const isTrialUser = !!user.free_trial_granted;
 
   // Модальное окно с PaymentWizard
   if (showPaymentWizard) {
@@ -240,15 +236,14 @@ export const ProfilePage: React.FC = () => {
                   ⭐
                 </div>
                 <div className="flex-1">
-                  <div className="text-sm text-primary-900 font-semibold">Пробный доступ активен</div>
+                  <div className="text-sm text-primary-900 font-semibold">Приветственный бонус активен</div>
                   <div className="text-xs text-gray-600">
-                    Вам начислено {freemiumLimit} приветственных кредитов. Списываем сначала бесплатные кредиты, затем платные.
-                    {freemiumExpiresAt ? ` Доступны до ${formatDate(freemiumExpiresAt.toISOString())}.` : ''}
+                    Вам начислено {trialCredits} приветственных кредитов при регистрации. Сначала тратятся бонусные кредиты, затем подписка или оплаченные пакеты.
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-lg font-bold text-primary-800">{freemiumRemaining}</div>
-                  <div className="text-xs text-gray-500">бесплатных осталось</div>
+                  <div className="text-lg font-bold text-primary-800">{user.balance_credits}</div>
+                  <div className="text-xs text-gray-500">Текущий баланс кредитов</div>
                 </div>
               </div>
             </Card>

@@ -24,6 +24,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const { user } = useAuthStore();
 
+  const hasActiveSubscription = !!(
+    user?.subscription_type &&
+    user.subscription_type !== 'none' &&
+    user.subscription_expires_at &&
+    new Date(user.subscription_expires_at) > new Date() &&
+    (user.subscription_ops_remaining ?? 0) > 0
+  );
+
   // Автоматическая подстройка высоты textarea
   React.useEffect(() => {
     if (textareaRef.current) {
@@ -112,14 +120,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               <Badge variant="neutral" size="sm">
                 💎 {user.balance_credits} кредитов
               </Badge>
-              {user.subscription_type && user.subscription_type !== 'none' && (
+              {hasActiveSubscription && (
                 <Badge variant="primary" size="sm" dot>
-                  {user.subscription_type}
-                </Badge>
-              )}
-              {user.freemium_actions_remaining && user.freemium_actions_remaining > 0 && (
-                <Badge variant="success" size="sm" dot>
-                  {user.freemium_actions_remaining} бесплатных
+                  Действия: {Math.max(user.subscription_ops_remaining || 0, 0)} / {user.subscription_ops_limit ?? 0}
                 </Badge>
               )}
             </div>

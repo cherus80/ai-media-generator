@@ -10,6 +10,7 @@ Endpoints:
 - POST /auth/logout - Выход (для будущего расширения)
 """
 
+import logging
 import secrets
 import time
 from collections import defaultdict, deque
@@ -23,6 +24,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies import CurrentUser, DBSession
 from app.core.config import settings
 from app.models.user import User, AuthProvider, UserRole
+from app.services.billing_v4 import BillingV5Service
 from app.schemas.auth_web import (
     RegisterRequest,
     LoginRequest,
@@ -102,10 +104,18 @@ def user_to_profile(user: User) -> UserProfile:
         last_name=user.last_name,
         balance_credits=user.balance_credits,
         subscription_type=user.subscription_type.value if user.subscription_type else None,
+        subscription_started_at=user.subscription_started_at,
         subscription_expires_at=user.subscription_end,
+        subscription_ops_limit=user.subscription_ops_limit,
+        subscription_ops_used=user.subscription_ops_used,
+        subscription_ops_remaining=user.actions_remaining,
+        subscription_ops_reset_at=user.subscription_ops_reset_at,
         freemium_actions_used=user.freemium_actions_used,
         freemium_reset_at=user.freemium_reset_at or datetime.utcnow(),
-        can_use_freemium=user.can_use_freemium,
+        freemium_actions_remaining=0,
+        freemium_actions_limit=0,
+        can_use_freemium=False,
+        free_trial_granted=user.free_trial_granted,
         is_blocked=user.is_banned,
         created_at=user.created_at,
         last_activity_at=user.updated_at,
@@ -193,7 +203,7 @@ async def register_with_email(
         first_name=request_body.first_name,
         last_name=request_body.last_name,
         username=request_body.email.split('@')[0],  # Временный username из email
-        balance_credits=settings.BILLING_FREE_TRIAL_CREDITS,
+        balance_credits=0,
         freemium_actions_used=0,
         freemium_reset_at=datetime.utcnow(),
         is_active=True,
@@ -208,11 +218,16 @@ async def register_with_email(
     await db.commit()
     await db.refresh(user)
 
-    # Гарантируем бонусные кредиты при регистрации (защита от отката)
-    if user.balance_credits < settings.BILLING_FREE_TRIAL_CREDITS:
-        user.balance_credits = settings.BILLING_FREE_TRIAL_CREDITS
-        await db.commit()
-        await db.refresh(user)
+    # Free trial +10 кредитов (однократно)
+    billing = BillingV5Service(db)
+    try:
+        await billing.grant_free_trial(
+            user,
+            meta={"reason": "email_signup"},
+        )
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.error("Failed to grant free trial on signup: %s", e)
 
     # Создаём JWT токен
     access_token = create_user_access_token(
@@ -458,7 +473,7 @@ async def login_with_google(
             first_name=first_name,
             last_name=last_name,
             username=email.split('@')[0],  # Временный username из email
-            balance_credits=settings.BILLING_FREE_TRIAL_CREDITS,
+            balance_credits=0,
             freemium_actions_used=0,
             freemium_reset_at=datetime.utcnow(),
             is_active=True,
@@ -473,10 +488,12 @@ async def login_with_google(
         await db.commit()
         await db.refresh(user)
 
-        if user.balance_credits < settings.BILLING_FREE_TRIAL_CREDITS:
-            user.balance_credits = settings.BILLING_FREE_TRIAL_CREDITS
-            await db.commit()
-            await db.refresh(user)
+        billing = BillingV5Service(db)
+        try:
+            await billing.grant_free_trial(user, meta={"reason": "google_oauth"})
+        except Exception as e:
+            logger = logging.getLogger(__name__)
+            logger.error("Failed to grant free trial (google): %s", e)
 
     # Проверка, что пользователь не забанен
     if user.is_banned:
@@ -668,7 +685,7 @@ async def login_with_vk_pkce(
             first_name=first_name,
             last_name=last_name,
             username=username,
-            balance_credits=settings.BILLING_FREE_TRIAL_CREDITS,
+            balance_credits=0,
             freemium_actions_used=0,
             freemium_reset_at=datetime.utcnow(),
             is_active=True,
@@ -682,10 +699,12 @@ async def login_with_vk_pkce(
         await db.commit()
         await db.refresh(user)
 
-        if user.balance_credits < settings.BILLING_FREE_TRIAL_CREDITS:
-            user.balance_credits = settings.BILLING_FREE_TRIAL_CREDITS
-            await db.commit()
-            await db.refresh(user)
+        billing = BillingV5Service(db)
+        try:
+            await billing.grant_free_trial(user, meta={"reason": "vk_oauth"})
+        except Exception as e:
+            logger = logging.getLogger(__name__)
+            logger.error("Failed to grant free trial (vk): %s", e)
 
     if user.is_banned:
         raise HTTPException(
@@ -827,7 +846,7 @@ async def login_with_vk(
             first_name=first_name,
             last_name=last_name,
             username=username,
-            balance_credits=settings.BILLING_FREE_TRIAL_CREDITS,
+            balance_credits=0,
             freemium_actions_used=0,
             freemium_reset_at=datetime.utcnow(),
             is_active=True,
@@ -842,11 +861,12 @@ async def login_with_vk(
         await db.commit()
         await db.refresh(user)
 
-        # Гарантируем бонус 100 кредитов
-        if user.balance_credits < settings.BILLING_FREE_TRIAL_CREDITS:
-            user.balance_credits = settings.BILLING_FREE_TRIAL_CREDITS
-            await db.commit()
-            await db.refresh(user)
+        billing = BillingV5Service(db)
+        try:
+            await billing.grant_free_trial(user, meta={"reason": "vk_oauth_pkce"})
+        except Exception as e:
+            logger = logging.getLogger(__name__)
+            logger.error("Failed to grant free trial (vk pkce): %s", e)
 
     # Проверка, что пользователь не забанен
     if user.is_banned:
