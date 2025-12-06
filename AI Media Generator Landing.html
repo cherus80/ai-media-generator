@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Media Generator - Виртуальная примерка</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8FAFC; /* Slate-50 */
+            color: #1e293b; /* Slate-800 */
+        }
+
+        /* Gradients */
+        .gradient-purple {
+            background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+        }
+        .gradient-blue {
+            background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+        }
+        .gradient-orange {
+            background: linear-gradient(135deg, #fb7185 0%, #f97316 100%);
+        }
+        .card-gradient-tryon {
+            background: linear-gradient(135deg, #7c5cf6 0%, #45a3ff 100%);
+        }
+        .card-gradient-edit {
+            background: linear-gradient(135deg, #ff7a7f 0%, #f59e0b 100%);
+        }
+        .text-gradient-purple {
+            background: linear-gradient(to right, #7c3aed, #db2777);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* App Specific Colors from Screenshot */
+        .app-blue { background-color: #0088CC; }
+        .app-blue:hover { background-color: #0077B5; }
+        .app-purple { background-color: #9F54FC; }
+        .app-purple:hover { background-color: #8B40E0; }
+        
+        .badge-green { background-color: #D1FAE5; color: #059669; }
+        .badge-yellow { background-color: #FEF3C7; color: #D97706; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        .hero-blob {
+            position: absolute;
+            filter: blur(80px);
+            z-index: 0;
+            opacity: 0.6;
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            purple: '#8b5cf6',
+                            blue: '#0ea5e9',
+                            orange: '#f97316',
+                            dark: '#0f172a',
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 10px 40px -10px rgba(0, 0, 0, 0.08)',
+                        'glow': '0 0 20px rgba(139, 92, 246, 0.3)',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="antialiased selection:bg-brand-purple selection:text-white">
+
+    <!-- Header -->
+    <header class="fixed w-full top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <!-- Logo -->
+                <div class="flex items-center gap-2">
+                    <div class="w-9 h-9 gradient-orange rounded-xl flex items-center justify-center shadow-md">
+                        <i class="fas fa-magic text-white text-sm"></i>
+                    </div>
+                    <span class="font-bold text-xl text-slate-800 tracking-tight">AI Media Generator</span>
+                </div>
+
+                <!-- Nav -->
+                <nav class="hidden md:flex space-x-8">
+                    <a href="#features" class="text-slate-600 hover:text-brand-purple font-medium transition-colors">Возможности</a>
+                    <a href="#how-it-works" class="text-slate-600 hover:text-brand-purple font-medium transition-colors">Как это работает</a>
+                    <a href="#pricing" class="text-slate-600 hover:text-brand-purple font-medium transition-colors">Тарифы</a>
+                    <a href="#faq" class="text-slate-600 hover:text-brand-purple font-medium transition-colors">FAQ</a>
+                </nav>
+
+                <!-- Auth Buttons -->
+                <div class="flex items-center gap-4">
+                    <button class="hidden md:block text-slate-600 hover:text-brand-purple font-medium transition-colors">Войти</button>
+                    <button class="gradient-purple text-white px-6 py-2.5 rounded-full font-semibold transition-all transform hover:scale-105 shadow-lg shadow-purple-500/20">
+                        Регистрация
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 1. HERO BLOCK -->
+    <section class="relative pt-32 pb-20 lg:pt-40 lg:pb-32 overflow-hidden">
+        <!-- Blobs -->
+        <div class="hero-blob bg-purple-200 w-96 h-96 rounded-full top-0 -left-20"></div>
+        <div class="hero-blob bg-blue-200 w-80 h-80 rounded-full bottom-0 right-0"></div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="grid lg:grid-cols-2 gap-16 items-center">
+                <!-- Text Content -->
+                <div>
+                    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-orange-50 border border-orange-100 text-orange-600 text-sm font-semibold mb-8 shadow-sm">
+                        <i class="fas fa-gift"></i>
+                        <span>Бонус при регистрации</span>
+                    </div>
+                    <h1 class="text-4xl lg:text-6xl font-extrabold leading-tight mb-6 text-slate-900">
+                        Виртуальная примерка и <span class="text-gradient-purple">AI-редактирование</span>
+                    </h1>
+                    <p class="text-xl text-slate-500 mb-6 leading-relaxed">
+                        Загружайте фото, примеряйте одежду, улучшайте изображения и создавайте идеальный визуал с помощью искусственного интеллекта.
+                    </p>
+                    <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-soft mb-8 flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center shrink-0">
+                             <i class="fas fa-check"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold text-slate-800">Специальный оффер</p>
+                            <p class="text-slate-500">Каждому новому пользователю — <span class="text-brand-purple font-bold">10 бесплатных кредитов</span> сразу после регистрации.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-4 mb-6">
+                        <button class="gradient-blue text-white text-lg px-8 py-4 rounded-full font-bold transition-all shadow-xl shadow-blue-400/20 text-center hover:shadow-blue-400/40">
+                            Попробовать бесплатно
+                        </button>
+                        <button class="bg-white border border-slate-200 text-slate-700 text-lg px-8 py-4 rounded-full font-bold transition-all flex items-center justify-center gap-2 hover:bg-slate-50 hover:border-slate-300">
+                            <i class="fas fa-play text-slate-400 text-xs"></i> Смотреть как работает
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Visual (Selection of Main Functions) -->
+                <div class="relative">
+                    <div class="bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden">
+                        <div class="p-6 sm:p-8 border-b border-slate-100 bg-slate-50">
+                            <h3 class="text-2xl font-bold text-slate-800 mb-2">Выберите функцию</h3>
+                            <p class="text-sm text-slate-500 leading-relaxed">
+                                Начните с загрузки вашего фото, а затем выберите одно из основных действий.
+                            </p>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 sm:p-8">
+                            <!-- Card 1: Virtual Try-On -->
+                            <div class="rounded-3xl border border-slate-100 shadow-soft overflow-hidden bg-white flex flex-col">
+                                <div class="card-gradient-tryon text-white px-6 sm:px-8 pt-6 pb-8 text-center">
+                                    <div class="mx-auto w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center mb-4 shadow-glow">
+                                        <i class="fas fa-shirt text-2xl"></i>
+                                    </div>
+                                    <h4 class="text-2xl font-bold mb-2">Примерка одежды</h4>
+                                    <p class="text-white/90 font-medium">Примерьте одежду и аксессуары на своё фото</p>
+                                </div>
+                                <div class="p-6 sm:p-8 flex flex-col gap-3">
+                                    <p class="text-slate-600">Загрузите своё фото и фото одежды, и наш AI создаст реалистичную примерку</p>
+                                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 text-slate-700 text-sm font-semibold self-start">
+                                        <i class="fas fa-coins text-brand-purple"></i>
+                                        <span>2 кредита за примерку</span>
+                                    </div>
+                                    <button class="gradient-blue text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-400/30 hover:shadow-blue-400/50 transition-all">
+                                        Начать
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Card 2: AI Editing -->
+                            <div class="rounded-3xl border border-slate-100 shadow-soft overflow-hidden bg-white flex flex-col">
+                                <div class="card-gradient-edit text-white px-6 sm:px-8 pt-6 pb-8 text-center">
+                                    <div class="mx-auto w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center mb-4 shadow-glow">
+                                        <i class="fas fa-palette text-2xl"></i>
+                                    </div>
+                                    <h4 class="text-2xl font-bold mb-2">Редактирование фото</h4>
+                                    <p class="text-white/90 font-medium">Редактируйте изображения с помощью AI-ассистента</p>
+                                </div>
+                                <div class="p-6 sm:p-8 flex flex-col gap-3">
+                                    <p class="text-slate-600">Общайтесь с AI и описывайте изменения естественным языком</p>
+                                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 text-slate-700 text-sm font-semibold self-start">
+                                        <i class="fas fa-bolt text-brand-orange"></i>
+                                        <span>1 кредит за запрос + 2 за генерацию</span>
+                                    </div>
+                                    <button class="gradient-orange text-white font-bold py-3 rounded-xl shadow-lg shadow-orange-400/30 hover:shadow-orange-400/50 transition-all">
+                                        Начать
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bottom Info Bar -->
+                        <div class="px-6 sm:px-8 pb-6">
+                            <div class="bg-slate-50 p-3 rounded-xl text-center border border-slate-100">
+                                <p class="text-xs text-slate-500 font-medium">
+                                    <i class="fas fa-info-circle text-brand-orange mr-1"></i>
+                                    Все действия списывают 1 действие по подписке или 2 кредита.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Decorative Background element to show depth -->
+                    <div class="absolute -z-10 top-10 -right-10 w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 rounded-3xl opacity-50 blur-3xl"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. ВОЗМОЖНОСТИ СЕРВИСА -->
+    <section id="features" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Card 1 -->
+                <div class="bg-slate-50 p-8 rounded-3xl hover:bg-white hover:shadow-soft transition-all duration-300 group border border-transparent hover:border-slate-100">
+                    <div class="w-14 h-14 gradient-blue rounded-2xl flex items-center justify-center mb-6 text-white shadow-lg shadow-blue-200 group-hover:scale-110 transition-transform">
+                        <i class="fas fa-tshirt text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-slate-800">Виртуальная примерка</h3>
+                    <p class="text-slate-500">Примеряйте одежду и аксессуары прямо на своём фото перед покупкой.</p>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="bg-slate-50 p-8 rounded-3xl hover:bg-white hover:shadow-soft transition-all duration-300 group border border-transparent hover:border-slate-100">
+                    <div class="w-14 h-14 gradient-purple rounded-2xl flex items-center justify-center mb-6 text-white shadow-lg shadow-purple-200 group-hover:scale-110 transition-transform">
+                        <i class="fas fa-comments text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-slate-800">AI-редактирование в чате</h3>
+                    <p class="text-slate-500">Улучшайте фото через диалог с умным ассистентом.</p>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="bg-slate-50 p-8 rounded-3xl hover:bg-white hover:shadow-soft transition-all duration-300 group border border-transparent hover:border-slate-100">
+                    <div class="w-14 h-14 bg-slate-800 rounded-2xl flex items-center justify-center mb-6 text-white shadow-lg group-hover:scale-110 transition-transform">
+                        <i class="fas fa-shoe-prints text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-slate-800">Мастер из 3 шагов</h3>
+                    <p class="text-slate-500">Загрузка → выбор действия → результат за несколько секунд.</p>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="bg-slate-50 p-8 rounded-3xl hover:bg-white hover:shadow-soft transition-all duration-300 group border border-transparent hover:border-slate-100">
+                    <div class="w-14 h-14 bg-orange-100 text-orange-500 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-orange-500 group-hover:text-white transition-colors">
+                        <i class="fas fa-wallet text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-slate-800">Гибкая система оплаты</h3>
+                    <p class="text-slate-500">Используйте действия по подписке или кредиты без ограничений.</p>
+                </div>
+
+                <!-- Card 5 -->
+                <div class="bg-slate-50 p-8 rounded-3xl hover:bg-white hover:shadow-soft transition-all duration-300 group border border-transparent hover:border-slate-100">
+                    <div class="w-14 h-14 bg-green-100 text-green-500 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-green-500 group-hover:text-white transition-colors">
+                        <i class="fas fa-bolt text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-slate-800">Бесплатный старт</h3>
+                    <p class="text-slate-500">10 кредитов бесплатно сразу после регистрации.</p>
+                </div>
+
+                <!-- Card 6 -->
+                <div class="bg-slate-50 p-8 rounded-3xl hover:bg-white hover:shadow-soft transition-all duration-300 group border border-transparent hover:border-slate-100">
+                    <div class="w-14 h-14 bg-slate-200 text-slate-600 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-slate-800 group-hover:text-white transition-colors">
+                        <i class="fas fa-shield-alt text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-slate-800">Безопасность данных</h3>
+                    <p class="text-slate-500">Фото хранятся временно и автоматически удаляются.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. КАК ЭТО РАБОТАЕТ -->
+    <section id="how-it-works" class="py-20 bg-slate-50 relative overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl md:text-4xl font-extrabold text-center mb-16 text-slate-900">Как это работает</h2>
+            
+            <div class="grid md:grid-cols-3 gap-8 relative z-10">
+                <!-- Step 1 -->
+                <div class="flex flex-col items-center text-center group">
+                    <div class="w-20 h-20 rounded-full bg-white border-4 border-slate-100 text-slate-900 text-2xl font-bold flex items-center justify-center mb-6 shadow-sm group-hover:border-brand-blue group-hover:text-brand-blue transition-colors">
+                        1
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 text-slate-800">Загрузите фотографию</h3>
+                    <p class="text-slate-500">Добавьте своё фото или изображение товара.</p>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="flex flex-col items-center text-center group">
+                    <div class="w-20 h-20 rounded-full bg-white border-4 border-slate-100 text-slate-900 text-2xl font-bold flex items-center justify-center mb-6 shadow-sm group-hover:border-brand-purple group-hover:text-brand-purple transition-colors">
+                        2
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 text-slate-800">Выберите действие</h3>
+                    <p class="text-slate-500">Виртуальная примерка или AI-редактирование.</p>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="flex flex-col items-center text-center group">
+                    <div class="w-20 h-20 rounded-full bg-white border-4 border-slate-100 text-slate-900 text-2xl font-bold flex items-center justify-center mb-6 shadow-sm group-hover:border-brand-orange group-hover:text-brand-orange transition-colors">
+                        3
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 text-slate-800">Получите результат</h3>
+                    <p class="text-slate-500">Скачайте готовое изображение и используйте его дальше.</p>
+                </div>
+                
+                <!-- Connector Line (Desktop) -->
+                <div class="hidden md:block absolute top-10 left-[16%] right-[16%] h-1 bg-slate-200 -z-10 rounded-full"></div>
+            </div>
+
+            <!-- Info Plate -->
+            <div class="mt-16 bg-white rounded-2xl p-8 shadow-soft max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8 border border-slate-100">
+                <div class="flex items-start gap-4">
+                    <div class="w-10 h-10 rounded-full bg-blue-50 text-brand-blue flex items-center justify-center shrink-0">
+                        <i class="fas fa-info text-lg"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-slate-800 mb-2 text-lg">Стоимость операций:</div>
+                        <ul class="text-slate-500 space-y-2">
+                            <li class="flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-slate-300"></div> 1 генерация = 1 действие по подписке</li>
+                            <li class="flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-slate-300"></div> или 2 кредита без подписки</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="h-px w-full md:w-px md:h-16 bg-slate-100"></div>
+                <div class="flex items-start gap-4">
+                     <div class="w-10 h-10 rounded-full bg-purple-50 text-brand-purple flex items-center justify-center shrink-0">
+                        <i class="fas fa-robot text-lg"></i>
+                    </div>
+                    <div>
+                        <span class="block font-bold text-slate-800 mb-2 text-lg">AI-ассистент:</span>
+                        <span class="text-slate-500">1 кредит = 1 обращение</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. ТАРИФЫ И ДЕЙСТВИЯ (Subscriptions) -->
+    <section id="pricing" class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-extrabold mb-4 text-slate-900">Выберите подписку</h2>
+                <p class="text-slate-500 text-lg max-w-2xl mx-auto">Подписка даёт вам действия для генераций каждый месяц.</p>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                <!-- Basic -->
+                <div class="bg-white rounded-3xl p-8 border border-slate-200 shadow-soft flex flex-col hover:-translate-y-2 transition-transform duration-300">
+                    <div class="mb-4">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-100 px-3 py-1 rounded-full">Basic</span>
+                    </div>
+                    <div class="flex items-baseline mb-6">
+                        <span class="text-4xl font-extrabold text-slate-900">299 ₽</span>
+                        <span class="text-slate-400 ml-2 font-medium">/ месяц</span>
+                    </div>
+                    <div class="mb-8 p-4 bg-slate-50 rounded-2xl">
+                        <div class="text-4xl font-bold text-slate-800 mb-1">80</div>
+                        <div class="text-xs text-slate-400 uppercase font-bold tracking-wider">действий</div>
+                    </div>
+                    <p class="text-slate-500 mb-8 flex-grow">Подходит для первых тестов и личного использования.</p>
+                    <button class="w-full py-3.5 rounded-xl border-2 border-slate-200 text-slate-700 hover:border-brand-blue hover:text-brand-blue transition-all font-bold">
+                        Выбрать
+                    </button>
+                </div>
+
+                <!-- Standard -->
+                <div class="bg-white rounded-3xl p-8 border-2 border-brand-blue shadow-xl shadow-blue-100 relative flex flex-col transform md:-translate-y-4">
+                    <div class="absolute top-0 right-0 gradient-blue text-white text-xs font-bold px-4 py-1.5 rounded-bl-xl rounded-tr-lg uppercase shadow-md">Популярный</div>
+                    <div class="mb-4">
+                        <span class="text-xs font-bold text-brand-blue uppercase tracking-wider bg-blue-50 px-3 py-1 rounded-full">Standard</span>
+                    </div>
+                    <div class="flex items-baseline mb-6">
+                        <span class="text-5xl font-extrabold text-slate-900">499 ₽</span>
+                        <span class="text-slate-400 ml-2 font-medium">/ месяц</span>
+                    </div>
+                    <div class="mb-8 p-4 bg-blue-50 rounded-2xl border border-blue-100">
+                        <div class="text-4xl font-bold text-brand-blue mb-1">130</div>
+                        <div class="text-xs text-blue-400 uppercase font-bold tracking-wider">действий</div>
+                    </div>
+                    <p class="text-slate-600 mb-8 flex-grow">Для активных пользователей и продавцов.</p>
+                    <button class="w-full py-4 rounded-xl gradient-blue text-white hover:shadow-lg hover:shadow-blue-300 transition-all font-bold text-lg">
+                        Выбрать
+                    </button>
+                </div>
+
+                <!-- Premium -->
+                <div class="bg-white rounded-3xl p-8 border border-slate-200 shadow-soft flex flex-col hover:-translate-y-2 transition-transform duration-300">
+                    <div class="mb-4">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider bg-slate-100 px-3 py-1 rounded-full">Premium</span>
+                    </div>
+                    <div class="flex items-baseline mb-6">
+                        <span class="text-4xl font-extrabold text-slate-900">899 ₽</span>
+                        <span class="text-slate-400 ml-2 font-medium">/ месяц</span>
+                    </div>
+                    <div class="mb-8 p-4 bg-slate-50 rounded-2xl">
+                        <div class="text-4xl font-bold text-brand-purple mb-1">250</div>
+                        <div class="text-xs text-slate-400 uppercase font-bold tracking-wider">действий</div>
+                    </div>
+                    <p class="text-slate-500 mb-8 flex-grow">Для бизнеса, студий и агентств.</p>
+                    <button class="w-full py-3.5 rounded-xl border-2 border-slate-200 text-slate-700 hover:border-brand-purple hover:text-brand-purple transition-all font-bold">
+                        Выбрать
+                    </button>
+                </div>
+            </div>
+
+            <div class="mt-12 text-center">
+                <p class="text-sm text-slate-500 bg-slate-50 inline-block px-6 py-3 rounded-full border border-slate-200">
+                    <i class="fas fa-exclamation-circle text-orange-500 mr-2"></i>
+                    Действия списываются в первую очередь. Когда они заканчиваются — используются кредиты.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. ПАКЕТЫ КРЕДИТОВ -->
+    <section class="py-20 bg-slate-50 border-t border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
+                <div>
+                    <h2 class="text-3xl font-bold mb-2 text-slate-900">Пакеты кредитов</h2>
+                    <p class="text-slate-500">Для максимальной гибкости. Работают без подписки.</p>
+                </div>
+                <div class="text-sm text-slate-500 text-right bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm">
+                    Кредиты используются для генераций без подписки<br>и для AI-ассистента.
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <!-- Small -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm hover:shadow-md transition-all border border-slate-100 hover:border-brand-orange/30 cursor-pointer group">
+                    <h4 class="text-slate-800 font-bold text-lg mb-3">Small</h4>
+                    <div class="flex items-center gap-2 mb-2">
+                         <div class="w-10 h-10 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center font-bold">20</div>
+                         <span class="text-xs text-slate-400 uppercase font-bold">кредитов</span>
+                    </div>
+                    <div class="text-slate-600 font-bold text-xl group-hover:text-brand-orange transition-colors">100 ₽</div>
+                </div>
+                <!-- Medium -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm hover:shadow-md transition-all border border-slate-100 hover:border-brand-orange/30 cursor-pointer group">
+                    <h4 class="text-slate-800 font-bold text-lg mb-3">Medium</h4>
+                     <div class="flex items-center gap-2 mb-2">
+                         <div class="w-10 h-10 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center font-bold">50</div>
+                         <span class="text-xs text-slate-400 uppercase font-bold">кредитов</span>
+                    </div>
+                    <div class="text-slate-600 font-bold text-xl group-hover:text-brand-orange transition-colors">230 ₽</div>
+                </div>
+                <!-- Large -->
+                <div class="bg-white p-6 rounded-2xl shadow-lg border-2 border-brand-orange cursor-pointer relative overflow-hidden transform hover:-translate-y-1 transition-all">
+                    <div class="absolute top-0 right-0 bg-brand-orange px-3 py-1 text-[10px] text-white font-bold rounded-bl-lg">ХИТ</div>
+                    <h4 class="font-bold text-lg mb-3 text-slate-900">Large</h4>
+                    <div class="flex items-center gap-2 mb-2">
+                         <div class="w-10 h-10 rounded-full gradient-orange text-white flex items-center justify-center font-bold shadow-md">100</div>
+                         <span class="text-xs text-slate-400 uppercase font-bold">кредитов</span>
+                    </div>
+                    <div class="text-brand-orange font-bold text-xl">400 ₽</div>
+                </div>
+                <!-- Pro -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm hover:shadow-md transition-all border border-slate-100 hover:border-brand-orange/30 cursor-pointer group">
+                    <h4 class="text-slate-800 font-bold text-lg mb-3">Pro</h4>
+                    <div class="flex items-center gap-2 mb-2">
+                         <div class="w-10 h-10 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center font-bold">250</div>
+                         <span class="text-xs text-slate-400 uppercase font-bold">кредитов</span>
+                    </div>
+                    <div class="text-slate-600 font-bold text-xl group-hover:text-brand-orange transition-colors">900 ₽</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 6. AI-АССИСТЕНТ -->
+    <section class="py-24 bg-white overflow-hidden relative">
+        <div class="absolute right-0 top-0 w-1/3 h-full bg-purple-50 skew-x-12 opacity-50"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="flex flex-col md:flex-row items-center gap-16">
+                <div class="md:w-1/2">
+                    <div class="inline-block p-4 rounded-2xl bg-purple-100 text-brand-purple mb-8">
+                        <i class="fas fa-magic text-3xl"></i>
+                    </div>
+                    <h2 class="text-3xl md:text-5xl font-extrabold mb-8 text-slate-900 leading-tight">Умный AI-ассистент для идеальных результатов</h2>
+                    <p class="text-slate-500 text-lg mb-8 leading-relaxed">
+                        Ассистент помогает формировать точные промпты, улучшать качество генераций и получать более реалистичные изображения.
+                    </p>
+                    <div class="bg-white shadow-soft rounded-xl p-6 inline-flex flex-col border border-slate-100">
+                        <span class="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Стоимость использования</span>
+                        <div class="text-slate-800 font-bold text-2xl flex items-center gap-2">
+                            1 кредит <span class="text-sm font-normal text-slate-400">= 1 обращение</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Visual for Assistant -->
+                <div class="md:w-1/2 w-full">
+                    <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden">
+                        <!-- Top bar -->
+                        <div class="flex items-center justify-between px-6 py-4 bg-slate-50 border-b border-slate-100">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 gradient-orange rounded-2xl flex items-center justify-center text-white shadow-glow">
+                                    <i class="fas fa-wand-magic-sparkles"></i>
+                                </div>
+                                <div>
+                                    <p class="font-bold text-slate-900 text-lg leading-tight">AI Редактор</p>
+                                    <p class="text-xs text-slate-400">Ассистент для фото</p>
+                                </div>
+                            </div>
+                            <div class="px-4 py-2 bg-white rounded-xl shadow-soft border border-slate-100 text-right">
+                                <div class="text-lg font-extrabold text-slate-900 leading-none">106</div>
+                                <div class="text-[11px] uppercase text-slate-400 tracking-wide leading-none">кредитов</div>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-50 px-4 sm:px-6 py-6 flex flex-col gap-4">
+                            <!-- User bubble -->
+                            <div class="flex justify-end">
+                                <div class="max-w-[75%] bg-gradient-to-r from-[#7c3aed] to-[#0ea5e9] text-white px-4 py-3 rounded-2xl rounded-br-sm shadow-glow text-sm">
+                                    Замени цвет платья на красный
+                                    <div class="text-[11px] text-white/70 mt-1 text-right">20:37</div>
+                                </div>
+                            </div>
+
+                            <!-- Assistant compact suggestion -->
+                            <div class="bg-white border border-slate-100 rounded-2xl shadow-soft p-4 sm:p-5 space-y-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full gradient-purple flex items-center justify-center text-white shadow-glow shrink-0">
+                                        <i class="fas fa-wand-magic-sparkles text-sm"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs font-bold text-brand-purple uppercase">AI Assistant</p>
+                                        <p class="text-[11px] text-slate-400">13:37</p>
+                                    </div>
+                                </div>
+                                <p class="text-slate-700 text-sm leading-relaxed">
+                                    Вот улучшенный промпт: <span class="font-semibold">“Преобразуй цвет платья, заменив текущий оттенок на яркий красный с сохранением текстуры ткани.”</span>
+                                </p>
+                                <div class="flex flex-wrap gap-2">
+                                    <span class="px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold">Короткий</span>
+                                    <span class="px-3 py-1 rounded-full bg-purple-50 text-brand-purple text-xs font-semibold">Средний</span>
+                                    <span class="px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold">Детальный</span>
+                                </div>
+                                <button class="w-full gradient-blue text-white font-bold py-3 rounded-xl shadow-glow hover:shadow-blue-400/50 transition">Генерировать изображение</button>
+                                <div class="flex items-center gap-2 text-xs text-slate-500">
+                                    <i class="fas fa-circle-info text-brand-purple"></i>
+                                    <span>AI-ассистент −1 кр, генерация изображения −2 кр.</span>
+                                </div>
+                            </div>
+
+                            <!-- Input area -->
+                            <div class="bg-white border border-slate-200 rounded-2xl shadow-inner p-3 sm:p-4 flex items-center gap-3">
+                                <input class="flex-1 bg-transparent outline-none text-sm text-slate-600 placeholder-slate-400" placeholder="Опишите, как хотите изменить изображение..." />
+                                <button class="px-4 py-2 rounded-full gradient-blue text-white font-semibold text-sm shadow-glow flex items-center gap-2">
+                                    <i class="fas fa-paper-plane text-xs"></i>
+                                    <span>Отправить</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 7. БЕЗОПАСНОСТЬ -->
+    <section class="py-20 bg-slate-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl font-bold mb-16 text-slate-900">Безопасность и надёжность</h2>
+            <div class="grid md:grid-cols-4 gap-8">
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 hover:shadow-soft transition-all">
+                    <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6 text-brand-blue">
+                         <i class="fas fa-history text-2xl"></i>
+                    </div>
+                    <p class="font-bold text-slate-700">Временное хранение файлов</p>
+                </div>
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 hover:shadow-soft transition-all">
+                     <div class="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 text-red-500">
+                        <i class="fas fa-trash-alt text-2xl"></i>
+                    </div>
+                    <p class="font-bold text-slate-700">Автоматическое удаление</p>
+                </div>
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 hover:shadow-soft transition-all">
+                     <div class="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6 text-green-500">
+                        <i class="fas fa-lock text-2xl"></i>
+                    </div>
+                    <p class="font-bold text-slate-700">Платежи через ЮKassa</p>
+                </div>
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 hover:shadow-soft transition-all">
+                     <div class="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-6 text-brand-purple">
+                        <i class="fas fa-user-shield text-2xl"></i>
+                    </div>
+                    <p class="font-bold text-slate-700">Защита персональных данных</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 8. ОТЗЫВЫ -->
+    <section class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-center mb-16 text-slate-900">Отзывы пользователей</h2>
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- 1 -->
+                <div class="bg-slate-50 p-8 rounded-3xl border border-slate-100 relative">
+                    <div class="absolute top-8 right-8 text-slate-200 text-6xl font-serif">"</div>
+                    <div class="flex items-center gap-1 text-yellow-400 text-xs mb-6">
+                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                    </div>
+                    <p class="text-slate-600 mb-8 leading-relaxed relative z-10 font-medium">Примерка помогла выбрать куртку перед покупкой — результат совпал почти идеально.</p>
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full gradient-blue flex items-center justify-center font-bold text-white shadow-md">А</div>
+                        <div>
+                            <div class="font-bold text-slate-900">Анна</div>
+                            <div class="text-sm text-slate-400">Москва</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- 2 -->
+                <div class="bg-slate-50 p-8 rounded-3xl border border-slate-100 relative">
+                     <div class="absolute top-8 right-8 text-slate-200 text-6xl font-serif">"</div>
+                    <div class="flex items-center gap-1 text-yellow-400 text-xs mb-6">
+                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                    </div>
+                    <p class="text-slate-600 mb-8 leading-relaxed relative z-10 font-medium">Очень удобно для карточек товаров на маркетплейсах.</p>
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full gradient-purple flex items-center justify-center font-bold text-white shadow-md">Д</div>
+                        <div>
+                            <div class="font-bold text-slate-900">Дмитрий</div>
+                            <div class="text-sm text-slate-400">Санкт-Петербург</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- 3 -->
+                <div class="bg-slate-50 p-8 rounded-3xl border border-slate-100 relative">
+                     <div class="absolute top-8 right-8 text-slate-200 text-6xl font-serif">"</div>
+                    <div class="flex items-center gap-1 text-yellow-400 text-xs mb-6">
+                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                    </div>
+                    <p class="text-slate-600 mb-8 leading-relaxed relative z-10 font-medium">Экономит часы работы на обработке фото.</p>
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full gradient-orange flex items-center justify-center font-bold text-white shadow-md">Е</div>
+                        <div>
+                            <div class="font-bold text-slate-900">Елена</div>
+                            <div class="text-sm text-slate-400">Новосибирск</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 9. FAQ -->
+    <section id="faq" class="py-20 bg-slate-50">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl font-bold text-center mb-12 text-slate-900">Частые вопросы</h2>
+            
+            <div class="space-y-4">
+                <!-- Item -->
+                <div class="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="p-6">
+                        <h4 class="font-bold text-slate-800 text-lg mb-2 flex items-center gap-3">
+                            <i class="far fa-question-circle text-brand-blue"></i>
+                            Что такое действия?
+                        </h4>
+                        <p class="text-slate-500 pl-8">Действия — это количество генераций по подписке.</p>
+                    </div>
+                </div>
+                <!-- Item -->
+                <div class="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="p-6">
+                        <h4 class="font-bold text-slate-800 text-lg mb-2 flex items-center gap-3">
+                            <i class="far fa-question-circle text-brand-blue"></i>
+                            Что такое кредиты?
+                        </h4>
+                        <p class="text-slate-500 pl-8">Кредиты — это внутренняя валюта для генераций и AI-ассистента.</p>
+                    </div>
+                </div>
+                <!-- Item -->
+                <div class="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="p-6">
+                        <h4 class="font-bold text-slate-800 text-lg mb-2 flex items-center gap-3">
+                            <i class="fas fa-coins text-brand-blue"></i>
+                            Сколько стоит одна генерация?
+                        </h4>
+                        <p class="text-slate-500 pl-8">1 действие по подписке или 2 кредита без подписки.</p>
+                    </div>
+                </div>
+                <!-- Item -->
+                <div class="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                     <div class="p-6">
+                        <h4 class="font-bold text-slate-800 text-lg mb-2 flex items-center gap-3">
+                            <i class="fas fa-robot text-brand-blue"></i>
+                            Сколько стоит AI-ассистент?
+                        </h4>
+                        <p class="text-slate-500 pl-8">1 кредит за одно обращение.</p>
+                    </div>
+                </div>
+                <!-- Item -->
+                <div class="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="p-6">
+                        <h4 class="font-bold text-slate-800 text-lg mb-2 flex items-center gap-3">
+                            <i class="fas fa-gift text-brand-blue"></i>
+                            Что выдаётся бесплатно?
+                        </h4>
+                        <p class="text-slate-500 pl-8">10 кредитов при регистрации.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 10. FOOTER -->
+    <footer class="bg-white border-t border-slate-200 pt-16 pb-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-3 gap-12 mb-12">
+                <!-- Col 1 -->
+                <div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 gradient-orange rounded-lg flex items-center justify-center shadow-sm">
+                            <i class="fas fa-magic text-white text-xs"></i>
+                        </div>
+                        <span class="font-bold text-lg text-slate-800">AI Media Generator</span>
+                    </div>
+                    <p class="text-slate-500 text-sm">Виртуальная примерка и AI-редактирование изображений.</p>
+                </div>
+
+                <!-- Col 2 -->
+                <div>
+                    <h5 class="text-slate-900 font-bold mb-4">Ссылки</h5>
+                    <ul class="space-y-2 text-sm text-slate-500">
+                        <li><a href="#pricing" class="hover:text-brand-blue transition-colors">Тарифы</a></li>
+                        <li><a href="#" class="hover:text-brand-blue transition-colors">Контакты</a></li>
+                        <li><a href="#" class="hover:text-brand-blue transition-colors">Оферта</a></li>
+                        <li><a href="#" class="hover:text-brand-blue transition-colors">Политика</a></li>
+                    </ul>
+                </div>
+
+                <!-- Col 3 -->
+                <div>
+                    <h5 class="text-slate-900 font-bold mb-4">Контакты</h5>
+                    <ul class="space-y-2 text-sm text-slate-500">
+                        <li class="flex items-center gap-2"><i class="far fa-envelope text-brand-orange w-4"></i> ai-generator@mix4.ru</li>
+                        <li class="flex items-center gap-2"><i class="fas fa-phone text-brand-orange w-4"></i> +7 913 220-69-67</li>
+                        <li class="flex items-center gap-2"><i class="far fa-file-alt text-brand-orange w-4"></i> ИНН 222312090918</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="border-t border-slate-100 pt-8 text-center text-xs text-slate-400">
+                &copy; 2024 AI Media Generator. Все права защищены.
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>

@@ -4,7 +4,7 @@ services:
   # PostgreSQL база данных
   postgres:
     image: postgres:15-alpine
-    container_name: ai_image_bot_postgres_prod
+    container_name: ai_image_generator_postgres_prod
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
@@ -31,7 +31,7 @@ services:
   # Redis для Celery
   redis:
     image: redis:7-alpine
-    container_name: ai_image_bot_redis_prod
+    container_name: ai_image_generator_redis_prod
     restart: always
     ports:
       - "127.0.0.1:6379:6379"  # Только localhost для безопасности
@@ -55,7 +55,7 @@ services:
       dockerfile: Dockerfile
       args:
         - ENVIRONMENT=production
-    container_name: ai_image_bot_backend_prod
+    container_name: ai_image_generator_backend_prod
     restart: always
     env_file:
       - .env
@@ -97,7 +97,7 @@ services:
       dockerfile: Dockerfile
       args:
         - ENVIRONMENT=production
-    container_name: ai_image_bot_celery_worker_prod
+    container_name: ai_image_generator_celery_worker_prod
     restart: always
     env_file:
       - .env
@@ -135,7 +135,7 @@ services:
       dockerfile: Dockerfile
       args:
         - ENVIRONMENT=production
-    container_name: ai_image_bot_celery_beat_prod
+    container_name: ai_image_generator_celery_beat_prod
     restart: always
     env_file:
       - .env
@@ -170,7 +170,7 @@ services:
         - VITE_VK_REDIRECT_URI=${VITE_VK_REDIRECT_URI}
         - VITE_VK_AUTH_URL=${VITE_VK_AUTH_URL:-https://id.vk.com/authorize}
         - VITE_ENV=production
-    container_name: ai_image_bot_frontend_prod
+    container_name: ai_image_generator_frontend_prod
     restart: always
     ports:
       - "127.0.0.1:3000:80"  # Только localhost (nginx будет проксировать)
@@ -192,7 +192,7 @@ services:
   # Caddy reverse proxy с автоматическим SSL
   caddy:
     image: caddy:2-alpine
-    container_name: ai_image_bot_caddy
+    container_name: ai_image_generator_caddy
     restart: always
     depends_on:
       - backend
