@@ -18,6 +18,7 @@ interface LayoutProps {
   title: string;
   subtitle?: string;
   icon?: React.ReactNode;
+  onBack?: () => void;
   showBalance?: boolean;
   showBackButton?: boolean;
   backTo?: string; // Optional custom back path
@@ -29,6 +30,7 @@ export const Layout: React.FC<LayoutProps> = ({
   title,
   subtitle,
   icon,
+  onBack,
   showBalance = true,
   showBackButton = true,
   backTo,
@@ -61,6 +63,10 @@ export const Layout: React.FC<LayoutProps> = ({
   }, [location.pathname]);
 
   const handleBack = () => {
+    if (onBack) {
+      onBack();
+      return;
+    }
     if (backTo) {
       navigate(backTo);
     } else {

@@ -20,7 +20,7 @@ import toast from 'react-hot-toast';
 
 export const ProfilePage: React.FC = () => {
   const { user, refreshProfile } = useAuthStore();
-  const { paymentHistory, loadPaymentHistory, isLoading } = usePayment();
+  const { paymentHistory, loadPaymentHistory, isLoading, reset: resetPayments } = usePayment();
   const [showPaymentWizard, setShowPaymentWizard] = useState(false);
   const [paymentReturnMessage, setPaymentReturnMessage] = useState<string | null>(null);
   const [referralStats, setReferralStats] = useState<ReferralStatsResponse | null>(null);
@@ -168,6 +168,10 @@ export const ProfilePage: React.FC = () => {
           title="Покупка кредитов"
           subtitle="Выберите подходящий тариф"
           backTo="/profile"
+          onBack={() => {
+            resetPayments();
+            setShowPaymentWizard(false);
+          }}
           showBackButton={true}
           icon={
             <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

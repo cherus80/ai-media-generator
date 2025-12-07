@@ -91,6 +91,7 @@ def _build_subscription_tariffs() -> dict:
     for tariff_id, data in config.items():
         actions = data.get("ops_limit") or data.get("actions_limit") or data.get("credits_amount") or data.get("credits") or 0
         price = Decimal(str(data.get("price", 0)))
+        is_alias = tariff_id == "pro"  # legacy alias, не показываем в списках тарифов
         tariffs[tariff_id] = {
             "name": data.get("name") or tariff_id.capitalize(),
             "price": price,
@@ -98,7 +99,8 @@ def _build_subscription_tariffs() -> dict:
             "actions_limit": actions,
             "duration_days": data.get("duration_days", 30),
             "description": data.get("description") or f"{actions} действий на {data.get('duration_days', 30)} дней",
-            "is_popular": data.get("is_popular", False),
+            "is_popular": data.get("is_popular", False) or tariff_id == "standard",
+            "is_alias": is_alias,
         }
     return tariffs
 
@@ -376,8 +378,14 @@ def get_all_tariffs() -> dict:
     Returns:
         dict: Словарь с подписками и пакетами кредитов
     """
+    subscriptions_for_public = {
+        key: value
+        for key, value in SUBSCRIPTION_TARIFFS.items()
+        if not value.get("is_alias")
+    }
+
     return {
-        "subscriptions": SUBSCRIPTION_TARIFFS,
+        "subscriptions": subscriptions_for_public,
         "credits_packages": CREDITS_PACKAGES,
     }
 
