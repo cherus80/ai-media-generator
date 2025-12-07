@@ -45,7 +45,7 @@ export function VKSignInButton({ onSuccess, onError }: VKSignInButtonProps) {
       type="button"
       onClick={handleClick}
       disabled={isLoading || !appId}
-      className="w-full h-14 inline-flex items-center justify-center gap-2 px-4 rounded-xl border border-slate-200 shadow-sm bg-white hover:bg-slate-50 text-sm font-semibold text-slate-800 disabled:opacity-60 disabled:cursor-not-allowed transition"
+      className="w-full h-12 inline-flex items-center justify-center gap-2 px-4 rounded-lg border border-slate-200 shadow-sm bg-white hover:bg-slate-50 text-sm font-semibold text-slate-800 disabled:opacity-60 disabled:cursor-not-allowed transition"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"

@@ -85,23 +85,17 @@ export function LoginPage() {
         <div className="space-y-6">
           {/* OAuth Buttons */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="w-full">
-              <div className="w-full h-14 rounded-xl border border-slate-200 bg-white shadow-sm flex items-center justify-center px-2">
-                <GoogleSignInButton
-                  onSuccess={handleGoogleSuccess}
-                  onError={(err) => console.error(err)}
-                  text="signin_with"
-                  size="large"
-                  width={260}
-                />
-              </div>
-            </div>
-            <div className="w-full">
-              <VKSignInButton
-                onSuccess={handleVKSuccess}
-                onError={(err) => console.error(err)}
-              />
-            </div>
+            <GoogleSignInButton
+              onSuccess={handleGoogleSuccess}
+              onError={(err) => console.error(err)}
+              text="signin_with"
+              size="large"
+              className="w-full h-12 rounded-lg border border-slate-200 bg-white shadow-sm flex items-center justify-center px-2"
+            />
+            <VKSignInButton
+              onSuccess={handleVKSuccess}
+              onError={(err) => console.error(err)}
+            />
           </div>
 
           {/* Divider */}

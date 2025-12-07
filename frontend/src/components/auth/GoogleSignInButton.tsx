@@ -15,6 +15,7 @@ interface GoogleSignInButtonProps {
   theme?: 'outline' | 'filled_blue' | 'filled_black';
   size?: 'large' | 'medium' | 'small';
   width?: number;
+  className?: string;
 }
 
 export function GoogleSignInButton({
@@ -24,6 +25,7 @@ export function GoogleSignInButton({
   theme = 'outline',
   size = 'large',
   width,
+  className,
 }: GoogleSignInButtonProps) {
   const buttonRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -66,11 +68,16 @@ export function GoogleSignInButton({
             logo_alignment: 'left',
           };
 
-          if (width) {
-            config.width = width;
-          }
+          config.width = width ?? 280;
 
           window.google.accounts.id.renderButton(buttonRef.current, config);
+
+          // Растянуть кнопку на всю ширину/высоту контейнера
+          const renderedButton = buttonRef.current.querySelector('div[role="button"]') as HTMLDivElement | null;
+          if (renderedButton) {
+            renderedButton.style.width = '100%';
+            renderedButton.style.height = '100%';
+          }
         }
         return true;
       } catch (error) {
@@ -141,7 +148,7 @@ export function GoogleSignInButton({
   }
 
   return (
-    <div className="relative">
+    <div className={`relative ${className || ''}`}>
       {/* Здесь будет отрисована кнопка Google */}
       <div ref={buttonRef} className={isLoading ? 'opacity-50 pointer-events-none' : ''} />
 

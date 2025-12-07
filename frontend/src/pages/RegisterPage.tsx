@@ -149,16 +149,14 @@ export function RegisterPage() {
 
         <div className="mt-8 space-y-6">
           {/* OAuth Buttons */}
-          <div className="space-y-3">
-            {/* Google Sign-In */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <GoogleSignInButton
               onSuccess={handleGoogleSuccess}
               onError={(err) => console.error(err)}
               text="signup_with"
               size="large"
+              className="w-full h-12 rounded-lg border border-slate-200 bg-white shadow-sm flex items-center justify-center px-2"
             />
-
-            {/* VK Sign-In */}
             <VKSignInButton
               onSuccess={handleVKSuccess}
               onError={(err) => console.error(err)}

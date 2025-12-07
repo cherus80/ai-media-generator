@@ -29,7 +29,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies import AdminUser, SuperAdminUser, DBSession, get_current_admin
 from app.core.config import settings
 from app.db.session import get_db
-from app.models import ChatHistory, Generation, Payment, Referral, User
+from app.models import ChatHistory, Generation, Payment, Referral, User, SubscriptionType
 from app.schemas.admin import (
     AddCreditsRequest,
     AddCreditsResponse,
@@ -267,7 +267,7 @@ async def get_dashboard_stats(
     active_subscriptions_basic = await db.scalar(
         select(func.count(User.id)).where(
             and_(
-                User.subscription_type == "basic",
+                User.subscription_type == SubscriptionType.BASIC,
                 User.subscription_end > now
             )
         )
@@ -275,7 +275,7 @@ async def get_dashboard_stats(
     active_subscriptions_pro = await db.scalar(
         select(func.count(User.id)).where(
             and_(
-                User.subscription_type.in_(["pro", "standard"]),
+                User.subscription_type.in_([SubscriptionType.PRO, SubscriptionType.STANDARD]),
                 User.subscription_end > now
             )
         )
@@ -283,7 +283,7 @@ async def get_dashboard_stats(
     active_subscriptions_premium = await db.scalar(
         select(func.count(User.id)).where(
             and_(
-                User.subscription_type == "premium",
+                User.subscription_type == SubscriptionType.PREMIUM,
                 User.subscription_end > now
             )
         )
