@@ -21,6 +21,8 @@ export function RegisterPage() {
   const [formErrors, setFormErrors] = useState<any>({});
   const [showPassword, setShowPassword] = useState(false);
   const [referralCode, setReferralCode] = useState<string | null>(null);
+  const oauthButtonClass =
+    'rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden';
 
   const passwordStrength = checkPasswordStrength(formData.password);
 
@@ -155,11 +157,12 @@ export function RegisterPage() {
               onError={(err) => console.error(err)}
               text="signup_with"
               size="large"
-              className="w-full h-12 rounded-lg border border-slate-200 bg-white shadow-sm flex items-center justify-center px-2"
+              className={oauthButtonClass}
             />
             <VKSignInButton
               onSuccess={handleVKSuccess}
               onError={(err) => console.error(err)}
+              className={oauthButtonClass}
             />
           </div>
 

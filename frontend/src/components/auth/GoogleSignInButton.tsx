@@ -59,6 +59,12 @@ export function GoogleSignInButton({
 
         // Отрисовка кнопки
         if (buttonRef.current) {
+          // Гарантируем одинаковую геометрию с VK кнопкой
+          buttonRef.current.style.height = '48px';
+          buttonRef.current.style.minHeight = '48px';
+          buttonRef.current.style.maxHeight = '48px';
+          buttonRef.current.style.width = '100%';
+
           const config: GoogleSignInButtonConfig = {
             type: 'standard',
             theme,
@@ -78,11 +84,14 @@ export function GoogleSignInButton({
           const renderedButton = buttonRef.current.querySelector('div[role="button"]') as HTMLDivElement | null;
           if (renderedButton) {
             renderedButton.style.width = '100%';
-            renderedButton.style.maxWidth = '320px';
+            renderedButton.style.maxWidth = '100%';
+            renderedButton.style.minHeight = '48px';
             renderedButton.style.height = '48px';
             renderedButton.style.borderRadius = '12px';
             renderedButton.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
             renderedButton.style.border = '1px solid rgb(226 232 240)';
+            renderedButton.style.display = 'flex';
+            renderedButton.style.alignItems = 'center';
           }
         }
         return true;
@@ -154,9 +163,14 @@ export function GoogleSignInButton({
   }
 
   return (
-    <div className={`relative ${className || ''}`}>
+    <div
+      className={`relative h-12 min-h-[48px] max-h-[48px] w-full ${className || ''}`}
+    >
       {/* Здесь будет отрисована кнопка Google */}
-      <div ref={buttonRef} className={isLoading ? 'opacity-50 pointer-events-none' : ''} />
+      <div
+        ref={buttonRef}
+        className={`h-full flex items-stretch justify-center ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}
+      />
 
       {/* Оверлей загрузки */}
       {isLoading && (

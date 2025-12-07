@@ -264,28 +264,33 @@ async def get_dashboard_stats(
     )
 
     # Подписки
-    active_subscriptions_basic = await db.scalar(
-        select(func.count(User.id)).where(
-            and_(
-                User.subscription_type == SubscriptionType.BASIC.value,
-                User.subscription_end > now
-            )
+    subscription_type_expr = sa.func.lower(sa.cast(User.subscription_type, sa.String))
+
+    async def _safe_subscription_count(condition):
+        try:
+            return await db.scalar(select(func.count(User.id)).where(condition)) or 0
+        except Exception as exc:
+            logger.exception("Failed to count subscriptions: %s", exc)
+            return 0
+
+    active_subscriptions_basic = await _safe_subscription_count(
+        and_(
+            subscription_type_expr == SubscriptionType.BASIC.value,
+            User.subscription_end > now,
         )
     )
-    active_subscriptions_pro = await db.scalar(
-        select(func.count(User.id)).where(
-            and_(
-                User.subscription_type.in_([SubscriptionType.PRO.value, SubscriptionType.STANDARD.value]),
-                User.subscription_end > now
-            )
+    active_subscriptions_pro = await _safe_subscription_count(
+        and_(
+            subscription_type_expr.in_(
+                [SubscriptionType.PRO.value, SubscriptionType.STANDARD.value]
+            ),
+            User.subscription_end > now,
         )
     )
-    active_subscriptions_premium = await db.scalar(
-        select(func.count(User.id)).where(
-            and_(
-                User.subscription_type == SubscriptionType.PREMIUM.value,
-                User.subscription_end > now
-            )
+    active_subscriptions_premium = await _safe_subscription_count(
+        and_(
+            subscription_type_expr == SubscriptionType.PREMIUM.value,
+            User.subscription_end > now,
         )
     )
 

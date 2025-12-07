@@ -10,9 +10,10 @@ import { startVKPKCEAuth } from '../../utils/pkce';
 interface VKSignInButtonProps {
   onSuccess?: () => void;
   onError?: (error: string) => void;
+  className?: string;
 }
 
-export function VKSignInButton({ onSuccess, onError }: VKSignInButtonProps) {
+export function VKSignInButton({ onSuccess, onError, className }: VKSignInButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const appId = import.meta.env.VITE_VK_APP_ID;
   const redirectUri = import.meta.env.VITE_VK_REDIRECT_URI || `${window.location.origin}/vk/callback`;
@@ -45,7 +46,7 @@ export function VKSignInButton({ onSuccess, onError }: VKSignInButtonProps) {
       type="button"
       onClick={handleClick}
       disabled={isLoading || !appId}
-      className="w-full h-12 inline-flex items-center justify-center gap-2 px-4 rounded-lg border border-slate-200 shadow-sm bg-white hover:bg-slate-50 text-sm font-semibold text-slate-800 disabled:opacity-60 disabled:cursor-not-allowed transition"
+      className={`w-full h-12 min-h-[48px] max-h-[48px] inline-flex items-center justify-center gap-2 px-4 rounded-lg border border-slate-200 shadow-sm bg-white hover:bg-slate-50 text-sm font-semibold text-slate-800 disabled:opacity-60 disabled:cursor-not-allowed transition ${className || ''}`}
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"

@@ -14,6 +14,8 @@ export function LoginPage() {
     password: '',
   });
   const [formErrors, setFormErrors] = useState<{ email?: string; password?: string }>({});
+  const oauthButtonClass =
+    'rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,11 +92,12 @@ export function LoginPage() {
               onError={(err) => console.error(err)}
               text="signin_with"
               size="large"
-              className="w-full h-12 rounded-lg border border-slate-200 bg-white shadow-sm flex items-center justify-center px-2"
+              className={oauthButtonClass}
             />
             <VKSignInButton
               onSuccess={handleVKSuccess}
               onError={(err) => console.error(err)}
+              className={oauthButtonClass}
             />
           </div>
 
