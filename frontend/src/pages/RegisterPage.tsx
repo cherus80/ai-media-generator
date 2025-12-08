@@ -22,7 +22,7 @@ export function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [referralCode, setReferralCode] = useState<string | null>(null);
   const oauthButtonClass =
-    'rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden';
+    'rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-200';
 
   const passwordStrength = checkPasswordStrength(formData.password);
 

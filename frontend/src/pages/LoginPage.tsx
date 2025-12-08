@@ -15,7 +15,7 @@ export function LoginPage() {
   });
   const [formErrors, setFormErrors] = useState<{ email?: string; password?: string }>({});
   const oauthButtonClass =
-    'rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden';
+    'rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-200';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

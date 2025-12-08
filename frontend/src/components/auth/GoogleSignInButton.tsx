@@ -30,11 +30,96 @@ export function GoogleSignInButton({
   className,
 }: GoogleSignInButtonProps) {
   const buttonRef = useRef<HTMLDivElement>(null);
+  const cleanupRef = useRef<(() => void) | null>(null);
+  const styleGuardLock = useRef(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isReady, setIsReady] = useState<boolean>(Boolean(window.google?.accounts?.id));
   const { loginWithGoogle } = useAuth();
 
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+  const applyUnifiedStyles = (button: HTMLDivElement | null, state: 'default' | 'hover' | 'active' | 'focus' = 'default') => {
+    if (!button || styleGuardLock.current) return;
+
+    styleGuardLock.current = true;
+
+    const background =
+      state === 'active' ? '#f1f5f9' : state === 'hover' ? '#f8fafc' : '#ffffff';
+    const focusRing =
+      state === 'focus' ? '0 0 0 3px rgba(59, 130, 246, 0.35)' : 'none';
+
+    button.style.width = '100%';
+    button.style.maxWidth = '100%';
+    button.style.minHeight = '48px';
+    button.style.height = '48px';
+    button.style.borderRadius = '12px';
+    button.style.background = background;
+    button.style.border = '0';
+    button.style.boxShadow = 'none';
+    button.style.fontWeight = '600';
+    button.style.fontSize = '14px';
+    button.style.fontFamily = "'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif";
+    button.style.letterSpacing = '0.01em';
+    button.style.display = 'inline-flex';
+    button.style.alignItems = 'center';
+    button.style.justifyContent = 'center';
+    button.style.gap = '10px';
+    button.style.padding = '0 16px';
+    button.style.boxSizing = 'border-box';
+    button.style.color = '#0f172a';
+    button.style.cursor = 'pointer';
+    button.style.transition =
+      'background-color 150ms ease, box-shadow 180ms ease, transform 120ms ease';
+    button.style.outline = 'none';
+    button.style.transform = state === 'active' ? 'translateY(0.5px)' : 'none';
+    button.style.boxShadow = focusRing;
+
+    const label = button.querySelector('span');
+    if (label) {
+      label.style.color = '#0f172a';
+      label.style.fontWeight = '600';
+      label.style.fontSize = '14px';
+    }
+
+    const logo = button.querySelector('svg');
+    if (logo) {
+      logo.style.height = '20px';
+      logo.style.width = '20px';
+    }
+
+    requestAnimationFrame(() => {
+      styleGuardLock.current = false;
+    });
+  };
+
+  const bindStyleGuards = (button: HTMLDivElement | null) => {
+    if (!button) return () => {};
+
+    applyUnifiedStyles(button);
+
+    const observer = new MutationObserver(() => applyUnifiedStyles(button));
+    observer.observe(button, { attributes: true, attributeFilter: ['style', 'class'] });
+
+    const events: Array<[keyof HTMLElementEventMap, 'default' | 'hover' | 'active' | 'focus']> = [
+      ['mouseenter', 'hover'],
+      ['mouseleave', 'default'],
+      ['focus', 'focus'],
+      ['blur', 'default'],
+      ['mousedown', 'active'],
+      ['mouseup', 'hover'],
+    ];
+
+    const handlers = events.map(([event, state]) => {
+      const handler = () => applyUnifiedStyles(button, state);
+      button.addEventListener(event, handler);
+      return { event, handler };
+    });
+
+    return () => {
+      observer.disconnect();
+      handlers.forEach(({ event, handler }) => button.removeEventListener(event, handler));
+    };
+  };
 
   const ensureScriptLoaded = () => {
     if (window.google?.accounts?.id) return Promise.resolve(true);
@@ -70,6 +155,8 @@ export function GoogleSignInButton({
     let cancelled = false;
 
     const init = async () => {
+      cleanupRef.current?.();
+
       const loaded = await ensureScriptLoaded();
       if (!loaded || cancelled || !window.google?.accounts?.id) {
         console.error('Google Identity Services не удалось загрузить');
@@ -91,6 +178,8 @@ export function GoogleSignInButton({
           buttonRef.current.style.minHeight = '48px';
           buttonRef.current.style.maxHeight = '48px';
           buttonRef.current.style.width = '100%';
+          buttonRef.current.style.borderRadius = '12px';
+          buttonRef.current.style.overflow = 'hidden';
 
           const config: GoogleSignInButtonConfig = {
             type: 'standard',
@@ -106,25 +195,7 @@ export function GoogleSignInButton({
 
           const renderedButton = buttonRef.current.querySelector('div[role="button"]') as HTMLDivElement | null;
           if (renderedButton) {
-            renderedButton.style.width = '100%';
-            renderedButton.style.maxWidth = '100%';
-            renderedButton.style.minHeight = '48px';
-            renderedButton.style.height = '48px';
-            renderedButton.style.borderRadius = '12px';
-            renderedButton.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
-            renderedButton.style.background = '#ffffff';
-            renderedButton.style.color = '#0f172a';
-            renderedButton.style.border = '1px solid rgb(226 232 240)';
-            renderedButton.style.fontWeight = '700';
-            renderedButton.style.letterSpacing = '0.01em';
-            renderedButton.style.display = 'flex';
-            renderedButton.style.alignItems = 'center';
-
-            const label = renderedButton.querySelector('span');
-            if (label) {
-              label.style.color = '#0f172a';
-              label.style.fontWeight = '700';
-            }
+            cleanupRef.current = bindStyleGuards(renderedButton);
           }
         }
         setIsReady(true);
@@ -138,6 +209,7 @@ export function GoogleSignInButton({
 
     return () => {
       cancelled = true;
+      cleanupRef.current?.();
     };
   }, [clientId, theme, size, text, width, shape]);
 
@@ -163,7 +235,7 @@ export function GoogleSignInButton({
   // Показать состояние загрузки или заглушку, если Google не загружен или нет client ID
   if (!clientId) {
     return (
-      <div className="flex items-center justify-center p-3 border border-gray-300 rounded-md bg-gray-50">
+      <div className="flex items-center justify-center p-3 h-12 min-h-[48px] max-h-[48px] rounded-xl border border-slate-200 bg-white shadow-sm">
         <span className="text-sm text-gray-500">Google вход не настроен</span>
       </div>
     );
@@ -171,7 +243,7 @@ export function GoogleSignInButton({
 
   if (!isReady) {
     return (
-      <div className="flex items-center justify-center p-3 h-12 min-h-[48px] max-h-[48px] border border-gray-200 rounded-lg bg-white shadow-sm">
+      <div className="flex items-center justify-center p-3 h-12 min-h-[48px] max-h-[48px] rounded-xl border border-slate-200 bg-white shadow-sm">
         <span className="text-sm text-gray-500">Загрузка Google входа...</span>
       </div>
     );

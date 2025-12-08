@@ -46,7 +46,7 @@ export function VKSignInButton({ onSuccess, onError, className }: VKSignInButton
       type="button"
       onClick={handleClick}
       disabled={isLoading || !appId}
-      className={`w-full h-12 min-h-[48px] max-h-[48px] inline-flex items-center justify-center gap-2 px-4 rounded-lg border border-slate-200 shadow-sm bg-white hover:bg-slate-50 text-sm font-semibold text-slate-800 disabled:opacity-60 disabled:cursor-not-allowed transition ${className || ''}`}
+      className={`w-full h-12 min-h-[48px] max-h-[48px] inline-flex items-center justify-center gap-2 px-4 rounded-xl border border-slate-200 shadow-sm bg-white hover:bg-slate-50 text-sm font-semibold text-slate-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-200 disabled:opacity-60 disabled:cursor-not-allowed transition ${className || ''}`}
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
