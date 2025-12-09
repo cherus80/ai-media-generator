@@ -58,15 +58,111 @@ def ensure_upright_image(file_path: str | Path) -> Path:
     try:
         with Image.open(path) as img:
             oriented = ImageOps.exif_transpose(img)
-            if oriented is img:
-                return path
 
-            oriented.save(path, format=img.format or "JPEG")
-            logger.info("Applied EXIF orientation to %s", path.name)
+            # Удаляем EXIF, чтобы не было повторного автоповорота где-либо ещё
+            fmt = (img.format or path.suffix.lstrip(".") or "JPEG").upper()
+            save_kwargs = {"format": fmt}
+
+            if fmt == "JPEG" or fmt == "JPG":
+                save_kwargs["format"] = "JPEG"
+                save_kwargs["quality"] = 95
+                save_kwargs["optimize"] = True
+            elif fmt == "PNG":
+                save_kwargs["compress_level"] = 6
+
+            try:
+                oriented.save(path, exif=b"", **save_kwargs)
+            except TypeError:
+                # Некоторые форматы не принимают параметр exif
+                oriented.save(path, **save_kwargs)
+
+            logger.info("Applied EXIF orientation and stripped metadata for %s", path.name)
             return path
     except Exception as e:
         logger.warning("Failed to auto-orient image %s: %s", path, e)
         return path
+
+
+def pad_image_to_match_reference(
+    reference_path: str | Path,
+    image_path: str | Path,
+    max_side: int = 2048,
+    fill_color=(255, 255, 255, 0),
+) -> Path:
+    """
+    Подгоняет второе изображение под соотношение/ориентацию референса без искажений:
+    масштабирует с сохранением пропорций и добавляет паддинг.
+
+    Args:
+        reference_path: Путь к изображению, чью геометрию считаем приоритетной.
+        image_path: Путь к изображению, которое подгоняем.
+        max_side: Максимальная сторона для выходного изображения (чтобы не раздувать).
+        fill_color: Цвет паддинга (RGBA по умолчанию, чтобы оставить прозрачность).
+
+    Returns:
+        Path к новому файлу (suffix _padded.png).
+    """
+    ref_path = Path(reference_path)
+    img_path = Path(image_path)
+
+    if not ref_path.exists():
+        raise IOError(f"Reference file not found: {reference_path}")
+    if not img_path.exists():
+        raise IOError(f"Image file not found: {image_path}")
+
+    ref_w, ref_h = get_image_dimensions(ref_path)
+    if ref_w <= 0 or ref_h <= 0:
+        raise ValueError(f"Invalid reference dimensions: {ref_w}x{ref_h}")
+
+    # Масштабируем целевой размер под ограничение по максимальной стороне
+    target_w, target_h = ref_w, ref_h
+    longest = max(target_w, target_h)
+    if longest > max_side:
+        scale = max_side / float(longest)
+        target_w = max(1, int(target_w * scale))
+        target_h = max(1, int(target_h * scale))
+
+    with Image.open(img_path) as img:
+        img = ImageOps.exif_transpose(img)
+        if img.mode not in ("RGB", "RGBA"):
+            img = img.convert("RGBA")
+
+        src_w, src_h = img.size
+        if src_w <= 0 or src_h <= 0:
+            raise ValueError(f"Invalid image dimensions: {src_w}x{src_h}")
+
+        scale = min(target_w / src_w, target_h / src_h)
+        scaled_w = max(1, int(src_w * scale))
+        scaled_h = max(1, int(src_h * scale))
+        resized = img.resize((scaled_w, scaled_h), Image.LANCZOS)
+
+        canvas_mode = "RGBA" if len(fill_color) == 4 else "RGB"
+        canvas = Image.new(canvas_mode, (target_w, target_h), fill_color)
+
+        if resized.mode != canvas_mode:
+            resized = resized.convert(canvas_mode)
+
+        paste_x = (target_w - scaled_w) // 2
+        paste_y = (target_h - scaled_h) // 2
+        # Если есть альфа — используем её как маску для вставки
+        mask = resized.split()[-1] if resized.mode == "RGBA" else None
+        canvas.paste(resized, (paste_x, paste_y), mask)
+
+        output_path = img_path.with_stem(f"{img_path.stem}_padded").with_suffix(".png")
+        canvas.save(output_path, "PNG", compress_level=6)
+
+        logger.info(
+            "Padded %s to match %s (%dx%d -> %dx%d, saved %s)",
+            img_path.name,
+            ref_path.name,
+            src_w,
+            src_h,
+            target_w,
+            target_h,
+            output_path.name,
+        )
+
+        return output_path
 
 
 def calculate_aspect_ratio(width: int, height: int, tolerance: float = 0.05) -> str:

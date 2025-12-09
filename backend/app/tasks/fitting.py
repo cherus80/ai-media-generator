@@ -29,6 +29,7 @@ from app.utils.image_utils import (
     determine_image_size_for_fitting,
     convert_iphone_format_to_png,
     ensure_upright_image,
+    pad_image_to_match_reference,
 )
 from app.utils.runtime_config import get_generation_providers_for_worker
 from app.services.fitting_prompts import get_prompt_for_zone
@@ -146,6 +147,17 @@ def generate_fitting_task(
                 # Определение aspect_ratio из user photo
                 aspect_ratio = determine_image_size_for_fitting(user_photo_path)
                 logger.info(f"Determined aspect ratio for fitting: {aspect_ratio}")
+
+                # Паддинг item-фото под геометрию user-фото (без искажений)
+                try:
+                    padded_item_photo_path = pad_image_to_match_reference(
+                        reference_path=user_photo_path,
+                        image_path=item_photo_path,
+                    )
+                    item_photo_path = padded_item_photo_path
+                    logger.info("Padded item photo to match user geometry: %s", item_photo_path.name)
+                except Exception as e:
+                    logger.warning("Failed to pad item photo to user geometry, continue with original: %s", e)
 
                 # Формирование публичных URL для kie.ai API
                 # ВАЖНО: После конвертации iPhone форматов (строки 181-182), файлы могут иметь новые имена
