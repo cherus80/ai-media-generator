@@ -240,7 +240,7 @@ export const EditingPage: React.FC = () => {
                   isLoading={isUploadingImage}
                   error={uploadError}
                   label="Базовое изображение"
-                  hint="JPEG или PNG, до 5MB"
+                  hint="JPEG / PNG / WebP, до 10MB"
                 />
               </motion.div>
 
@@ -306,7 +306,7 @@ export const EditingPage: React.FC = () => {
                 placeholder="Опишите, как хотите изменить изображение..."
               />
               <p className="text-xs text-dark-400 px-4 mb-6 max-w-4xl mx-auto">
-                Генерация выполняется внешними AI-сервисами (kie.ai / OpenRouter). Результат может отличаться от ожидаемого, сервис не отвечает за соответствие итогового изображения.
+                Генерация выполняется внешним AI-сервисом. Итоговое изображение может отличаться от ожидаемого; проверяйте результат перед публикацией или использованием.
               </p>
             </>
           )}

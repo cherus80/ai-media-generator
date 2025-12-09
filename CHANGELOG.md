@@ -635,6 +635,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History
 
+- **0.12.3** (2025-12-09) - Fix virtual try-on/editing results re-hosting with EXIF normalization, step-back navigation in wizard, OAuth button alignment, updated disclaimers and upload limits.
 - **0.12.2** (2025-11-18) - Virtual Try-On Critical Bug Fix + E2E Testing
 - **0.12.1** (2025-11-18) - Credits and Virtual Try-On Fixes
 - **0.12.0** (2025-11-18) - Web Authentication System

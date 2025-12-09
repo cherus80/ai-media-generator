@@ -30,6 +30,8 @@ from app.utils.image_utils import (
     convert_iphone_format_to_png,
     ensure_upright_image,
     pad_image_to_match_reference,
+    download_image_bytes,
+    normalize_image_bytes,
 )
 from app.utils.runtime_config import get_generation_providers_for_worker
 from app.services.fitting_prompts import get_prompt_for_zone
@@ -280,36 +282,41 @@ def generate_fitting_task(
                 await update_generation_status(session, generation_id, "processing", progress=80)
 
                 final_image_url = generated_image_url
-                if generated_image_url.startswith("data:image"):
-                    import re
+                try:
+                    # Скачиваем/декодируем результат, нормализуем ориентацию и сохраняем локально,
+                    # чтобы избежать проблем с CORS и EXIF.
+                    if generated_image_url.startswith("data:image"):
+                        import re
 
-                    match = re.match(r"data:image/(?P<fmt>[^;]+);base64,(?P<data>.+)", generated_image_url)
-                    if match:
+                        match = re.match(r"data:image/(?P<fmt>[^;]+);base64,(?P<data>.+)", generated_image_url)
+                        if not match:
+                            raise ValueError("Invalid data URL")
+
                         image_format = match.group("fmt")
                         base64_data = match.group("data")
-                        image_bytes = base64.b64decode(base64_data)
-
-                        # Нормализуем ориентацию результата перед сохранением
-                        try:
-                            from io import BytesIO
-                            from PIL import Image, ImageOps
-
-                            with Image.open(BytesIO(image_bytes)) as im:
-                                oriented = ImageOps.exif_transpose(im)
-                                buf = BytesIO()
-                                save_fmt = image_format.upper() if image_format else "PNG"
-                                oriented.save(buf, format=save_fmt, exif=b"")
-                                image_bytes = buf.getvalue()
-                        except Exception as orient_err:
-                            logger.warning("Failed to normalize orientation for result: %s", orient_err)
-
+                        raw_bytes = base64.b64decode(base64_data)
+                        normalized_bytes, normalized_ext = normalize_image_bytes(raw_bytes, image_format)
                         _, saved_file_url, _ = await save_upload_file_by_content(
-                            content=image_bytes,
-                            filename=f"tryon_result_{generation_id}.{image_format}",
+                            content=normalized_bytes,
+                            filename=f"tryon_result_{generation_id}.{normalized_ext}",
+                            content_type=f"image/{normalized_ext}",
                             user_id=user_id,
                         )
                         final_image_url = saved_file_url
-                        logger.info(f"Saved OpenRouter result to local storage: {saved_file_url}")
+                    else:
+                        raw_bytes, ext, content_type = await download_image_bytes(generated_image_url)
+                        normalized_bytes, normalized_ext = normalize_image_bytes(raw_bytes, ext)
+                        _, saved_file_url, _ = await save_upload_file_by_content(
+                            content=normalized_bytes,
+                            filename=f"tryon_result_{generation_id}.{normalized_ext}",
+                            content_type=content_type or f"image/{normalized_ext}",
+                            user_id=user_id,
+                        )
+                        final_image_url = saved_file_url
+
+                    logger.info(f"Saved try-on result to local storage: {final_image_url}")
+                except Exception as save_err:
+                    logger.warning("Failed to normalize/save try-on result, returning source URL: %s", save_err)
 
                 # Нормализуем URL для фронтенда (добавляем backend host если путь относительный)
                 if final_image_url and final_image_url.startswith("/"):

@@ -8,9 +8,13 @@ This module provides helper functions for:
 """
 
 import logging
+import mimetypes
+from io import BytesIO
 from pathlib import Path
-from typing import Tuple
+from typing import Optional, Tuple
+from urllib.parse import urlparse
 
+import httpx
 from PIL import Image, ImageOps
 
 logger = logging.getLogger(__name__)
@@ -81,6 +85,46 @@ def ensure_upright_image(file_path: str | Path) -> Path:
     except Exception as e:
         logger.warning("Failed to auto-orient image %s: %s", path, e)
         return path
+
+
+async def download_image_bytes(url: str, timeout: float = 30.0) -> tuple[bytes, Optional[str], Optional[str]]:
+    """
+    Скачивает изображение по URL и возвращает байты + расширение/контент-тип если удалось определить.
+    """
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        response = await client.get(url)
+        response.raise_for_status()
+
+    content_type = response.headers.get("content-type")
+    ext: Optional[str] = None
+
+    if content_type:
+        guessed = mimetypes.guess_extension(content_type.split(";")[0].strip())
+        if guessed:
+            ext = guessed.lstrip(".")
+
+    # Если расширение не удалось определить по заголовку — пробуем из пути
+    if not ext:
+        parsed = urlparse(url)
+        ext = Path(parsed.path).suffix.lstrip(".") or None
+
+    return response.content, ext, content_type
+
+
+def normalize_image_bytes(image_bytes: bytes, fallback_ext: Optional[str] = None) -> tuple[bytes, str]:
+    """
+    Применяет EXIF-поворот и возвращает обновлённые байты + расширение.
+    """
+    try:
+        with Image.open(BytesIO(image_bytes)) as im:
+            oriented = ImageOps.exif_transpose(im)
+            fmt = (im.format or fallback_ext or "PNG").upper()
+            buf = BytesIO()
+            oriented.save(buf, format=fmt, exif=b"")
+            return buf.getvalue(), fmt.lower()
+    except Exception as err:
+        logger.warning("Failed to normalize image bytes: %s", err)
+        return image_bytes, (fallback_ext or "png").lower()
 
 
 def pad_image_to_match_reference(

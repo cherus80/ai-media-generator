@@ -186,7 +186,7 @@ export function GoogleSignInButton({
             type: 'standard',
             theme,
             size,
-            text: 'signin_with', // убираем персонализированный текст
+            text, // используем выбранный вариант текста
             shape,
             logo_alignment: 'left',
             width,

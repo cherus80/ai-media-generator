@@ -29,6 +29,8 @@ from app.utils.image_utils import (
     determine_image_size_for_editing,
     convert_iphone_format_to_png,
     ensure_upright_image,
+    download_image_bytes,
+    normalize_image_bytes,
 )
 from app.utils.runtime_config import get_generation_providers_for_worker
 
@@ -254,40 +256,42 @@ def generate_editing_task(
                     progress=80
                 )
 
-                # Сохранение результата локально
-                if result_url.startswith("data:image"):
-                    import re
+                # Сохранение результата локально (всегда re-host, чтобы устранить CORS/EXIF проблемы)
+                image_url = result_url
+                file_size = 0
 
-                    match = re.match(r"data:image/(?P<fmt>[^;]+);base64,(?P<data>.+)", result_url)
-                    if not match:
-                        raise ValueError("Invalid data URL")
+                try:
+                    if result_url.startswith("data:image"):
+                        import re
 
-                    image_format = match.group("fmt")
-                    base64_data = match.group("data")
-                    image_bytes = base64.b64decode(base64_data)
+                        match = re.match(r"data:image/(?P<fmt>[^;]+);base64,(?P<data>.+)", result_url)
+                        if not match:
+                            raise ValueError("Invalid data URL")
 
-                    # Нормализуем ориентацию результата перед сохранением
-                    try:
-                        from io import BytesIO
-                        from PIL import Image, ImageOps
+                        image_format = match.group("fmt")
+                        base64_data = match.group("data")
+                        raw_bytes = base64.b64decode(base64_data)
+                        normalized_bytes, normalized_ext = normalize_image_bytes(raw_bytes, image_format)
 
-                        with Image.open(BytesIO(image_bytes)) as im:
-                            oriented = ImageOps.exif_transpose(im)
-                            buf = BytesIO()
-                            save_fmt = image_format.upper() if image_format else "PNG"
-                            oriented.save(buf, format=save_fmt, exif=b"")
-                            image_bytes = buf.getvalue()
-                    except Exception as orient_err:
-                        logger.warning("Failed to normalize orientation for editing result: %s", orient_err)
-
-                    file_id, image_url, file_size = await save_upload_file_by_content(
-                        content=image_bytes,
-                        user_id=user_id,
-                        filename=f"editing_{generation_id}.{image_format}",
-                    )
-                else:
-                    image_url = result_url
-                    file_size = 0
+                        _, saved_url, file_size = await save_upload_file_by_content(
+                            content=normalized_bytes,
+                            user_id=user_id,
+                            filename=f"editing_{generation_id}.{normalized_ext}",
+                            content_type=f"image/{normalized_ext}",
+                        )
+                        image_url = saved_url
+                    else:
+                        raw_bytes, ext, content_type = await download_image_bytes(result_url)
+                        normalized_bytes, normalized_ext = normalize_image_bytes(raw_bytes, ext)
+                        _, saved_url, file_size = await save_upload_file_by_content(
+                            content=normalized_bytes,
+                            user_id=user_id,
+                            filename=f"editing_{generation_id}.{normalized_ext}",
+                            content_type=content_type or f"image/{normalized_ext}",
+                        )
+                        image_url = saved_url
+                except Exception as save_err:
+                    logger.warning("Failed to normalize/save editing result, returning source URL: %s", save_err)
 
                 if image_url and image_url.startswith("/"):
                     image_url = to_public_url(image_url)

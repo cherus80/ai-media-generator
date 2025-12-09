@@ -3,7 +3,7 @@
  * Управляет навигацией между шагами и процессом генерации
  */
 
-import React, { useEffect, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Step1UserPhoto } from './Step1UserPhoto';
 import { Step2ItemPhoto } from './Step2ItemPhoto';
@@ -16,7 +16,11 @@ import toast from 'react-hot-toast';
 
 type WizardStep = 'user_photo' | 'item_photo' | 'zone' | 'generating' | 'result';
 
-export const FittingWizard: React.FC = () => {
+export interface FittingWizardHandle {
+  goBack: () => boolean;
+}
+
+export const FittingWizard = forwardRef<FittingWizardHandle>((_, ref) => {
   const [currentStep, setCurrentStep] = useState<WizardStep>('user_photo');
   const { startGeneration, result, isGenerating } = useFittingStore();
 
@@ -47,6 +51,25 @@ export const FittingWizard: React.FC = () => {
   const handleRestart = () => {
     setCurrentStep('user_photo');
   };
+
+  // Позволяем кнопке "Назад" в layout возвращать на предыдущий шаг, а не на главную
+  useImperativeHandle(ref, () => ({
+    goBack: () => {
+      if (currentStep === 'result') {
+        setCurrentStep('zone');
+        return true;
+      }
+      if (currentStep === 'zone' || currentStep === 'generating') {
+        setCurrentStep('item_photo');
+        return true;
+      }
+      if (currentStep === 'item_photo') {
+        setCurrentStep('user_photo');
+        return true;
+      }
+      return false;
+    },
+  }));
 
   // Progress indicator
   const getStepNumber = (): number => {
@@ -180,4 +203,6 @@ export const FittingWizard: React.FC = () => {
       </p>
     </div>
   );
-};
+});
+
+FittingWizard.displayName = 'FittingWizard';
