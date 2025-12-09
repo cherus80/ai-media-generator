@@ -2,12 +2,17 @@
  * Утилиты для скачивания изображений без открытия нового окна.
  */
 
+const PUBLIC_BASE_URL = (
+  import.meta.env.VITE_PUBLIC_BACKEND_URL ||
+  import.meta.env.VITE_API_BASE_URL ||
+  (typeof window !== 'undefined' ? window.location.origin : '')
+).replace(/\/$/, '');
+
 export const resolveAbsoluteUrl = (url: string): string => {
   if (!url) return '';
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  const base = window.location.origin.replace(/\/$/, '');
   const normalized = url.startsWith('/') ? url : `/${url}`;
-  return `${base}${normalized}`;
+  return `${PUBLIC_BASE_URL}${normalized}`;
 };
 
 export const downloadImage = async (url: string, filename: string): Promise<void> => {
@@ -46,27 +51,37 @@ export const downloadImage = async (url: string, filename: string): Promise<void
     }
   }
 
-  const response = await fetch(targetUrl, {
-    mode: 'cors',
-    cache: 'no-store',
-  });
+  try {
+    const response = await fetch(targetUrl, {
+      mode: 'cors',
+      cache: 'no-store',
+    });
 
-  if (!response.ok) {
-    throw new Error(`Ошибка загрузки файла: ${response.status}`);
+    if (!response.ok) {
+      throw new Error(`Ошибка загрузки файла: ${response.status}`);
+    }
+
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = filename;
+    link.rel = 'noopener noreferrer';
+    link.target = '_self';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    window.setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
+    return;
+  } catch (error) {
+    console.error('Download via fetch failed, fallback to opening in new tab:', error);
+    // Фолбэк: открываем в новой вкладке, если CORS не даёт скачать blob
+    const link = document.createElement('a');
+    link.href = targetUrl;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.click();
   }
-
-  const blob = await response.blob();
-  const blobUrl = window.URL.createObjectURL(blob);
-
-  const link = document.createElement('a');
-  link.href = blobUrl;
-  link.download = filename;
-  link.rel = 'noopener noreferrer';
-  link.target = '_self';
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-
-  window.setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1000);
-  return;
 };

@@ -284,17 +284,29 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       // Добавляем сообщение с результатом
       if (result.status === 'completed' && result.image_url) {
+        const resolvedResultUrl = result.image_url.startsWith('http')
+          ? result.image_url
+          : `${API_BASE_URL}${result.image_url.startsWith('/') ? result.image_url : `/${result.image_url}`}`;
+
         const imageMessage: ChatMessage = {
           id: uuidv4(),
           role: 'assistant',
           content: `Изображение готово! Промпт: "${prompt}"`,
-          image_url: result.image_url,
+          image_url: resolvedResultUrl,
           timestamp: new Date(),
         };
         set((state) => ({
           messages: [...state.messages, imageMessage],
           isGenerating: false,
           generationProgress: 100,
+          // Обновляем базовое изображение, чтобы следующие генерации использовали свежий результат
+          baseImage: state.baseImage
+            ? {
+                ...state.baseImage,
+                url: resolvedResultUrl,
+                preview: resolvedResultUrl,
+              }
+            : state.baseImage,
         }));
       } else {
         throw new Error(result.error_message || 'Ошибка генерации');

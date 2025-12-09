@@ -217,6 +217,10 @@ export const FittingResult: React.FC<FittingResultProps> = ({ onNewFitting }) =>
           </button>
         </div>
 
+        <p className="text-xs text-gray-500 mb-4">
+          Результат генерируется внешними AI-сервисами (kie.ai / OpenRouter). Итоговое изображение может отличаться от ожиданий; сервис не несёт ответственности за расхождения.
+        </p>
+
         {/* New fitting button */}
         <button
           onClick={handleNewFitting}

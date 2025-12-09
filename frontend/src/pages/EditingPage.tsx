@@ -308,6 +308,9 @@ export const EditingPage: React.FC = () => {
                 disabled={isSendingMessage || isGenerating || decisionLoadingTarget !== null}
                 placeholder="Опишите, как хотите изменить изображение..."
               />
+              <p className="text-xs text-dark-400 px-4 mb-6 max-w-4xl mx-auto">
+                Генерация выполняется внешними AI-сервисами (kie.ai / OpenRouter). Результат может отличаться от ожидаемого, сервис не отвечает за соответствие итогового изображения.
+              </p>
             </>
           )}
 
