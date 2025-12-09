@@ -289,6 +289,20 @@ def generate_fitting_task(
                         base64_data = match.group("data")
                         image_bytes = base64.b64decode(base64_data)
 
+                        # Нормализуем ориентацию результата перед сохранением
+                        try:
+                            from io import BytesIO
+                            from PIL import Image, ImageOps
+
+                            with Image.open(BytesIO(image_bytes)) as im:
+                                oriented = ImageOps.exif_transpose(im)
+                                buf = BytesIO()
+                                save_fmt = image_format.upper() if image_format else "PNG"
+                                oriented.save(buf, format=save_fmt, exif=b"")
+                                image_bytes = buf.getvalue()
+                        except Exception as orient_err:
+                            logger.warning("Failed to normalize orientation for result: %s", orient_err)
+
                         _, saved_file_url, _ = await save_upload_file_by_content(
                             content=image_bytes,
                             filename=f"tryon_result_{generation_id}.{image_format}",

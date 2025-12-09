@@ -60,7 +60,7 @@ export const Step2ItemPhoto: React.FC<Step2ItemPhotoProps> = ({
         isLoading={isUploading}
         error={uploadError}
         label="Одежда или аксессуар"
-        hint="Загрузите фото одежды, обуви или аксессуара. JPEG или PNG, до 5MB"
+        hint="Загрузите фото одежды, обуви или аксессуара. JPEG / PNG / WebP / HEIC, до 10MB"
       />
 
       {/* File info */}

@@ -21,6 +21,8 @@ export const FittingResult: React.FC<FittingResultProps> = ({ onNewFitting }) =>
     return null;
   }
 
+  const resolvedImageUrl = resolveAbsoluteUrl(result.image_url || '');
+
   const handleDownload = async () => {
     if (!result.image_url) return;
 
@@ -150,10 +152,11 @@ export const FittingResult: React.FC<FittingResultProps> = ({ onNewFitting }) =>
         {/* Image */}
         <div className="mb-6 relative">
           <img
-            src={result.image_url}
+            src={resolvedImageUrl}
             alt="Fitting result"
             className="w-full rounded-lg shadow-lg cursor-pointer"
             onClick={() => setIsFullscreen(true)}
+            onError={() => toast.error('Не удалось загрузить превью изображения')}
           />
           {result.has_watermark && (
             <div className="absolute top-4 right-4 bg-yellow-500 text-white text-xs font-semibold px-3 py-1 rounded-full">

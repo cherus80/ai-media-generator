@@ -56,7 +56,7 @@ export const Step1UserPhoto: React.FC<Step1UserPhotoProps> = ({ onNext }) => {
         isLoading={isUploading}
         error={uploadError}
         label="Ваше фото"
-        hint="Загрузите фото в полный рост или портрет. JPEG или PNG, до 5MB"
+        hint="Загрузите фото в полный рост или портрет. JPEG / PNG / WebP / HEIC, до 10MB"
       />
 
       {/* File info */}

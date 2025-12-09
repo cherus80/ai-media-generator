@@ -25,7 +25,7 @@ export function GoogleSignInButton({
   text = 'continue_with',
   theme = 'outline',
   size = 'large',
-  shape = 'pill',
+  shape = 'rectangular',
   width,
   className,
 }: GoogleSignInButtonProps) {
@@ -165,6 +165,7 @@ export function GoogleSignInButton({
       }
 
       try {
+        window.google.accounts.id.disableAutoSelect();
         window.google.accounts.id.initialize({
           client_id: clientId,
           callback: handleCredentialResponse,
@@ -185,7 +186,7 @@ export function GoogleSignInButton({
             type: 'standard',
             theme,
             size,
-            text,
+            text: 'signin_with', // убираем персонализированный текст
             shape,
             logo_alignment: 'left',
             width,

@@ -15,6 +15,8 @@ interface ImageMessageProps {
 export const ImageMessage: React.FC<ImageMessageProps> = ({ message }) => {
   const [isZoomed, setIsZoomed] = React.useState(false);
 
+  const resolvedImageUrl = message.image_url ? resolveAbsoluteUrl(message.image_url) : '';
+
   if (!message.image_url) {
     return null;
   }
@@ -110,11 +112,12 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({ message }) => {
           {/* Изображение */}
           <div className="relative rounded-lg overflow-hidden bg-gray-200">
             <img
-              src={message.image_url}
+              src={resolvedImageUrl}
               alt="Generated result"
               className="w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
               onClick={handleZoom}
               loading="lazy"
+              onError={() => toast.error('Не удалось загрузить изображение')}
             />
             {/* Кнопка Zoom поверх изображения */}
             <button
