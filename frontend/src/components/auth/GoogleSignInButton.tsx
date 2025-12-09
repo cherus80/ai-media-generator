@@ -43,10 +43,11 @@ export function GoogleSignInButton({
 
     styleGuardLock.current = true;
 
+    const baseShadow = '0 1px 2px rgba(15, 23, 42, 0.04)';
     const background =
       state === 'active' ? '#f1f5f9' : state === 'hover' ? '#f8fafc' : '#ffffff';
     const focusRing =
-      state === 'focus' ? '0 0 0 3px rgba(59, 130, 246, 0.35)' : 'none';
+      state === 'focus' ? '0 0 0 3px rgba(59, 130, 246, 0.35)' : baseShadow;
 
     button.style.width = '100%';
     button.style.maxWidth = '100%';
@@ -54,8 +55,8 @@ export function GoogleSignInButton({
     button.style.height = '48px';
     button.style.borderRadius = '12px';
     button.style.background = background;
-    button.style.border = '0';
-    button.style.boxShadow = 'none';
+    button.style.border = '1px solid #E5E7EB';
+    button.style.boxShadow = focusRing;
     button.style.fontWeight = '600';
     button.style.fontSize = '14px';
     button.style.fontFamily = "'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif";
@@ -69,10 +70,9 @@ export function GoogleSignInButton({
     button.style.color = '#0f172a';
     button.style.cursor = 'pointer';
     button.style.transition =
-      'background-color 150ms ease, box-shadow 180ms ease, transform 120ms ease';
+      'background-color 150ms ease, box-shadow 180ms ease, transform 120ms ease, border-color 150ms ease';
     button.style.outline = 'none';
     button.style.transform = state === 'active' ? 'translateY(0.5px)' : 'none';
-    button.style.boxShadow = focusRing;
 
     const label = button.querySelector('span');
     if (label) {
