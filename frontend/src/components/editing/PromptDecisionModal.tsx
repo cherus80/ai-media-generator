@@ -28,6 +28,8 @@ export const PromptDecisionModal: React.FC<PromptDecisionModalProps> = ({
   }
 
   const isBusy = Boolean(loadingTarget);
+  const showOriginalProgress = loadingTarget === 'original';
+  const showAiProgress = loadingTarget === 'ai';
 
   return (
     <motion.div
@@ -98,10 +100,24 @@ export const PromptDecisionModal: React.FC<PromptDecisionModalProps> = ({
                   fullWidth
                   type="submit"
                   disabled={isBusy}
-                  isLoading={loadingTarget === 'original'}
+                  isLoading={showOriginalProgress}
+                  loadingLabel="Генерация..."
                 >
                   Отправить без улучшений
                 </Button>
+                {showOriginalProgress && (
+                  <div className="mt-3">
+                    <div className="h-2 bg-primary-100 rounded-full overflow-hidden">
+                      <motion.div
+                        className="h-full bg-gradient-to-r from-primary-500 via-secondary-500 to-primary-500"
+                        style={{ width: '50%' }}
+                        animate={{ x: ['-50%', '100%'] }}
+                        transition={{ repeat: Infinity, duration: 1.2, ease: 'linear' }}
+                      />
+                    </div>
+                    <p className="text-xs text-primary-700 font-semibold mt-2">Генерация...</p>
+                  </div>
+                )}
               </form>
             </Card>
 
@@ -131,7 +147,8 @@ export const PromptDecisionModal: React.FC<PromptDecisionModalProps> = ({
               fullWidth
               type="submit"
               disabled={isBusy}
-              isLoading={loadingTarget === 'ai'}
+              isLoading={showAiProgress}
+              loadingLabel="Генерация..."
               icon={
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l4 2" />
@@ -140,6 +157,19 @@ export const PromptDecisionModal: React.FC<PromptDecisionModalProps> = ({
             >
               Улучшить с AI
             </Button>
+            {showAiProgress && (
+              <div className="mt-3">
+                <div className="h-2 bg-secondary-100 rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-secondary-500 via-primary-500 to-secondary-500"
+                    style={{ width: '50%' }}
+                    animate={{ x: ['-50%', '100%'] }}
+                    transition={{ repeat: Infinity, duration: 1.2, ease: 'linear' }}
+                  />
+                </div>
+                <p className="text-xs text-secondary-700 font-semibold mt-2">Генерация...</p>
+              </div>
+            )}
           </form>
         </Card>
       </div>
