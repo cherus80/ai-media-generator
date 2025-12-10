@@ -110,6 +110,7 @@ class YuKassaClient:
         description: str,
         idempotency_key: Optional[str] = None,
         metadata: Optional[dict] = None,
+        receipt: Optional[dict] = None,
     ) -> dict:
         """
         Создание платежа в ЮKassa.
@@ -119,6 +120,7 @@ class YuKassaClient:
             description: Описание платежа
             idempotency_key: Ключ идемпотентности (UUID)
             metadata: Метаданные платежа (до 16 пар ключ-значение)
+            receipt: Чек (customer, items) — обязателен для большинства мерчантов
 
         Returns:
             dict: Ответ от ЮKassa API с данными платежа
@@ -146,6 +148,8 @@ class YuKassaClient:
 
         if metadata:
             payload["metadata"] = metadata
+        if receipt:
+            payload["receipt"] = receipt
 
         try:
             response = await self.client.post(

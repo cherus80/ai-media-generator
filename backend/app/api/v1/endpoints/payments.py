@@ -175,6 +175,22 @@ async def create_payment(
             "credits_amount": request.credits_amount,
         }
 
+        # Формируем чек (YooKassa требует receipt при включённой фискализации)
+        receipt = {
+            "customer": {
+                "email": current_user.email,
+            },
+            "items": [
+                {
+                    "description": description[:128],
+                    "quantity": "1.0",
+                    "amount": {"value": f"{amount:.2f}", "currency": "RUB"},
+                    # Без НДС
+                    "vat_code": 1,
+                }
+            ],
+        }
+
         # Создание платежа в ЮKassa
         yukassa_client = get_yukassa_client()
         yukassa_payment = await yukassa_client.create_payment(
@@ -182,6 +198,7 @@ async def create_payment(
             description=description,
             idempotency_key=idempotency_key,
             metadata=metadata,
+            receipt=receipt,
         )
 
         # Создание записи в БД после успешного ответа ЮKassa
