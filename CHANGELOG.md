@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed - Editing first-call regression
 - Исправлена ошибка `cannot access local variable 'base_image_url'`, возникшая после восстановления базового изображения в Celery-задаче редактирования (переменная теперь локализована корректно).
+- Исправлен `NameError: urlparse is not defined` при конструировании публичных ссылок на изображения (импорт добавлен в utils).
 
 ## [0.15.8] - 2025-12-05
 
