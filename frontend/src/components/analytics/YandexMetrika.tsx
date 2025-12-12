@@ -13,18 +13,21 @@ export const YandexMetrika: React.FC = () => {
     if (!counterId) return;
     if (document.getElementById('ym-tag')) return;
 
-    ((m: Window & { ym?: (...args: unknown[]) => void }, doc: Document, tag: 'script', src: string, name: 'ym') => {
+    type YMFunction = ((...args: unknown[]) => void) & { a?: unknown[]; l?: number };
+
+    ((m: Window & { ym?: YMFunction }, doc: Document, tag: 'script', src: string, name: 'ym') => {
       const existing = Array.from(doc.getElementsByTagName(tag)).find((s) => s.src === src);
       if (existing) return;
 
-      const ymFunc = (...args: unknown[]) => {
-        (ymFunc as any).a = (ymFunc as any).a || [];
-        (ymFunc as any).a.push(args);
-      };
-
-      if (!m[name]) {
-        const fn = ymFunc as typeof m.ym;
-        fn.l = Number(new Date());
+      let fn: YMFunction;
+      if (m[name]) {
+        fn = m[name] as YMFunction;
+      } else {
+        fn = ((...args: unknown[]) => {
+          fn.a = fn.a || [];
+          fn.a.push(args);
+        }) as YMFunction;
+        fn.l = Date.now();
         m[name] = fn;
       }
 
