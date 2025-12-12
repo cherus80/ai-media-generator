@@ -22,7 +22,7 @@ export const PrivacyPage: React.FC = () => {
     >
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
         <Card variant="glass" padding="lg" className="border border-primary-200">
-          <h2 className="text-2xl font-bold mb-3">0. Обработка персональных данных</h2>
+          <h2 className="text-2xl font-bold mb-3">1. Обработка персональных данных</h2>
           <ul className="space-y-2 text-dark-700 text-sm leading-relaxed">
             <li>Оператор: Чернов Руслан Васильевич, ИНН 222312090918 (далее — «Оператор»).</li>
             <li>Правовое основание: 152-ФЗ «О персональных данных», акцепт оферты и согласие при регистрации/входе.</li>
@@ -34,7 +34,7 @@ export const PrivacyPage: React.FC = () => {
         </Card>
 
         <Card variant="glass" padding="lg" className="border border-primary-200">
-          <h2 className="text-2xl font-bold mb-3">1. Обрабатываемые данные</h2>
+          <h2 className="text-2xl font-bold mb-3">2. Обрабатываемые данные</h2>
           <ul className="space-y-2 text-dark-700 text-sm leading-relaxed">
             <li>Email, имя и фамилия (если указаны) — для регистрации и коммуникации.</li>
             <li>Файлы изображений и переписка с ассистентом — для оказания услуг (примерка, редактирование).</li>
@@ -43,7 +43,7 @@ export const PrivacyPage: React.FC = () => {
         </Card>
 
         <Card variant="glass" padding="lg" className="border border-primary-200">
-          <h2 className="text-2xl font-bold mb-3">2. Цели обработки</h2>
+          <h2 className="text-2xl font-bold mb-3">3. Цели обработки</h2>
           <ul className="space-y-2 text-dark-700 text-sm leading-relaxed">
             <li>Оказание услуг по виртуальной примерке и AI-редактированию.</li>
             <li>Отправка служебных писем (подтверждение e-mail, статус операций, безопасность).</li>
@@ -52,7 +52,7 @@ export const PrivacyPage: React.FC = () => {
         </Card>
 
         <Card variant="glass" padding="lg" className="border border-primary-200">
-          <h2 className="text-2xl font-bold mb-3">3. Хранение</h2>
+          <h2 className="text-2xl font-bold mb-3">4. Хранение</h2>
           <ul className="space-y-2 text-dark-700 text-sm leading-relaxed">
             <li>Данные хранятся на VPS хостинге (Россия) для домена ai-generator.mix4.ru; доступ ограничен учетками администратора.</li>
             <li>База данных и файлы находятся на том же сервере; резервные копии могут храниться в том же дата-центре.</li>
@@ -63,7 +63,7 @@ export const PrivacyPage: React.FC = () => {
         </Card>
 
         <Card variant="glass" padding="lg" className="border border-primary-200">
-          <h2 className="text-2xl font-bold mb-3">4. Передача третьим лицам</h2>
+          <h2 className="text-2xl font-bold mb-3">5. Передача третьим лицам</h2>
           <ul className="space-y-2 text-dark-700 text-sm leading-relaxed">
             <li>Платежи обрабатывает ЮKassa — передаем минимальные платежные данные.</li>
             <li>AI-генерация выполняется сторонними моделями — изображения и промпты могут передаваться провайдеру модели.</li>
@@ -72,7 +72,7 @@ export const PrivacyPage: React.FC = () => {
         </Card>
 
         <Card variant="glass" padding="lg" className="border border-primary-200">
-          <h2 className="text-2xl font-bold mb-3">5. Права пользователя</h2>
+          <h2 className="text-2xl font-bold mb-3">6. Права пользователя</h2>
           <ul className="space-y-2 text-dark-700 text-sm leading-relaxed">
             <li>Запросить актуализацию или удаление аккаунта и данных (если это не противоречит закону).</li>
             <li>Отозвать согласие на рассылку служебных писем невозможно — они необходимы для работы сервиса.</li>
@@ -81,7 +81,7 @@ export const PrivacyPage: React.FC = () => {
         </Card>
 
         <Card variant="glass" padding="lg" className="border border-primary-200">
-          <h2 className="text-2xl font-bold mb-3">6. Меры защиты</h2>
+          <h2 className="text-2xl font-bold mb-3">7. Меры защиты</h2>
           <ul className="space-y-2 text-dark-700 text-sm leading-relaxed">
             <li>Передача данных ведётся по HTTPS (TLS); подключение к сайту ai-generator.mix4.ru — только шифрованное.</li>
             <li>Пароли хранятся в виде хэша (bcrypt); доступ к базе и файлам ограничен учетными записями администратора.</li>
@@ -92,7 +92,7 @@ export const PrivacyPage: React.FC = () => {
         </Card>
 
         <Card variant="glass" padding="lg" className="border border-primary-200">
-          <h2 className="text-2xl font-bold mb-3">6. Контакты и оператор</h2>
+          <h2 className="text-2xl font-bold mb-3">8. Контакты и оператор</h2>
           <ul className="space-y-2 text-dark-700 text-sm leading-relaxed">
             <li>Оператор: Чернов Руслан Васильевич, ИНН 222312090918.</li>
             <li>Почтовый адрес: г. Барнаул, ул. Энтузиастов 55-203, 656065.</li>

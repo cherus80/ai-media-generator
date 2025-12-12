@@ -13,25 +13,43 @@ export const YandexMetrika: React.FC = () => {
     if (!counterId) return;
     if (document.getElementById('ym-tag')) return;
 
-    const script = document.createElement('script');
-    script.id = 'ym-tag';
-    script.async = true;
-    script.src = 'https://mc.yandex.ru/metrika/tag.js';
-    script.onload = () => {
-      if (window.ym) {
-        window.ym(Number(counterId), 'init', {
-          clickmap: true,
-          trackLinks: true,
-          accurateTrackBounce: true,
-          defer: true,
-          webvisor: true,
-        });
+    (function (m, e, t, r, i, k, a) {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      m[i] =
+        m[i] ||
+        function () {
+          // eslint-disable-next-line prefer-rest-params
+          (m[i].a = m[i].a || []).push(arguments);
+        };
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      m[i].l = 1 * new Date();
+      for (let j = 0; j < e.scripts.length; j++) {
+        // @ts-ignore
+        if (e.scripts[j].src === r) return;
       }
-    };
-    document.head.appendChild(script);
+      k = e.createElement(t);
+      a = e.getElementsByTagName(t)[0];
+      k.async = true;
+      k.src = `${r}?id=${counterId}`;
+      // @ts-ignore
+      a.parentNode.insertBefore(k, a);
+    })(window, document, 'script', 'https://mc.yandex.ru/metrika/tag.js', 'ym');
+
+    if (window.ym) {
+      window.ym(Number(counterId), 'init', {
+        ssr: true,
+        webvisor: true,
+        clickmap: true,
+        ecommerce: 'dataLayer',
+        accurateTrackBounce: true,
+        trackLinks: true,
+      });
+    }
 
     return () => {
-      script.remove();
+      // ym snippet не требует очистки; скрипт оставляем
     };
   }, [counterId]);
 
