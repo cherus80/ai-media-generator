@@ -165,10 +165,12 @@ services:
       dockerfile: Dockerfile.prod
       args:
         - VITE_API_BASE_URL=${VITE_API_BASE_URL}
+        - VITE_APP_NAME=${VITE_APP_NAME}
         - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
         - VITE_VK_APP_ID=${VITE_VK_APP_ID}
         - VITE_VK_REDIRECT_URI=${VITE_VK_REDIRECT_URI}
         - VITE_VK_AUTH_URL=${VITE_VK_AUTH_URL:-https://id.vk.com/authorize}
+        - VITE_YANDEX_METRIKA_ID=${VITE_YANDEX_METRIKA_ID}
         - VITE_ENV=production
     container_name: ai_image_generator_frontend_prod
     restart: always
