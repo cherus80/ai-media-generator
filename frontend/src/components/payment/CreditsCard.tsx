@@ -19,6 +19,9 @@ export const CreditsCard: React.FC<CreditsCardProps> = ({
 }) => {
   const totalCredits = pkg.credits_amount + (pkg.bonus_credits || 0);
   const hasBonus = pkg.bonus_credits && pkg.bonus_credits > 0;
+  const tryOnCount = Math.floor(totalCredits / 2);
+  const editsWithoutAssistant = Math.floor(totalCredits / 2);
+  const editsWithAssistant = Math.floor(totalCredits / 3);
 
   return (
     <div
@@ -98,13 +101,18 @@ export const CreditsCard: React.FC<CreditsCardProps> = ({
         <div className="text-xs text-gray-600 space-y-1 max-[360px]:text-[11px]">
           <div className="flex justify-between">
             <span>Примерка одежды:</span>
-            <span className="font-semibold">
-              {Math.floor(totalCredits / 2)} раз
-            </span>
+            <span className="font-semibold">{tryOnCount} раз</span>
           </div>
-          <div className="flex justify-between">
+          <div className="flex justify-between items-start">
             <span>Редактирование:</span>
-            <span className="font-semibold">{totalCredits} раз</span>
+            <div className="text-right">
+              <div className="font-semibold">
+                до {editsWithAssistant}-{editsWithoutAssistant} раз
+              </div>
+              <div className="text-[10px] leading-tight text-gray-500 max-[360px]:text-[9px]">
+                2 кредита за действие, +1 при использовании AI-помощника
+              </div>
+            </div>
           </div>
         </div>
       </div>
