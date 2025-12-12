@@ -13,28 +13,26 @@ export const YandexMetrika: React.FC = () => {
     if (!counterId) return;
     if (document.getElementById('ym-tag')) return;
 
-    (function (m, e, t, r, i, k, a) {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      m[i] =
-        m[i] ||
-        function () {
-          // eslint-disable-next-line prefer-rest-params
-          (m[i].a = m[i].a || []).push(arguments);
-        };
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      m[i].l = 1 * new Date();
-      for (let j = 0; j < e.scripts.length; j++) {
-        // @ts-ignore
-        if (e.scripts[j].src === r) return;
+    ((m: Window & { ym?: (...args: unknown[]) => void }, doc: Document, tag: 'script', src: string, name: 'ym') => {
+      const existing = Array.from(doc.getElementsByTagName(tag)).find((s) => s.src === src);
+      if (existing) return;
+
+      const ymFunc = (...args: unknown[]) => {
+        (ymFunc as any).a = (ymFunc as any).a || [];
+        (ymFunc as any).a.push(args);
+      };
+
+      if (!m[name]) {
+        const fn = ymFunc as typeof m.ym;
+        fn.l = Number(new Date());
+        m[name] = fn;
       }
-      k = e.createElement(t);
-      a = e.getElementsByTagName(t)[0];
-      k.async = true;
-      k.src = `${r}?id=${counterId}`;
-      // @ts-ignore
-      a.parentNode.insertBefore(k, a);
+
+      const scriptEl = doc.createElement(tag);
+      const firstScript = doc.getElementsByTagName(tag)[0];
+      scriptEl.async = true;
+      scriptEl.src = `${src}?id=${counterId}`;
+      firstScript?.parentNode?.insertBefore(scriptEl, firstScript);
     })(window, document, 'script', 'https://mc.yandex.ru/metrika/tag.js', 'ym');
 
     if (window.ym) {
