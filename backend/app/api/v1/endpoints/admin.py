@@ -59,6 +59,8 @@ from app.schemas.admin import (
     UpdateFallbackSettingsRequest,
     ConsentExportItem,
     ConsentExportResponse,
+    DeleteConsentsRequest,
+    DeleteConsentsResponse,
 )
 from app.utils.tax import (
     calculate_npd_tax,
@@ -796,6 +798,7 @@ async def export_consents(
 
     export_items = [
         ConsentExportItem(
+            id=consent.id,
             user_id=user.id,
             email=user.email,
             consent_version=consent.consent_version,
@@ -819,6 +822,7 @@ async def export_consents(
     output = io.StringIO()
     writer = csv.writer(output)
     writer.writerow([
+        "ID",
         "User ID",
         "Email",
         "Consent Version",
@@ -830,6 +834,7 @@ async def export_consents(
 
     for item in export_items:
         writer.writerow([
+            item.id,
             item.user_id,
             item.email or "",
             item.consent_version,
@@ -849,6 +854,26 @@ async def export_consents(
             "Content-Disposition": f"attachment; filename=consents_export_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
         }
     )
+
+
+@router.delete("/consents", response_model=DeleteConsentsResponse)
+async def delete_consents(
+    payload: DeleteConsentsRequest,
+    admin: AdminUser,
+    db: DBSession,
+) -> DeleteConsentsResponse:
+    """
+    Удалить выбранные согласия на обработку ПДн (только ADMIN).
+    """
+    if not payload.consent_ids:
+        return DeleteConsentsResponse(deleted_count=0)
+
+    delete_stmt = sa.delete(UserConsent).where(UserConsent.id.in_(payload.consent_ids))
+    result = await db.execute(delete_stmt)
+    await db.commit()
+
+    deleted_count = result.rowcount or 0
+    return DeleteConsentsResponse(deleted_count=deleted_count)
 
 
 # ============================================================================

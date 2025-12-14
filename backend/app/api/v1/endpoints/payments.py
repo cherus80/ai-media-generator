@@ -15,7 +15,7 @@ from typing import Optional
 import json
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Header
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
@@ -28,6 +28,8 @@ from app.schemas.payment import (
     PaymentCreateResponse,
     PaymentHistoryResponse,
     PaymentHistoryItem,
+    PaymentHideRequest,
+    PaymentHideResponse,
     TariffsListResponse,
     TariffInfo,
     PaymentStatusResponse,
@@ -389,20 +391,19 @@ async def get_payment_history(
 
     Возвращает список платежей с пагинацией.
     """
-    # Подсчёт общего количества
-    count_stmt = select(Payment).where(Payment.user_id == current_user.id)
-    count_result = await db.execute(count_stmt)
-    total = len(count_result.scalars().all())
-
-    # Получение страницы
-    offset = (page - 1) * page_size
-    stmt = (
-        select(Payment)
-        .where(Payment.user_id == current_user.id)
-        .order_by(desc(Payment.created_at))
-        .offset(offset)
-        .limit(page_size)
+    base_query = select(Payment).where(
+        Payment.user_id == current_user.id,
+        Payment.is_hidden.is_(False),
     )
+
+    total = await db.scalar(
+        select(func.count()).select_from(
+            base_query.subquery()
+        )
+    ) or 0
+
+    offset = (page - 1) * page_size
+    stmt = base_query.order_by(desc(Payment.created_at)).offset(offset).limit(page_size)
     result = await db.execute(stmt)
     payments = result.scalars().all()
 
@@ -415,6 +416,39 @@ async def get_payment_history(
         page=page,
         page_size=page_size,
     )
+
+
+@router.post("/history/hide", response_model=PaymentHideResponse)
+async def hide_payments(
+    payload: PaymentHideRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Скрыть выбранные платежи из истории пользователя.
+    """
+    if not payload.payment_ids:
+        return PaymentHideResponse(deleted_count=0)
+
+    stmt = select(Payment.id).where(
+        Payment.user_id == current_user.id,
+        Payment.id.in_(payload.payment_ids),
+        Payment.is_hidden.is_(False),
+    )
+    result = await db.execute(stmt)
+    ids_to_hide = result.scalars().all()
+
+    if not ids_to_hide:
+        return PaymentHideResponse(deleted_count=0)
+
+    await db.execute(
+        update(Payment)
+        .where(Payment.id.in_(ids_to_hide))
+        .values(is_hidden=True)
+    )
+    await db.commit()
+
+    return PaymentHideResponse(deleted_count=len(ids_to_hide))
 
 
 @router.get("/tariffs", response_model=TariffsListResponse)

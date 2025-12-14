@@ -176,6 +176,10 @@ export interface ConsentExportRequest {
   format?: 'csv' | 'json';
 }
 
+export interface DeleteConsentsResponse {
+  deleted_count: number;
+}
+
 // ============================================================================
 // Локальные типы для UI
 // ============================================================================

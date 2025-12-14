@@ -10,6 +10,7 @@ import {
   getTariffs,
   getPaymentHistory,
   openPaymentWindow,
+  hidePayments as hidePaymentsApi,
 } from '../api/payment';
 import { useAuthStore } from './authStore';
 import type {
@@ -21,6 +22,26 @@ import type {
   PaymentHistoryItem,
   PaymentCreateRequest,
 } from '../types/payment';
+
+const extractErrorMessage = (error: any, fallback: string): string => {
+  const detail = error?.response?.data?.detail;
+
+  if (typeof detail === 'string') {
+    return detail;
+  }
+
+  if (Array.isArray(detail)) {
+    return detail
+      .map((item) => item?.msg || item?.message || JSON.stringify(item))
+      .join('; ');
+  }
+
+  if (detail && typeof detail === 'object') {
+    return detail.message || JSON.stringify(detail);
+  }
+
+  return error?.message || fallback;
+};
 
 /**
  * Интерфейс состояния store
@@ -41,6 +62,7 @@ interface PaymentState {
   selectCreditsPackage: (creditsAmount: number) => void;
   loadTariffs: () => Promise<void>;
   loadPaymentHistory: (page?: number, pageSize?: number) => Promise<void>;
+  hidePayments: (paymentIds: number[]) => Promise<void>;
   createPayment: () => Promise<void>;
   reset: () => void;
   clearError: () => void;
@@ -190,7 +212,7 @@ export const usePaymentStore = create<PaymentState>()(
         } catch (error: any) {
           console.error('Failed to load tariffs:', error);
           set({
-            error: error.response?.data?.detail || 'Не удалось загрузить тарифы',
+            error: extractErrorMessage(error, 'Не удалось загрузить тарифы'),
             isLoading: false,
           });
         }
@@ -211,9 +233,41 @@ export const usePaymentStore = create<PaymentState>()(
         } catch (error: any) {
           console.error('Failed to load payment history:', error);
           set({
-            error:
-              error.response?.data?.detail ||
-              'Не удалось загрузить историю платежей',
+            error: extractErrorMessage(
+              error,
+              'Не удалось загрузить историю платежей'
+            ),
+            isLoading: false,
+          });
+        }
+      },
+
+      /**
+       * Скрыть выбранные платежи из истории
+       */
+      hidePayments: async (paymentIds: number[]) => {
+        if (!paymentIds.length) {
+          return;
+        }
+
+        set({ error: null, isLoading: true });
+
+        try {
+          await hidePaymentsApi(paymentIds);
+          const { paymentHistory } = get();
+          set({
+            paymentHistory: paymentHistory.filter(
+              (item) => !paymentIds.includes(item.id)
+            ),
+            isLoading: false,
+          });
+        } catch (error: any) {
+          console.error('Failed to hide payments:', error);
+          set({
+            error: extractErrorMessage(
+              error,
+              'Не удалось удалить выбранные платежи'
+            ),
             isLoading: false,
           });
         }
@@ -260,8 +314,7 @@ export const usePaymentStore = create<PaymentState>()(
         } catch (error: any) {
           console.error('Failed to create payment:', error);
           set({
-            error:
-              error.response?.data?.detail || 'Не удалось создать платёж',
+            error: extractErrorMessage(error, 'Не удалось создать платёж'),
             isLoading: false,
           });
         }

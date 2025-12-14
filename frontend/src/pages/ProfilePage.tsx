@@ -20,12 +20,20 @@ import toast from 'react-hot-toast';
 
 export const ProfilePage: React.FC = () => {
   const { user, refreshProfile } = useAuthStore();
-  const { paymentHistory, loadPaymentHistory, isLoading, reset: resetPayments } = usePayment();
+  const {
+    paymentHistory,
+    loadPaymentHistory,
+    isLoading,
+    hidePayments,
+    reset: resetPayments,
+  } = usePayment();
   const [showPaymentWizard, setShowPaymentWizard] = useState(false);
   const [paymentReturnMessage, setPaymentReturnMessage] = useState<string | null>(null);
   const [referralStats, setReferralStats] = useState<ReferralStatsResponse | null>(null);
   const [isLoadingReferrals, setIsLoadingReferrals] = useState(false);
   const [isSendingVerification, setIsSendingVerification] = useState(false);
+  const [selectedPayments, setSelectedPayments] = useState<number[]>([]);
+  const [isDeletingPayments, setIsDeletingPayments] = useState(false);
 
   // Загружаем историю платежей при монтировании
   useEffect(() => {
@@ -43,6 +51,40 @@ export const ProfilePage: React.FC = () => {
       console.error('Failed to load referral stats:', error);
     } finally {
       setIsLoadingReferrals(false);
+    }
+  };
+
+  const togglePaymentSelection = (paymentId: number) => {
+    setSelectedPayments((prev) =>
+      prev.includes(paymentId)
+        ? prev.filter((id) => id !== paymentId)
+        : [...prev, paymentId]
+    );
+  };
+
+  const clearMissingSelections = () => {
+    setSelectedPayments((prev) =>
+      prev.filter((id) => paymentHistory.some((payment) => payment.id === id))
+    );
+  };
+
+  useEffect(() => {
+    clearMissingSelections();
+  }, [paymentHistory]);
+
+  const handleDeleteSelected = async () => {
+    if (!selectedPayments.length) return;
+
+    setIsDeletingPayments(true);
+    try {
+      await hidePayments(selectedPayments);
+      setSelectedPayments([]);
+      toast.success('Записи оплаты скрыты из истории');
+    } catch (error) {
+      console.error('Failed to delete payments:', error);
+      toast.error('Не удалось удалить выбранные записи');
+    } finally {
+      setIsDeletingPayments(false);
     }
   };
 
@@ -381,12 +423,33 @@ export const ProfilePage: React.FC = () => {
           transition={{ delay: 0.5 }}
         >
           <Card variant="glass" padding="lg">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
               <h2 className="text-2xl font-bold gradient-text">История платежей</h2>
-              <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-xl flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
+              <div className="flex items-center gap-3">
+                {selectedPayments.length > 0 && (
+                  <span className="text-sm text-dark-600">
+                    Выбрано: <span className="font-semibold">{selectedPayments.length}</span>
+                  </span>
+                )}
+                <button
+                  onClick={handleDeleteSelected}
+                  disabled={!selectedPayments.length || isDeletingPayments || isLoading}
+                  className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-semibold transition-colors border ${
+                    !selectedPayments.length || isDeletingPayments || isLoading
+                      ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                      : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
+                  }`}
+                >
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0h8l-1-2h-6l-1 2z" />
+                  </svg>
+                  Удалить выбранные
+                </button>
+                <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-xl flex items-center justify-center">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                </div>
               </div>
             </div>
 
@@ -417,40 +480,50 @@ export const ProfilePage: React.FC = () => {
                     transition={{ delay: 0.1 * index }}
                   >
                     <Card variant="bordered" padding="md" hover className="bg-white/50">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div className="flex items-start sm:items-center space-x-4 flex-1">
-                          <div className="w-12 h-12 bg-gradient-to-br from-primary-100 to-secondary-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                            <svg className="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              {payment.payment_type === 'subscription' ? (
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                              ) : (
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              )}
-                            </svg>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center space-x-2 mb-1">
-                              <span className="font-bold text-dark-900 truncate">
-                                {payment.payment_type === 'subscription'
-                                  ? `Подписка ${payment.subscription_type || ''}`.trim()
-                                  : payment.credits_amount
-                                    ? `${payment.credits_amount} кредитов`
-                                    : 'Покупка кредитов'}
-                              </span>
-                              {getPaymentStatusBadge(payment.status)}
+                      <div className="flex items-start gap-3">
+                        <label className="pt-1">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                            checked={selectedPayments.includes(payment.id)}
+                            onChange={() => togglePaymentSelection(payment.id)}
+                          />
+                        </label>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full">
+                          <div className="flex items-start sm:items-center space-x-4 flex-1">
+                            <div className="w-12 h-12 bg-gradient-to-br from-primary-100 to-secondary-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                              <svg className="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                {payment.payment_type === 'subscription' ? (
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                                ) : (
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                )}
+                              </svg>
                             </div>
-                            <div className="text-xs text-dark-600 space-y-0.5">
-                              <div className="break-all">ID: {payment.payment_id || '—'}</div>
-                              <div>{formatDate(payment.created_at)}</div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center space-x-2 mb-1">
+                                <span className="font-bold text-dark-900 truncate">
+                                  {payment.payment_type === 'subscription'
+                                    ? `Подписка ${payment.subscription_type || ''}`.trim()
+                                    : payment.credits_amount
+                                      ? `${payment.credits_amount} кредитов`
+                                      : 'Покупка кредитов'}
+                                </span>
+                                {getPaymentStatusBadge(payment.status)}
+                              </div>
+                              <div className="text-xs text-dark-600 space-y-0.5">
+                                <div className="break-all">ID: {payment.payment_id || '—'}</div>
+                                <div>{formatDate(payment.created_at)}</div>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        <div className="text-left sm:text-right sm:ml-4 flex-shrink-0">
-                          <div className="font-bold text-lg sm:text-xl text-dark-900">
-                            {payment.amount} ₽
-                          </div>
-                          <div className="text-xs text-dark-500 mt-1">
-                            {payment.paid_at ? 'Оплачено' : formatDate(payment.created_at)}
+                          <div className="text-left sm:text-right sm:ml-4 flex-shrink-0">
+                            <div className="font-bold text-lg sm:text-xl text-dark-900">
+                              {payment.amount} ₽
+                            </div>
+                            <div className="text-xs text-dark-500 mt-1">
+                              {payment.paid_at ? 'Оплачено' : formatDate(payment.created_at)}
+                            </div>
                           </div>
                         </div>
                       </div>

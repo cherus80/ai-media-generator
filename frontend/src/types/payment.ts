@@ -80,6 +80,10 @@ export interface PaymentHistoryResponse {
   total_pages: number;
 }
 
+export interface PaymentHideResponse {
+  deleted_count: number;
+}
+
 /**
  * Информация о тарифе подписки
  */

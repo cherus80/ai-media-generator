@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { exportConsentsCSV, getConsents } from '../../api/admin';
+import { exportConsentsCSV, getConsents, deleteConsents } from '../../api/admin';
 import type { ConsentExportItem, ConsentExportRequest, ConsentExportResponse } from '../../types/admin';
 
 type Filters = {
@@ -24,6 +24,8 @@ export const Consents: React.FC = () => {
   const [data, setData] = useState<ConsentExportResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const load = async (payload?: Partial<ConsentExportRequest>) => {
     setLoading(true);
@@ -48,6 +50,12 @@ export const Consents: React.FC = () => {
     load();
   }, []);
 
+  useEffect(() => {
+    setSelectedIds((prev) =>
+      prev.filter((id) => data?.consents?.some((item) => item.id === id))
+    );
+  }, [data]);
+
   const handleExport = async () => {
     try {
       await exportConsentsCSV({
@@ -62,8 +70,50 @@ export const Consents: React.FC = () => {
     }
   };
 
+  const toggleSelect = (id: number) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (!data?.consents?.length) return;
+    if (selectedIds.length === data.consents.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(data.consents.map((item) => item.id));
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (!selectedIds.length) return;
+    setIsDeleting(true);
+    setError(null);
+    try {
+      await deleteConsents(selectedIds);
+      setSelectedIds([]);
+      await load();
+    } catch (err: any) {
+      console.error(err);
+      const msg = err?.response?.data?.detail || err?.message || 'Не удалось удалить записи';
+      setError(msg);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const allSelected = data?.consents?.length ? selectedIds.length === data.consents.length : false;
+
   const renderRow = (item: ConsentExportItem) => (
-    <tr key={`${item.user_id}-${item.granted_at}-${item.source}`}>
+    <tr key={item.id}>
+      <td className="px-4 py-2 text-center">
+        <input
+          type="checkbox"
+          checked={selectedIds.includes(item.id)}
+          onChange={() => toggleSelect(item.id)}
+          className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+        />
+      </td>
       <td className="px-4 py-2 text-sm text-gray-900 font-medium">{item.user_id}</td>
       <td className="px-4 py-2 text-sm text-gray-700">{item.email || '—'}</td>
       <td className="px-4 py-2 text-sm text-gray-700">{item.consent_version}</td>
@@ -131,6 +181,25 @@ export const Consents: React.FC = () => {
             </button>
           </div>
         </div>
+        <div className="flex items-center justify-between text-sm text-gray-600">
+          <span>
+            Выбрано: <span className="font-semibold">{selectedIds.length}</span>
+          </span>
+          <button
+            onClick={handleDeleteSelected}
+            disabled={!selectedIds.length || isDeleting || loading}
+            className={`inline-flex items-center px-3 py-2 rounded-md border text-sm font-semibold shadow-sm ${
+              !selectedIds.length || isDeleting || loading
+                ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
+            }`}
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0h8l-1-2h-6l-1 2z" />
+            </svg>
+            {isDeleting ? 'Удаляем...' : 'Удалить выбранные'}
+          </button>
+        </div>
         {error && <p className="text-sm text-red-600">{error}</p>}
       </div>
 
@@ -139,6 +208,14 @@ export const Consents: React.FC = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={toggleSelectAll}
+                    className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  />
+                </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">User ID</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Email</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Версия</th>
@@ -151,7 +228,7 @@ export const Consents: React.FC = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {data?.consents?.length ? data.consents.map(renderRow) : (
                 <tr>
-                  <td colSpan={7} className="px-4 py-6 text-center text-sm text-gray-500">
+                  <td colSpan={8} className="px-4 py-6 text-center text-sm text-gray-500">
                     {loading ? 'Загружаем...' : 'Нет данных за выбранный период'}
                   </td>
                 </tr>

@@ -10,7 +10,7 @@ Pydantic схемы для админки.
 from datetime import datetime
 from enum import Enum
 from decimal import Decimal
-from typing import Optional
+from typing import Optional, Literal
 from pydantic import BaseModel, Field, FieldValidationInfo, field_validator
 
 
@@ -193,6 +193,7 @@ class PaymentExportResponse(BaseModel):
 class ConsentExportItem(BaseModel):
     """Запись о согласии на обработку ПДн."""
 
+    id: int = Field(..., description="ID записи о согласии")
     user_id: int
     email: str | None = Field(None, description="Email пользователя")
     consent_version: str = Field(..., description="Версия согласия")
@@ -215,6 +216,29 @@ class ConsentExportResponse(BaseModel):
 # ============================================================================
 # Запросы
 # ============================================================================
+
+class ConsentExportRequest(BaseModel):
+    date_from: datetime | None = Field(default=None, description="Начальная дата")
+    date_to: datetime | None = Field(default=None, description="Конечная дата")
+    version: str | None = Field(default=None, description="Фильтр по версии согласия")
+    format: Literal["csv", "json"] = Field(default="csv", description="Формат экспорта")
+
+
+class DeleteConsentsRequest(BaseModel):
+    """Запрос на удаление выбранных согласий."""
+
+    consent_ids: list[int] = Field(
+        ...,
+        min_length=1,
+        description="Список ID согласий для удаления",
+    )
+
+
+class DeleteConsentsResponse(BaseModel):
+    """Результат удаления согласий."""
+
+    deleted_count: int = Field(..., description="Сколько записей удалено")
+
 
 class AdminUsersRequest(BaseModel):
     """Параметры для получения списка пользователей."""

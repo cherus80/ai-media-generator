@@ -16,6 +16,7 @@ from sqlalchemy import (
     Numeric,
     Index,
     Text,
+    Boolean,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -163,6 +164,15 @@ class Payment(Base, TimestampMixin):
         String(500),
         nullable=True,
         comment="Описание платежа для пользователя",
+    )
+
+    is_hidden: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        server_default="false",
+        nullable=False,
+        index=True,
+        comment="Скрыт ли платёж из истории пользователя",
     )
 
     # Relationships

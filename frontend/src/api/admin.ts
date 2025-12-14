@@ -25,6 +25,7 @@ import type {
   UpdateFallbackSettingsRequest,
   ConsentExportResponse,
   ConsentExportRequest,
+  DeleteConsentsResponse,
 } from '../types/admin';
 
 // ============================================================================
@@ -297,6 +298,13 @@ export const exportConsentsCSV = async (params?: ConsentExportRequest): Promise<
   link.click();
   document.body.removeChild(link);
   window.URL.revokeObjectURL(url);
+};
+
+export const deleteConsents = async (consentIds: number[]): Promise<DeleteConsentsResponse> => {
+  const response = await apiClient.delete<DeleteConsentsResponse>('/api/v1/admin/consents', {
+    data: { consent_ids: consentIds },
+  });
+  return response.data;
 };
 
 export const updateFittingPrompt = async (

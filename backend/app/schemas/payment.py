@@ -32,7 +32,7 @@ class PaymentCreateRequest(BaseModel):
     credits_amount: Optional[int] = Field(
         None,
         description="Количество кредитов (только для payment_type=credits)",
-        ge=20,
+        ge=1,
         le=10000,
     )
 
@@ -164,6 +164,25 @@ class PaymentHistoryResponse(BaseModel):
     page_size: int = Field(
         default=20,
         description="Размер страницы",
+    )
+
+
+class PaymentHideRequest(BaseModel):
+    """Запрос на скрытие платежей в истории."""
+
+    payment_ids: list[int] = Field(
+        ...,
+        min_length=1,
+        description="ID платежей, которые нужно скрыть из истории",
+    )
+
+
+class PaymentHideResponse(BaseModel):
+    """Ответ после скрытия платежей."""
+
+    deleted_count: int = Field(
+        ...,
+        description="Сколько платежей было скрыто",
     )
 
 

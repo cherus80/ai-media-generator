@@ -10,6 +10,7 @@ import type {
   PaymentStatusResponse,
   PaymentHistoryResponse,
   TariffsListResponse,
+  PaymentHideResponse,
 } from '../types/payment';
 
 /**
@@ -67,6 +68,18 @@ export const getPaymentHistory = async (
 export const getTariffs = async (): Promise<TariffsListResponse> => {
   const response = await apiClient.get<TariffsListResponse>(
     '/api/v1/payments/tariffs'
+  );
+  return response.data;
+};
+
+/**
+ * Скрыть выбранные платежи из истории пользователя
+ * @param paymentIds - ID платежей для скрытия
+ */
+export const hidePayments = async (paymentIds: number[]): Promise<PaymentHideResponse> => {
+  const response = await apiClient.post<PaymentHideResponse>(
+    '/api/v1/payments/history/hide',
+    { payment_ids: paymentIds }
   );
   return response.data;
 };
