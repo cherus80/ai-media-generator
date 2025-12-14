@@ -7,7 +7,7 @@ Endpoints:
 - GET /api/v1/admin/dashboard/user-activity — активность пользователей (защищено role=ADMIN)
 - GET /api/v1/admin/users — список пользователей (защищено role=ADMIN)
 - GET /api/v1/admin/users/{user_id} — детали пользователя (защищено role=ADMIN)
-- POST /api/v1/admin/users/{user_id}/add-credits — начислить кредиты (защищено role=ADMIN)
+- PUT /api/v1/admin/users/{user_id}/credits — редактировать баланс кредитов (защищено role=ADMIN)
 - GET /api/v1/admin/referrals/stats — статистика рефералов (защищено role=ADMIN)
 - GET /api/v1/admin/export/users — экспорт пользователей CSV (защищено role=ADMIN)
 - GET /api/v1/admin/export/payments — экспорт платежей CSV/JSON (защищено role=ADMIN)
@@ -31,8 +31,6 @@ from app.core.config import settings
 from app.db.session import get_db
 from app.models import ChatHistory, Generation, Payment, Referral, User, SubscriptionType, UserConsent
 from app.schemas.admin import (
-    AddCreditsRequest,
-    AddCreditsResponse,
     AdminChartsData,
     AdminStats,
     AdminUsersRequest,
@@ -61,6 +59,8 @@ from app.schemas.admin import (
     ConsentExportResponse,
     DeleteConsentsRequest,
     DeleteConsentsResponse,
+    UpdateCreditsRequest,
+    UpdateCreditsResponse,
 )
 from app.utils.tax import (
     calculate_npd_tax,
@@ -1000,47 +1000,48 @@ async def get_user_details(
 
 
 # ============================================================================
-# POST /api/v1/admin/users/{user_id}/add-credits — Начислить кредиты
+# PUT /api/v1/admin/users/{user_id}/credits — Редактировать баланс кредитов
 # ============================================================================
 
-@router.post("/users/{user_id}/add-credits", response_model=AddCreditsResponse)
-async def add_user_credits(
+@router.put("/users/{user_id}/credits", response_model=UpdateCreditsResponse)
+async def update_user_credits(
     user_id: int,
-    request: AddCreditsRequest,
+    request: UpdateCreditsRequest,
     admin: AdminUser,
     db: DBSession,
-) -> AddCreditsResponse:
+) -> UpdateCreditsResponse:
     """
-    Начислить кредиты пользователю.
+    Установить новый баланс кредитов пользователю.
 
     Требует роль: ADMIN
     """
-    # Получаем пользователя
     user = await db.scalar(select(User).where(User.id == user_id))
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Начисляем кредиты
-    user.balance_credits += request.amount
+    previous_balance = user.balance_credits
+    user.balance_credits = request.new_balance
     await db.commit()
     await db.refresh(user)
 
-    # Логируем действие
     logger.info(
-        "Admin %s (%s) added %s credits to user_id=%s (new_balance=%s, reason=%s)",
+        "Admin %s (%s) set credits for user_id=%s: %s -> %s (reason=%s)",
         admin.id,
         getattr(admin, "email", "unknown"),
-        request.amount,
         user.id,
+        previous_balance,
         user.balance_credits,
-        request.reason,
+        request.reason or "not provided",
     )
 
-    return AddCreditsResponse(
+    reason_suffix = f" Reason: {request.reason}" if request.reason else ""
+
+    return UpdateCreditsResponse(
         success=True,
         user_id=user.id,
+        previous_balance=previous_balance,
         new_balance=user.balance_credits,
-        message=f"Successfully added {request.amount} credits. Reason: {request.reason}"
+        message=f"Balance updated from {previous_balance} to {user.balance_credits}.{reason_suffix}"
     )
 
 

@@ -6,12 +6,12 @@
  * - Последние генерации
  * - Последние платежи
  * - Рефералов
- * - Кнопку добавления кредитов
+ * - Кнопку редактирования кредитов
  */
 
 import React, { useState, useEffect } from 'react';
 import { getUserDetails, formatCurrency, formatNumber, formatDate, formatRelativeTime } from '../../api/admin';
-import { AddCreditsModal } from './AddCreditsModal';
+import { EditCreditsModal } from './EditCreditsModal';
 import type { UserDetailsResponse } from '../../types/admin';
 
 interface UserDetailsModalProps {
@@ -28,7 +28,7 @@ export const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
   const [userDetails, setUserDetails] = useState<UserDetailsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showAddCreditsModal, setShowAddCreditsModal] = useState(false);
+  const [showEditCreditsModal, setShowEditCreditsModal] = useState(false);
 
   useEffect(() => {
     if (isOpen && userId) {
@@ -50,8 +50,8 @@ export const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
     }
   };
 
-  const handleCreditsAdded = () => {
-    setShowAddCreditsModal(false);
+  const handleCreditsUpdated = () => {
+    setShowEditCreditsModal(false);
     loadUserDetails(); // Перезагружаем данные пользователя
   };
 
@@ -148,10 +148,10 @@ export const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-lg font-semibold text-gray-900">Баланс и подписка</h3>
                       <button
-                        onClick={() => setShowAddCreditsModal(true)}
+                        onClick={() => setShowEditCreditsModal(true)}
                         className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
                       >
-                        Добавить кредиты
+                        Редактировать кредиты
                       </button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -351,7 +351,7 @@ export const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
       </div>
 
       {/* Модальное окно добавления кредитов */}
-      <AddCreditsModal
+      <EditCreditsModal
         user={
           userDetails
             ? {
@@ -362,9 +362,9 @@ export const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
               }
             : null
         }
-        isOpen={showAddCreditsModal}
-        onClose={() => setShowAddCreditsModal(false)}
-        onSuccess={handleCreditsAdded}
+        isOpen={showEditCreditsModal}
+        onClose={() => setShowEditCreditsModal(false)}
+        onSuccess={handleCreditsUpdated}
       />
     </>
   );

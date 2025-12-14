@@ -12,7 +12,7 @@ import React, { useState } from 'react';
 import { AdminGuard } from '../components/guards/AdminGuard';
 import { AdminDashboard } from '../components/admin/AdminDashboard';
 import { UsersManagement } from '../components/admin/UsersManagement';
-import { AddCreditsModal } from '../components/admin/AddCreditsModal';
+import { EditCreditsModal } from '../components/admin/EditCreditsModal';
 import { DeleteUserModal } from '../components/admin/DeleteUserModal';
 import { MakeAdminModal } from '../components/admin/MakeAdminModal';
 import { FittingPrompts } from '../components/admin/FittingPrompts';
@@ -37,14 +37,14 @@ export const AdminPage: React.FC = () => {
 
   // Модальные окна
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [isAddCreditsModalOpen, setIsAddCreditsModalOpen] = useState(false);
+  const [isEditCreditsModalOpen, setIsEditCreditsModalOpen] = useState(false);
   const [isDeleteUserModalOpen, setIsDeleteUserModalOpen] = useState(false);
   const [isMakeAdminModalOpen, setIsMakeAdminModalOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const handleAddCredits = (user: User) => {
+  const handleEditCredits = (user: User) => {
     setSelectedUser(user);
-    setIsAddCreditsModalOpen(true);
+    setIsEditCreditsModalOpen(true);
   };
 
   const handleDeleteUser = (user: User) => {
@@ -148,7 +148,7 @@ export const AdminPage: React.FC = () => {
           {activeTab === 'users' && (
             <UsersManagement
               key={refreshKey}
-              onAddCredits={handleAddCredits}
+              onEditCredits={handleEditCredits}
               onDeleteUser={handleDeleteUser}
               onMakeAdmin={handleMakeAdmin}
             />
@@ -159,10 +159,10 @@ export const AdminPage: React.FC = () => {
         </div>
 
         {/* Модальные окна */}
-        <AddCreditsModal
+        <EditCreditsModal
           user={selectedUser}
-          isOpen={isAddCreditsModalOpen}
-          onClose={() => setIsAddCreditsModalOpen(false)}
+          isOpen={isEditCreditsModalOpen}
+          onClose={() => setIsEditCreditsModalOpen(false)}
           onSuccess={handleSuccess}
         />
         <DeleteUserModal

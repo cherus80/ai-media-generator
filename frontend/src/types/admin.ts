@@ -230,17 +230,18 @@ export interface UserActivityStats {
 }
 
 // ============================================================================
-// Начисление кредитов
+// Редактирование кредитов
 // ============================================================================
 
-export interface AddCreditsRequest {
-  amount: number;
-  reason: string;
+export interface UpdateCreditsRequest {
+  new_balance: number;
+  reason?: string;
 }
 
-export interface AddCreditsResponse {
+export interface UpdateCreditsResponse {
   success: boolean;
   user_id: number;
+  previous_balance: number;
   new_balance: number;
   message: string;
 }

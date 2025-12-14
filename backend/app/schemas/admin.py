@@ -377,27 +377,33 @@ class UserActivityStats(BaseModel):
 
 
 # ============================================================================
-# Начисление кредитов
+# Редактирование баланса кредитов
 # ============================================================================
 
-class AddCreditsRequest(BaseModel):
-    """Запрос на начисление кредитов пользователю."""
-    amount: int = Field(..., gt=0, description="Количество кредитов для начисления")
-    reason: str = Field(..., min_length=3, max_length=200, description="Причина начисления")
+class UpdateCreditsRequest(BaseModel):
+    """Запрос на установку нового баланса кредитов пользователю."""
+    new_balance: int = Field(..., ge=0, description="Итоговый баланс кредитов")
+    reason: str | None = Field(
+        default=None,
+        min_length=3,
+        max_length=200,
+        description="Причина изменения баланса (опционально)",
+    )
 
     class Config:
         json_schema_extra = {
             "example": {
-                "amount": 100,
-                "reason": "Компенсация за проблему с генерацией"
+                "new_balance": 120,
+                "reason": "Коррекция баланса после возврата"
             }
         }
 
 
-class AddCreditsResponse(BaseModel):
-    """Ответ на начисление кредитов."""
+class UpdateCreditsResponse(BaseModel):
+    """Ответ на редактирование баланса кредитов."""
     success: bool
     user_id: int
+    previous_balance: int = Field(..., description="Баланс до изменений")
     new_balance: int = Field(..., description="Новый баланс пользователя")
     message: str
 

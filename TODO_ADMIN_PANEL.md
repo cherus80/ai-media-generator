@@ -86,15 +86,15 @@
    - ✅ Пагинация (skip/limit) (строки 42-44, 277-328)
    - ✅ Поиск по email/username (строки 40, 131-141, 65)
    - ✅ Фильтр по роли (USER/ADMIN/SUPER_ADMIN) (строки 41, 148-161, 66)
-   - ✅ Кнопки действий: 💰 Add Credits, 👑 Make Admin, 🗑️ Delete (строки 237-268)
+   - ✅ Кнопки действий: ✏️ Edit Credits, 👑 Make Admin, 🗑️ Delete (строки 237-268)
    - ✅ isSuperAdmin проверка для кнопки Make Admin (строка 248)
 
-4. **AddCreditsModal** (`frontend/src/components/admin/AddCreditsModal.tsx`)
-   - ✅ Inputs: amount (number), reason (string) (строки 27-28, 122-150)
-   - ✅ Submit: POST /admin/users/{id}/add-credits (строки 52-64)
-   - ✅ Валидация: amount > 0 (строки 38-42)
+4. **EditCreditsModal** (`frontend/src/components/admin/EditCreditsModal.tsx`)
+   - ✅ Inputs: new_balance (number), reason (string, optional) (строки 27-32, 129-157)
+   - ✅ Submit: PUT /admin/users/{id}/credits (строки 63-71)
+   - ✅ Валидация: new_balance >= 0 (строки 50-54)
    - ✅ Success: обновить таблицу через onSuccess callback (строки 75-78)
-   - ✅ Error handling и loading states (строки 29-30, 44-83)
+   - ✅ Error handling и loading states (строки 34-35, 55-89)
 
 5. **DeleteUserModal** (`frontend/src/components/admin/DeleteUserModal.tsx`)
    - ✅ Подтверждение с детальной информацией (строки 98-121)
@@ -133,7 +133,7 @@
 
 ### Высокий приоритет (MVP):
 1. **UsersTable** - основной UI для управления
-2. **AddCreditsModal** - начисление кредитов через UI
+2. **EditCreditsModal** - редактирование баланса кредитов через UI
 3. **DeleteUserModal** - удаление пользователей через UI
 
 ### Средний приоритет:

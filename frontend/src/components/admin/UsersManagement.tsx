@@ -5,7 +5,7 @@
  * - Таблица пользователей с пагинацией
  * - Поиск по email/username
  * - Фильтр по роли
- * - Действия: Add Credits, Delete User, Make Admin (для super admin)
+ * - Действия: Редактирование кредитов, Delete User, Make Admin (для super admin)
  */
 
 import React, { useState, useEffect } from 'react';
@@ -25,13 +25,13 @@ interface User {
 }
 
 interface UsersManagementProps {
-  onAddCredits?: (user: User) => void;
+  onEditCredits?: (user: User) => void;
   onDeleteUser?: (user: User) => void;
   onMakeAdmin?: (user: User) => void;
 }
 
 export const UsersManagement: React.FC<UsersManagementProps> = ({
-  onAddCredits,
+  onEditCredits,
   onDeleteUser,
   onMakeAdmin,
 }) => {
@@ -220,13 +220,13 @@ export const UsersManagement: React.FC<UsersManagementProps> = ({
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                      {/* Add Credits */}
+                      {/* Edit Credits */}
                       <button
-                        onClick={() => onAddCredits?.(user)}
-                        className="text-green-600 hover:text-green-900"
-                        title="Начислить кредиты"
+                        onClick={() => onEditCredits?.(user)}
+                        className="text-blue-600 hover:text-blue-900"
+                        title="Редактировать баланс кредитов"
                       >
-                        💰
+                        ✏️
                       </button>
 
                       {/* Make Admin (только для super admin) */}

@@ -15,8 +15,8 @@ import type {
   UserRegistrationData,
   UserActivityStats,
   UserDetailsResponse,
-  AddCreditsRequest,
-  AddCreditsResponse,
+  UpdateCreditsRequest,
+  UpdateCreditsResponse,
   ReferralStatsResponse,
   FittingPromptListResponse,
   FittingPromptItem,
@@ -90,14 +90,14 @@ export const getUserDetails = async (userId: number): Promise<UserDetailsRespons
 };
 
 /**
- * Начислить кредиты пользователю.
+ * Установить новый баланс кредитов пользователю.
  */
-export const addUserCredits = async (
+export const updateUserCredits = async (
   userId: number,
-  data: AddCreditsRequest
-): Promise<AddCreditsResponse> => {
-  const response = await apiClient.post<AddCreditsResponse>(
-    `/api/v1/admin/users/${userId}/add-credits`,
+  data: UpdateCreditsRequest
+): Promise<UpdateCreditsResponse> => {
+  const response = await apiClient.put<UpdateCreditsResponse>(
+    `/api/v1/admin/users/${userId}/credits`,
     data
   );
   return response.data;
