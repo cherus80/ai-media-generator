@@ -89,13 +89,13 @@ async def _save_pd_consent(
 
     # Не дублируем одинаковое согласие (версия + источник) для пользователя
     existing = await db.execute(
-        select(UserConsent).where(
+        select(UserConsent.id).where(
             UserConsent.user_id == user.id,
             UserConsent.consent_version == version,
             UserConsent.source == source,
-        )
+        ).limit(1)
     )
-    if existing.scalar_one_or_none():
+    if existing.scalars().first():
         return
 
     consent = UserConsent(
