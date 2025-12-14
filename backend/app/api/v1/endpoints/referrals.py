@@ -75,19 +75,20 @@ async def get_referral_link_endpoint(
         referral_code = generate_referral_code(current_user.id)
 
         # Получаем статистику рефералов
-        stmt = select(func.count(Referral.id), func.sum(Referral.credits_awarded)).where(
-            Referral.referrer_id == current_user.id
-        )
-        result = await db.execute(stmt)
-        total_referrals, total_earned = result.one()
-
-        # Если нет рефералов, total_earned может быть None
-        total_earned = total_earned or 0
+        total_referrals = await db.scalar(
+            select(func.count(Referral.id)).where(Referral.referrer_id == current_user.id)
+        ) or 0
+        total_earned = await db.scalar(
+            select(func.sum(Referral.credits_awarded)).where(
+                Referral.referrer_id == current_user.id,
+                Referral.is_awarded.is_(True),
+            )
+        ) or 0
 
         return ReferralLinkResponse(
             referral_link=get_referral_link(referral_code),
             referral_code=referral_code,
-            total_referrals=total_referrals or 0,
+            total_referrals=total_referrals,
             total_earned=int(total_earned),
         )
 

@@ -492,7 +492,7 @@ export const ProfilePage: React.FC = () => {
                     <div className="text-3xl font-bold text-success-700 mb-1">
                       {referralStats.total_referrals}
                     </div>
-                    <div className="text-xs font-semibold text-success-600">Всего друзей</div>
+                    <div className="text-xs font-semibold text-success-600">Всего приглашённых</div>
                   </div>
                 </Card>
                 <Card variant="gradient" padding="md" className="border border-primary-200">
@@ -500,7 +500,7 @@ export const ProfilePage: React.FC = () => {
                     <div className="text-3xl font-bold text-primary-700 mb-1">
                       {referralStats.active_referrals}
                     </div>
-                    <div className="text-xs font-semibold text-primary-600">Активных</div>
+                    <div className="text-xs font-semibold text-primary-600">Активных (оплатили)</div>
                   </div>
                 </Card>
                 <Card variant="gradient" padding="md" className="border border-secondary-200">
@@ -508,7 +508,7 @@ export const ProfilePage: React.FC = () => {
                     <div className="text-3xl font-bold text-secondary-700 mb-1">
                       {referralStats.total_earned}
                     </div>
-                    <div className="text-xs font-semibold text-secondary-600">Заработано</div>
+                    <div className="text-xs font-semibold text-secondary-600">Заработано, кредитов</div>
                   </div>
                 </Card>
               </div>
@@ -561,7 +561,7 @@ export const ProfilePage: React.FC = () => {
                   />
                 </div>
                 <p className="text-xs text-dark-600 mt-3 font-medium bg-accent-50 border border-accent-200 rounded-lg p-3">
-                  💰 Приглашайте друзей: бонус начисляется после первой покупки приглашённого пользователя.
+                  💰 Приглашайте друзей: 10 кредитов за каждого, кто оплатит подписку или покупку кредитов.
                 </p>
               </Card>
 
@@ -586,7 +586,7 @@ export const ProfilePage: React.FC = () => {
                               @{referral.username || `user_${referral.telegram_id}`}
                             </div>
                             <div className="text-xs text-gray-600">
-                              {referral.is_awarded ? 'Активный' : 'Ожидает первой покупки'}
+                              {referral.is_awarded ? 'Активный (после оплаты)' : 'Ожидает первой покупки'}
                             </div>
                           </div>
                         </div>

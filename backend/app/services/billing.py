@@ -76,6 +76,13 @@ DEFAULT_CREDITS_PACKAGES = {
         "description": "Разовая покупка кредитов",
         "is_popular": True,
     },
+    "test5": {
+        "name": "Тест: 5 кредитов",
+        "price": Decimal("10.00"),
+        "credits_amount": 5,
+        "description": "Тестовый пакет для проверки оплаты в ЮKassa",
+        "is_popular": False,
+    },
 }
 
 

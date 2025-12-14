@@ -51,7 +51,7 @@ export function checkPasswordStrength(password: string): PasswordStrength {
   if (/[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/.test(password)) {
     score++;
   } else {
-    feedback.push('Add at least one special character (!@#$%^&*()_+-=[]{}|;:,.<>?)');
+    feedback.push('Добавьте хотя бы один специальный символ (!@#$%^&*()_+-=[]{}|;:,.<>?)');
   }
 
   // Check for very strong passwords (length > 12)
@@ -143,7 +143,7 @@ export function validatePassword(password: string): { isValid: boolean; error?: 
   if (!/[!@#$%^&*()_+\-=[\]{}|;:,.<>?]/.test(password)) {
     return {
       isValid: false,
-      error: 'Password must contain at least one special character (!@#$%^&*()_+-=[]{}|;:,.<>?)',
+      error: 'Пароль должен содержать хотя бы один специальный символ (!@#$%^&*()_+-=[]{}|;:,.<>?)',
     };
   }
 
