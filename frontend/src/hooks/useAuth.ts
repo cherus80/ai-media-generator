@@ -23,6 +23,8 @@ export const useAuth = () => {
     logout,
     refreshProfile,
     clearError,
+    pdConsentVersionAccepted,
+    setPdConsentAccepted,
   } = useAuthStore();
 
   // Если есть токен, но профиль ещё не загружен — подтягиваем его тихо
@@ -79,6 +81,8 @@ export const useAuth = () => {
     logout,
     refreshProfile,
     clearError,
+    pdConsentVersionAccepted,
+    setPdConsentAccepted,
 
     // Computed values
     hasCredits: user ? user.balance_credits > 0 : false,

@@ -25,6 +25,7 @@ export function RegisterPage() {
   const [pdConsent, setPdConsent] = useState(false);
   const oauthButtonClass =
     'rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-200';
+  const { pdConsentVersionAccepted, setPdConsentAccepted } = useAuth();
 
   const passwordStrength = checkPasswordStrength(formData.password);
 
@@ -36,6 +37,12 @@ export function RegisterPage() {
       console.log('Referral code detected:', refCode);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (pdConsentVersionAccepted === PD_CONSENT_VERSION) {
+      setPdConsent(true);
+    }
+  }, [pdConsentVersionAccepted]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -175,6 +182,11 @@ export function RegisterPage() {
               disabled={!pdConsent}
             />
           </div>
+          {!pdConsent && (
+            <p className="text-xs text-gray-500">
+              Отметьте согласие на обработку ПДн, чтобы активировать регистрацию через Google или VK.
+            </p>
+          )}
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
@@ -302,11 +314,15 @@ export function RegisterPage() {
               <input
                 id="pd-consent-register"
                 type="checkbox"
-                className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                checked={pdConsent}
-                onChange={(e) => setPdConsent(e.target.checked)}
-                required
-              />
+              className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              checked={pdConsent}
+              onChange={(e) => {
+                const next = e.target.checked;
+                setPdConsent(next);
+                setPdConsentAccepted(next ? PD_CONSENT_VERSION : null);
+              }}
+              required
+            />
               <label htmlFor="pd-consent-register" className="text-xs text-gray-600 leading-snug">
                 Я согласен на обработку персональных данных и принимаю{' '}
                 <a href="/oferta" className="text-blue-600 hover:text-blue-500 underline">оферту</a> и{' '}

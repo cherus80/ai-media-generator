@@ -183,10 +183,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           </motion.div>
         )}
 
-        <p className="text-xs text-dark-400 mt-4">
-          Результат генерируется внешним AI-сервисом и может отличаться от ваших ожиданий!
-        </p>
-
         {/* Scroll anchor */}
         <div ref={messagesEndRef} />
       </div>

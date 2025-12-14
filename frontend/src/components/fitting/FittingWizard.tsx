@@ -207,9 +207,6 @@ export const FittingWizard = forwardRef<FittingWizardHandle>((_, ref) => {
         </AnimatePresence>
       </div>
 
-      <p className="text-xs text-dark-400 mt-4 text-center">
-        Результат генерируется внешним AI-сервисом и может отличаться от ваших ожиданий!
-      </p>
     </div>
   );
 });

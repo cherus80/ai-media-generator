@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth, useAuthStore } from '../store/authStore';
 import { GoogleSignInButton } from '../components/auth/GoogleSignInButton';
@@ -18,6 +18,13 @@ export function LoginPage() {
   const [formErrors, setFormErrors] = useState<{ email?: string; password?: string; pdConsent?: string }>({});
   const oauthButtonClass =
     'rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-200';
+  const { pdConsentVersionAccepted, setPdConsentAccepted } = useAuth();
+
+  useEffect(() => {
+    if (pdConsentVersionAccepted === PD_CONSENT_VERSION) {
+      setPdConsent(true);
+    }
+  }, [pdConsentVersionAccepted]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,6 +116,11 @@ export function LoginPage() {
               disabled={!pdConsent}
             />
           </div>
+          {!pdConsent && (
+            <p className="text-xs text-slate-500">
+              Отметьте согласие на обработку ПДн, чтобы активировать вход через Google или VK.
+            </p>
+          )}
 
           {/* Divider */}
           <div className="relative">
@@ -171,7 +183,11 @@ export function LoginPage() {
               type="checkbox"
               className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               checked={pdConsent}
-              onChange={(e) => setPdConsent(e.target.checked)}
+              onChange={(e) => {
+                const next = e.target.checked;
+                setPdConsent(next);
+                setPdConsentAccepted(next ? PD_CONSENT_VERSION : null);
+              }}
               required
             />
             <label htmlFor="pd-consent-login" className="text-xs text-slate-600 leading-snug">

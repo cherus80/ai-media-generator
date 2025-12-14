@@ -22,6 +22,7 @@ import {
 import { loginWithTelegram } from '../api/auth'; // Legacy Telegram auth
 import { getTelegramInitData } from '../utils/telegram';
 import type { VKOAuthPKCERequest } from '../types/auth';
+import { PD_CONSENT_VERSION } from '../constants/pdConsent';
 
 interface AuthState {
   // State
@@ -30,6 +31,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  pdConsentVersionAccepted: string | null;
 
   // Actions
   registerWithEmail: (data: RegisterRequest) => Promise<void>;
@@ -42,6 +44,7 @@ interface AuthState {
   refreshProfile: () => Promise<void>;
   setUser: (user: UserProfile) => void;
   setToken: (token: string) => void;
+  setPdConsentAccepted: (version: string | null) => void;
   clearError: () => void;
 
   // Computed values
@@ -78,6 +81,7 @@ export const useAuthStore = create<AuthState>()(
         isAuthenticated: false,
         isLoading: false,
         error: null,
+        pdConsentVersionAccepted: null,
         ...computeAccessFlags(null),
 
         // Register with Email/Password
@@ -105,6 +109,7 @@ export const useAuthStore = create<AuthState>()(
               isAuthenticated: true,
               isLoading: false,
               error: null,
+              pdConsentVersionAccepted: data.consent_version || PD_CONSENT_VERSION,
               ...computeAccessFlags(response.user),
             });
           } catch (error: any) {
@@ -136,6 +141,7 @@ export const useAuthStore = create<AuthState>()(
               isAuthenticated: true,
               isLoading: false,
               error: null,
+              pdConsentVersionAccepted: data.consent_version || PD_CONSENT_VERSION,
               ...computeAccessFlags(response.user),
             });
           } catch (error: any) {
@@ -166,6 +172,7 @@ export const useAuthStore = create<AuthState>()(
               isAuthenticated: true,
               isLoading: false,
               error: null,
+              pdConsentVersionAccepted: consentVersion || PD_CONSENT_VERSION,
               ...computeAccessFlags(response.user),
             });
           } catch (error: any) {
@@ -197,6 +204,7 @@ export const useAuthStore = create<AuthState>()(
               isAuthenticated: true,
               isLoading: false,
               error: null,
+              pdConsentVersionAccepted: consentVersion || PD_CONSENT_VERSION,
               ...computeAccessFlags(response.user),
             });
           } catch (error: any) {
@@ -340,6 +348,11 @@ export const useAuthStore = create<AuthState>()(
           // Zustand persist automatically updates localStorage
         },
 
+        // Save accepted PD consent version
+        setPdConsentAccepted: (version: string | null) => {
+          set({ pdConsentVersionAccepted: version });
+        },
+
         // Clear error
         clearError: () => {
           set({ error: null });
@@ -360,6 +373,7 @@ export const useAuthStore = create<AuthState>()(
         token: state.token,
         user: state.user,
         isAuthenticated: state.isAuthenticated,
+        pdConsentVersionAccepted: state.pdConsentVersionAccepted,
       }),
       onRehydrateStorage: () => {
         console.log('🔄 Начинаем восстановление состояния авторизации из localStorage');
@@ -393,6 +407,7 @@ export const useAuthStore = create<AuthState>()(
               hasUser: !!state.user,
               isAdmin: state.isAdmin,
               role: state.user?.role,
+              pdConsentVersionAccepted: state.pdConsentVersionAccepted,
             });
           }
         };

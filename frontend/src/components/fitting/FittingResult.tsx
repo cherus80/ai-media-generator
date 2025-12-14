@@ -220,10 +220,6 @@ export const FittingResult: React.FC<FittingResultProps> = ({ onNewFitting }) =>
           </button>
         </div>
 
-        <p className="text-xs text-gray-500 mb-4">
-          Результат генерируется внешним AI-сервисом и может отличаться от ваших ожиданий!
-        </p>
-
         {/* New fitting button */}
         <button
           onClick={handleNewFitting}
