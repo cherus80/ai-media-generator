@@ -87,6 +87,17 @@ async def _save_pd_consent(
     ip = request.client.host if request and request.client else None
     ua = request.headers.get("User-Agent") if request else None
 
+    # Не дублируем одинаковое согласие (версия + источник) для пользователя
+    existing = await db.execute(
+        select(UserConsent).where(
+            UserConsent.user_id == user.id,
+            UserConsent.consent_version == version,
+            UserConsent.source == source,
+        )
+    )
+    if existing.scalar_one_or_none():
+        return
+
     consent = UserConsent(
         user_id=user.id,
         consent_version=version,
