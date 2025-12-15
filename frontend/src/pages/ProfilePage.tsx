@@ -587,25 +587,37 @@ export const ProfilePage: React.FC = () => {
           ) : referralStats ? (
             <>
               {/* Статистика */}
-              <div className="grid grid-cols-3 gap-4 mb-6">
-                <Card variant="gradient" padding="md" className="border border-success-200">
-                  <div className="text-center">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6">
+                <Card
+                  variant="gradient"
+                  padding="md"
+                  className="border border-success-200 h-full shadow-sm"
+                >
+                  <div className="flex flex-col items-center justify-center text-center gap-1 min-h-[104px]">
                     <div className="text-3xl font-bold text-success-700 mb-1">
                       {referralStats.total_referrals}
                     </div>
                     <div className="text-xs font-semibold text-success-600">Всего приглашённых</div>
                   </div>
                 </Card>
-                <Card variant="gradient" padding="md" className="border border-primary-200">
-                  <div className="text-center">
+                <Card
+                  variant="gradient"
+                  padding="md"
+                  className="border border-primary-200 h-full shadow-sm"
+                >
+                  <div className="flex flex-col items-center justify-center text-center gap-1 min-h-[104px]">
                     <div className="text-3xl font-bold text-primary-700 mb-1">
                       {referralStats.active_referrals}
                     </div>
                     <div className="text-xs font-semibold text-primary-600">Активных (оплатили)</div>
                   </div>
                 </Card>
-                <Card variant="gradient" padding="md" className="border border-secondary-200">
-                  <div className="text-center">
+                <Card
+                  variant="gradient"
+                  padding="md"
+                  className="border border-secondary-200 h-full shadow-sm"
+                >
+                  <div className="flex flex-col items-center justify-center text-center gap-1 min-h-[104px]">
                     <div className="text-3xl font-bold text-secondary-700 mb-1">
                       {referralStats.total_earned}
                     </div>

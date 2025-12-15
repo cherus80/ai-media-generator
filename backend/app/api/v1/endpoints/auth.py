@@ -7,7 +7,6 @@ Endpoints:
 """
 
 import logging
-import secrets
 from datetime import datetime
 from typing import Annotated
 
@@ -25,25 +24,11 @@ from app.schemas.auth import (
     UserProfileResponse,
 )
 from app.utils.jwt import create_user_access_token
+from app.utils.referrals import generate_referral_code
 from app.utils.telegram import TelegramInitDataError, validate_telegram_init_data
 from app.services.billing_v5 import BillingV5Service
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
-
-
-def generate_referral_code(telegram_id: int) -> str:
-    """
-    Генерация уникального реферального кода.
-
-    Args:
-        telegram_id: Telegram ID пользователя
-
-    Returns:
-        str: Уникальный реферальный код (8 символов)
-    """
-    # Используем комбинацию telegram_id и случайных символов
-    random_part = secrets.token_urlsafe(6)[:6]
-    return f"{telegram_id % 1000:03d}{random_part}".upper()
 
 
 def user_to_profile(user: User) -> UserProfile:
@@ -57,7 +42,7 @@ def user_to_profile(user: User) -> UserProfile:
         UserProfile: Pydantic модель профиля
     """
     # Генерируем временный реферальный код (позже добавим в БД)
-    referral_code = generate_referral_code(user.telegram_id)
+    referral_code = generate_referral_code(user.id)
 
     return UserProfile(
         id=user.id,

@@ -8,6 +8,55 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../store/authStore';
 import type { GoogleSignInResponse, GoogleSignInButtonConfig } from '../../types/auth';
 
+let googleSdkPromise: Promise<void> | null = null;
+const MAX_GOOGLE_LOAD_ATTEMPTS = 3;
+
+/**
+ * Единый загрузчик Google Identity Services — гарантирует однократную подгрузку скрипта
+ * и даёт возможность повторить попытку при сетевой ошибке.
+ */
+const loadGoogleIdentityServices = async () => {
+  if (window.google?.accounts?.id) {
+    return;
+  }
+
+  if (!googleSdkPromise) {
+    googleSdkPromise = new Promise<void>((resolve, reject) => {
+      const existing = document.querySelector<HTMLScriptElement>('script[data-gis-sdk]');
+      const script = existing || document.createElement('script');
+
+      const handleReady = () => {
+        if (window.google?.accounts?.id) {
+          script.dataset.gisLoaded = '1';
+          resolve();
+        } else {
+          reject(new Error('Google SDK loaded but window.google is unavailable'));
+        }
+      };
+
+      const handleError = () => reject(new Error('Google Identity Services failed to load'));
+
+      script.addEventListener('load', handleReady, { once: true });
+      script.addEventListener('error', handleError, { once: true });
+
+      if (!existing) {
+        script.src = 'https://accounts.google.com/gsi/client';
+        script.async = true;
+        script.defer = true;
+        script.dataset.gisSdk = '1';
+        document.head.appendChild(script);
+      } else if (script.dataset.gisLoaded === '1' || window.google?.accounts?.id) {
+        handleReady();
+      }
+    }).catch((err) => {
+      googleSdkPromise = null;
+      throw err;
+    });
+  }
+
+  return googleSdkPromise;
+};
+
 interface GoogleSignInButtonProps {
   onSuccess?: () => void;
   onError?: (error: string) => void;
@@ -38,6 +87,7 @@ export function GoogleSignInButton({
   const styleGuardLock = useRef(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isReady, setIsReady] = useState<boolean>(Boolean(window.google?.accounts?.id));
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const { loginWithGoogle } = useAuth();
 
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -125,29 +175,6 @@ export function GoogleSignInButton({
     };
   };
 
-  const ensureScriptLoaded = () => {
-    if (window.google?.accounts?.id) return Promise.resolve(true);
-    return new Promise<boolean>((resolve) => {
-      const existing = document.querySelector<HTMLScriptElement>('script[data-gis-sdk]');
-      if (existing && (existing as any)._gisReady) {
-        resolve(true);
-        return;
-      }
-      const script = existing || document.createElement('script');
-      script.src = 'https://accounts.google.com/gsi/client';
-      script.async = true;
-      script.defer = true;
-      script.dataset.gisSdk = '1';
-      (script as any)._gisReady = false;
-      script.onload = () => {
-        (script as any)._gisReady = true;
-        resolve(true);
-      };
-      script.onerror = () => resolve(false);
-      if (!existing) document.head.appendChild(script);
-    });
-  };
-
   useEffect(() => {
     // Проверка, настроен ли client ID
     if (!clientId) {
@@ -157,18 +184,18 @@ export function GoogleSignInButton({
     }
 
     let cancelled = false;
+    let retryTimeout: number | undefined;
 
     const init = async () => {
       cleanupRef.current?.();
-
-      const loaded = await ensureScriptLoaded();
-      if (!loaded || cancelled || !window.google?.accounts?.id) {
-        console.error('Google Identity Services не удалось загрузить');
-        onError?.('Google вход недоступен');
-        return;
-      }
+      setIsReady(Boolean(window.google?.accounts?.id));
 
       try {
+        await loadGoogleIdentityServices();
+        if (cancelled || !window.google?.accounts?.id) {
+          throw new Error('Google Identity Services не удалось инициализировать');
+        }
+
         window.google.accounts.id.disableAutoSelect();
         window.google.accounts.id.initialize({
           client_id: clientId,
@@ -207,6 +234,14 @@ export function GoogleSignInButton({
       } catch (error) {
         console.error('Ошибка инициализации Google входа:', error);
         onError?.('Google вход недоступен');
+        setIsReady(false);
+
+        if (!cancelled && loadAttempt < MAX_GOOGLE_LOAD_ATTEMPTS - 1) {
+          retryTimeout = window.setTimeout(
+            () => setLoadAttempt((prev) => prev + 1),
+            800
+          );
+        }
       }
     };
 
@@ -214,9 +249,12 @@ export function GoogleSignInButton({
 
     return () => {
       cancelled = true;
+      if (retryTimeout) {
+        window.clearTimeout(retryTimeout);
+      }
       cleanupRef.current?.();
     };
-  }, [clientId, theme, size, text, width, shape]);
+  }, [clientId, theme, size, text, width, shape, loadAttempt]);
 
   const handleCredentialResponse = async (response: GoogleSignInResponse) => {
     setIsLoading(true);

@@ -1,8 +1,5 @@
-"""
-API endpoints для реферальной программы
-"""
+"""API endpoints для реферальной программы."""
 
-import hashlib
 import logging
 from typing import Annotated
 
@@ -11,7 +8,6 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import get_current_user
-from app.core.config import settings
 from app.db.session import get_db
 from app.models.referral import Referral
 from app.models.user import User
@@ -22,41 +18,10 @@ from app.schemas.referral import (
     ReferralStatsResponse,
     ReferralItem,
 )
+from app.utils.referrals import generate_referral_code, get_referral_link
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
-
-
-def generate_referral_code(user_id: int) -> str:
-    """
-    Генерация уникального реферального кода для пользователя
-
-    Args:
-        user_id: ID пользователя
-
-    Returns:
-        Реферальный код (хеш от user_id + секретный ключ)
-    """
-    secret = settings.SECRET_KEY
-    raw = f"{user_id}:{secret}"
-    hash_obj = hashlib.sha256(raw.encode())
-    # Берём первые 8 символов хеша для краткости
-    return hash_obj.hexdigest()[:8].upper()
-
-
-def get_referral_link(referral_code: str) -> str:
-    """
-    Получить полную реферальную ссылку
-
-    Args:
-        referral_code: Реферальный код
-
-    Returns:
-        Полная ссылка для приглашения
-    """
-    # Веб-ссылка на страницу регистрации с реферальным кодом
-    frontend_url = settings.FRONTEND_URL
-    return f"{frontend_url}/register?ref={referral_code}"
 
 
 @router.get("/link", response_model=ReferralLinkResponse)

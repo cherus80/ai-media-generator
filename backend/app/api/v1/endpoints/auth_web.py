@@ -11,7 +11,6 @@ Endpoints:
 """
 
 import logging
-import secrets
 import time
 from collections import defaultdict, deque
 from datetime import datetime, timedelta
@@ -50,6 +49,7 @@ from app.utils.vk_oauth import (
     verify_vk_id_token,
     VKOAuthError,
 )
+from app.utils.referrals import generate_referral_code
 from app.services.email import email_service
 from app.models.email_verification import EmailVerificationToken
 
@@ -125,20 +125,6 @@ async def _save_pd_consent(
         await db.rollback()
         logger = logging.getLogger(__name__)
         logger.warning("Failed to persist PD consent for user %s", user.id, exc_info=True)
-
-
-def generate_referral_code(user_id: int) -> str:
-    """
-    Генерация уникального реферального кода.
-
-    Args:
-        user_id: User ID
-
-    Returns:
-        str: Уникальный реферальный код (8 символов)
-    """
-    random_part = secrets.token_urlsafe(6)[:6]
-    return f"{user_id % 1000:03d}{random_part}".upper()
 
 
 def user_to_profile(user: User) -> UserProfile:
