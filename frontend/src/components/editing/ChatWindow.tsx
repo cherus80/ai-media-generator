@@ -125,25 +125,30 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         )}
 
         {/* Сообщения */}
-        {messages.map((message) => (
-          <React.Fragment key={message.id}>
-            {message.image_url ? (
-              <ImageMessage message={message} />
-            ) : (
-              <ChatMessage message={message} />
-            )}
-            {/* Показываем промпты после сообщения ассистента */}
-            {message.role === 'assistant' &&
-              message.prompt &&
-              !message.image_url && (
+        {messages.map((message) => {
+          const isAssistantPromptOnly =
+            message.role === 'assistant' && message.prompt && !message.image_url;
+
+          return (
+            <React.Fragment key={message.id}>
+              {!isAssistantPromptOnly &&
+                (message.image_url ? (
+                  <ImageMessage message={message} />
+                ) : (
+                  <ChatMessage message={message} />
+                ))}
+
+              {/* Показываем только финальный промпт без дубля карточки */}
+              {message.role === 'assistant' && message.prompt && (
                 <PromptSelector
                   prompts={[message.prompt]}
                   onSelect={(prompt) => onSelectPrompt(prompt, message.attachments)}
                   isGenerating={isGenerating}
                 />
               )}
-          </React.Fragment>
-        ))}
+            </React.Fragment>
+          );
+        })}
 
         {/* Индикатор генерации */}
         {isGenerating && (

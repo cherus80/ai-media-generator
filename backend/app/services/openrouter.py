@@ -158,33 +158,14 @@ class OpenRouterClient:
         try:
             attachments = attachments or []
 
-            def to_multimodal_content(message: Dict[str, Any]) -> Dict[str, Any]:
-                content_parts = []
+            def to_text_only_content(message: Dict[str, Any]) -> Dict[str, Any]:
+                """
+                Формирует сообщение без передачи изображений в модель промпт-ассистента.
+                """
                 text = message.get("content") or ""
-                if text:
-                    content_parts.append({"type": "text", "text": text})
-
-                for attachment in message.get("attachments") or []:
-                    url = attachment.get("url")
-                    if not url:
-                        continue
-                    resolved_url = to_public_url(url)
-                    content_parts.append(
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": resolved_url},
-                        }
-                    )
-
-                if content_parts:
-                    return {
-                        "role": message.get("role", "user"),
-                        "content": content_parts,
-                    }
-
                 return {
                     "role": message.get("role", "user"),
-                    "content": text,
+                    "content": [{"type": "text", "text": text}],
                 }
 
             # Формируем сообщения для API
@@ -192,14 +173,10 @@ class OpenRouterClient:
 
             # Добавляем последние 10 сообщений из истории для контекста
             for msg in chat_history[-10:]:
-                messages.append(to_multimodal_content(msg))
+                messages.append(to_text_only_content(msg))
 
             # Добавляем текущее сообщение пользователя
-            current_msg = {"role": "user", "content": user_message}
-            if attachments:
-                current_msg = to_multimodal_content(
-                    {"role": "user", "content": user_message, "attachments": attachments}
-                )
+            current_msg = {"role": "user", "content": [{"type": "text", "text": user_message}]}
             messages.append(current_msg)
 
             # Формируем запрос
