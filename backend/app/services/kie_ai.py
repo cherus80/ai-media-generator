@@ -10,7 +10,7 @@ import asyncio
 import json
 import logging
 import time
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 
 import httpx
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
@@ -156,6 +156,7 @@ class KieAIClient:
         output_format: str = "png",
         mask_url: Optional[str] = None,
         progress_callback: Optional[callable] = None,
+        attachments_urls: Optional[List[str]] = None,
     ) -> str:
         logger.info("Starting image edit: base=%s, prompt=%s...", base_image_url, prompt[:50])
 
@@ -163,8 +164,12 @@ class KieAIClient:
             logger.warning("Aspect ratio '%s' unsupported, using 'auto'", image_size)
             image_size = "auto"
 
+        image_urls: List[str] = [base_image_url]
+        if attachments_urls:
+            image_urls.extend(attachments_urls)
+
         input_payload = {
-            "image_urls": [base_image_url],
+            "image_urls": image_urls,
             "output_format": output_format.lower(),
             "image_size": image_size,
         }

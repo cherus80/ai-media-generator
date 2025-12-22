@@ -11,9 +11,17 @@ interface ChatMessageProps {
   message: ChatMessageType;
 }
 
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
+
 export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const isUser = message.role === 'user';
   const isAssistant = message.role === 'assistant';
+
+  const resolveUrl = (url?: string) => {
+    if (!url) return '';
+    if (url.startsWith('http')) return url;
+    return `${API_BASE_URL}${url.startsWith('/') ? url : `/${url}`}`;
+  };
 
   // Форматирование времени
   const formatTime = (date: Date) => {
@@ -67,6 +75,24 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
         >
           {message.content}
         </p>
+
+        {/* Вложения */}
+        {message.attachments && message.attachments.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {message.attachments.map((att) => (
+              <div
+                key={att.id}
+                className="w-20 h-20 rounded-xl overflow-hidden border border-white/30 bg-white/60 shadow-sm"
+              >
+                <img
+                  src={resolveUrl(att.url)}
+                  alt={att.name || 'attachment'}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Индикатор загрузки */}
         {message.isLoading && (

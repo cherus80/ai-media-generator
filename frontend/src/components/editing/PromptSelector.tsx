@@ -25,6 +25,7 @@ export const PromptSelector: React.FC<PromptSelectorProps> = ({
   const [customPrompt, setCustomPrompt] = React.useState<string>('');
   const promptAssistantModel =
     import.meta.env.VITE_PROMPT_ASSISTANT_MODEL || 'AI-ассистент';
+  const isSinglePrompt = prompts.length === 1;
 
   if (prompts.length === 0) {
     return null;
@@ -85,7 +86,8 @@ export const PromptSelector: React.FC<PromptSelectorProps> = ({
 
       <div className="grid grid-cols-1 gap-4">
         {prompts.slice(0, 3).map((prompt, index) => {
-          const { label, icon, variant } = promptLabels[index] || promptLabels[0];
+          const fallbackLabel = { label: 'Финальный', icon: '🎯', variant: 'primary' as const };
+          const { label, icon, variant } = isSinglePrompt ? fallbackLabel : (promptLabels[index] || promptLabels[0]);
           const isEditing = editingPrompt === prompt;
           const isSelected = selectedPrompt === prompt;
 

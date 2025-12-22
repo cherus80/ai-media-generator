@@ -13,6 +13,7 @@ import type {
   GenerateImageResponse,
   ChatHistoryResponse,
   ResetSessionResponse,
+  ChatAttachment,
 } from '../types/editing';
 import type { FittingStatusResponse, FittingResult } from '../types/fitting';
 
@@ -32,6 +33,28 @@ export const uploadBaseImage = async (file: File): Promise<ChatSessionCreate> =>
         'Content-Type': 'multipart/form-data',
       },
       timeout: 60000, // 60 секунд для загрузки файлов
+    }
+  );
+
+  return response.data;
+};
+
+/**
+ * Загрузка дополнительного изображения (референса)
+ * POST /api/v1/editing/attachment
+ */
+export const uploadAttachment = async (file: File): Promise<ChatAttachment> => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await apiClient.post<ChatAttachment>(
+    '/api/v1/editing/attachment',
+    formData,
+    {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      timeout: 60000,
     }
   );
 

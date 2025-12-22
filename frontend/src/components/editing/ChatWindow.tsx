@@ -9,12 +9,12 @@ import { ChatMessage } from './ChatMessage';
 import { ImageMessage } from './ImageMessage';
 import { PromptSelector } from './PromptSelector';
 import { Card } from '../ui/Card';
-import type { ChatMessage as ChatMessageType } from '../../types/editing';
+import type { ChatMessage as ChatMessageType, ChatAttachment } from '../../types/editing';
 
 interface ChatWindowProps {
   messages: ChatMessageType[];
   currentPrompts: string[] | null;
-  onSelectPrompt: (prompt: string) => void;
+  onSelectPrompt: (prompt: string, attachments?: ChatAttachment[]) => void;
   isGenerating?: boolean;
   baseImageUrl?: string;
 }
@@ -134,12 +134,11 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             )}
             {/* Показываем промпты после сообщения ассистента */}
             {message.role === 'assistant' &&
-              message.prompts &&
-              message.prompts.length > 0 &&
+              message.prompt &&
               !message.image_url && (
                 <PromptSelector
-                  prompts={message.prompts}
-                  onSelect={onSelectPrompt}
+                  prompts={[message.prompt]}
+                  onSelect={(prompt) => onSelectPrompt(prompt, message.attachments)}
                   isGenerating={isGenerating}
                 />
               )}

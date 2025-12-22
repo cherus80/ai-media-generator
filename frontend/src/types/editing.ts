@@ -6,6 +6,16 @@
 // Роли сообщений в чате
 export type MessageRole = 'user' | 'assistant';
 
+// Вложение к сообщению
+export interface ChatAttachment {
+  id: string;
+  url: string;
+  type: 'image';
+  name?: string;
+  size?: number;
+  role?: 'reference' | 'base-extra';
+}
+
 // Запрос на создание сессии чата
 export interface ChatSessionCreate {
   base_image_url: string;
@@ -22,13 +32,15 @@ export interface ChatSessionResponse {
 export interface ChatMessageRequest {
   session_id: string;
   message: string;
+  attachments?: ChatAttachment[];
 }
 
 // Ответ от AI-ассистента
 export interface ChatMessageResponse {
   role: MessageRole;
   content: string;
-  prompts?: string[]; // 3 варианта промптов от AI
+  prompt?: string; // Финальный промпт от AI
+  attachments?: ChatAttachment[];
   timestamp: string;
 }
 
@@ -36,6 +48,7 @@ export interface ChatMessageResponse {
 export interface GenerateImageRequest {
   session_id: string;
   prompt: string;
+  attachments?: ChatAttachment[];
 }
 
 // Ответ при запуске генерации
@@ -49,6 +62,8 @@ export interface GenerateImageResponse {
 export interface ChatHistoryMessage {
   role: MessageRole;
   content: string;
+  prompt?: string;
+  attachments?: ChatAttachment[];
   image_url?: string; // URL сгенерированного изображения (если есть)
   timestamp: string;
 }
@@ -80,7 +95,8 @@ export interface ChatMessage {
   role: MessageRole;
   content: string;
   image_url?: string;
-  prompts?: string[]; // Промпты от AI (только для assistant)
+  attachments?: ChatAttachment[];
+  prompt?: string; // Финальный промпт
   timestamp: Date;
   isLoading?: boolean; // Индикатор загрузки
 }

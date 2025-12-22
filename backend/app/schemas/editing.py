@@ -11,6 +11,17 @@ from uuid import UUID
 from pydantic import BaseModel, Field, field_validator
 
 
+class ChatAttachment(BaseModel):
+    """Вложение (изображение), прикреплённое к сообщению"""
+
+    id: str = Field(..., description="UUID файла")
+    url: str = Field(..., description="Публичный или относительный URL файла")
+    type: str = Field(..., description="Тип вложения (image и т.п.)", pattern="^(image)$")
+    name: Optional[str] = Field(None, description="Имя файла")
+    size: Optional[int] = Field(None, description="Размер файла в байтах")
+    role: Optional[str] = Field(None, description="Роль вложения (reference/base-extra)")
+
+
 class ChatSessionCreate(BaseModel):
     """Запрос на создание новой сессии чата"""
 
@@ -53,6 +64,10 @@ class ChatMessageRequest(BaseModel):
         min_length=1,
         max_length=2000,
     )
+    attachments: Optional[List[ChatAttachment]] = Field(
+        default=None,
+        description="Список вложений (изображения)",
+    )
 
 
 class ChatMessageResponse(BaseModel):
@@ -66,9 +81,13 @@ class ChatMessageResponse(BaseModel):
         ...,
         description="Текст сообщения",
     )
-    prompts: Optional[List[str]] = Field(
+    prompt: Optional[str] = Field(
         None,
-        description="Список сгенерированных промптов для выбора (только для assistant)",
+        description="Единственный финальный промпт от ассистента",
+    )
+    attachments: Optional[List[ChatAttachment]] = Field(
+        default=None,
+        description="Вложения, связанные с сообщением (эхо для истории)",
     )
     timestamp: str = Field(
         ...,
@@ -96,6 +115,10 @@ class GenerateImageRequest(BaseModel):
         description="Промпт для генерации изображения",
         min_length=1,
         max_length=2000,
+    )
+    attachments: Optional[List[ChatAttachment]] = Field(
+        default=None,
+        description="Вложения (дополнительные изображения-референсы)",
     )
 
 
@@ -126,6 +149,14 @@ class ChatHistoryMessage(BaseModel):
     content: str = Field(
         ...,
         description="Текст сообщения",
+    )
+    prompt: Optional[str] = Field(
+        None,
+        description="Финальный промпт (для assistant)",
+    )
+    attachments: Optional[List[ChatAttachment]] = Field(
+        default=None,
+        description="Вложения, отправленные вместе с сообщением",
     )
     image_url: Optional[str] = Field(
         None,

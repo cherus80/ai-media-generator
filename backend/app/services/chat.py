@@ -137,6 +137,8 @@ async def add_message(
     role: str,
     content: str,
     image_url: Optional[str] = None,
+    attachments: Optional[list[dict[str, Any]]] = None,
+    prompt: Optional[str] = None,
 ) -> ChatHistory:
     """
     Добавление сообщения в историю чата.
@@ -148,6 +150,8 @@ async def add_message(
         role: Роль отправителя ('user' или 'assistant')
         content: Текст сообщения
         image_url: URL изображения (опционально)
+        attachments: Список вложений (опционально)
+        prompt: Финальный промпт (опционально)
 
     Returns:
         Обновлённая ChatHistory instance
@@ -171,6 +175,8 @@ async def add_message(
             role=role,
             content=content,
             image_url=image_url,
+            attachments=attachments,
+            prompt=prompt,
         )
 
         # Сохраняем изменения
@@ -228,7 +234,7 @@ async def get_messages_for_ai(
     session_id: str,
     user_id: int,
     max_messages: int = 10,
-) -> List[Dict[str, str]]:
+) -> List[Dict[str, Any]]:
     """
     Получение сообщений в формате для OpenRouter API.
 

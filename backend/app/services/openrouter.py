@@ -19,6 +19,7 @@ from tenacity import (
 )
 
 from app.core.config import settings
+from app.tasks.utils import to_public_url
 
 logger = logging.getLogger(__name__)
 
@@ -60,20 +61,16 @@ class OpenRouterClient:
     PROMPT_ASSISTANT_MODEL_DEFAULT = "openai/gpt-4.1-mini"
 
     # Системный промпт для генерации вариантов промптов (русский)
-    SYSTEM_PROMPT = """Ты — ассистент, который помогает пользователю формировать промпты для редактирования изображений.
-Верни ровно 3 варианта промптов на русском языке в формате JSON:
+    SYSTEM_PROMPT = """Ты — ассистент, который готовит ОДИН финальный промпт для редактирования изображения.
+Возвращай JSON строго в формате:
 {
-  "prompts": [
-    "Короткий вариант (1–2 предложения, четко и конкретно)",
-    "Средний вариант (2–3 предложения, больше деталей)",
-    "Подробный вариант (3–4 предложения, максимальная конкретика)"
-  ]
+  "prompt": "итоговый промпт на русском"
 }
 Требования:
-- Используй русский язык.
-- Учитывай контекст последних сообщений.
-- Фокус на изменении/редактировании уже загруженного изображения, а не создании с нуля.
-- Без лишнего текста, только JSON."""
+- Учитывай цель пользователя, контекст переписки и прикреплённые изображения (они передаются как image_url).
+- Фокусируйся на редактировании загруженного изображения, а не создании с нуля.
+- Промпт должен быть конкретным: что изменить, как выглядят объекты/фон/освещение/стиль, как использовать референсы.
+- Без лишних пояснений и вариантов. Только один максимально полезный промпт."""
 
     def __init__(
         self,
@@ -135,22 +132,23 @@ class OpenRouterClient:
     async def generate_prompts(
         self,
         user_message: str,
-        chat_history: List[Dict[str, str]],
+        chat_history: List[Dict[str, Any]],
+        attachments: Optional[List[Dict[str, Any]]] = None,
         max_tokens: int = 500,
         temperature: float = 0.7,
-    ) -> List[str]:
+    ) -> str:
         """
-        Генерация 3 вариантов промптов для редактирования изображения.
+        Генерация одного финального промпта для редактирования изображения.
 
         Args:
             user_message: Текущее сообщение пользователя
-            chat_history: История последних сообщений (до 10)
-                Формат: [{"role": "user|assistant", "content": "..."}, ...]
+            chat_history: История последних сообщений (до 10) с вложениями
+            attachments: Вложения из текущего сообщения
             max_tokens: Максимальное количество токенов для ответа
             temperature: Температура генерации (0.0-1.0)
 
         Returns:
-            Список из 3 промптов (короткий, средний, детальный)
+            Один строковый промпт
 
         Raises:
             OpenRouterAuthError: Ошибка авторизации
@@ -158,19 +156,51 @@ class OpenRouterClient:
             OpenRouterError: Другие ошибки API
         """
         try:
+            attachments = attachments or []
+
+            def to_multimodal_content(message: Dict[str, Any]) -> Dict[str, Any]:
+                content_parts = []
+                text = message.get("content") or ""
+                if text:
+                    content_parts.append({"type": "text", "text": text})
+
+                for attachment in message.get("attachments") or []:
+                    url = attachment.get("url")
+                    if not url:
+                        continue
+                    resolved_url = to_public_url(url)
+                    content_parts.append(
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": resolved_url},
+                        }
+                    )
+
+                if content_parts:
+                    return {
+                        "role": message.get("role", "user"),
+                        "content": content_parts,
+                    }
+
+                return {
+                    "role": message.get("role", "user"),
+                    "content": text,
+                }
+
             # Формируем сообщения для API
-            messages = [
-                {"role": "system", "content": self.SYSTEM_PROMPT}
-            ]
+            messages = [{"role": "system", "content": self.SYSTEM_PROMPT}]
 
             # Добавляем последние 10 сообщений из истории для контекста
-            messages.extend(chat_history[-10:])
+            for msg in chat_history[-10:]:
+                messages.append(to_multimodal_content(msg))
 
             # Добавляем текущее сообщение пользователя
-            messages.append({
-                "role": "user",
-                "content": user_message,
-            })
+            current_msg = {"role": "user", "content": user_message}
+            if attachments:
+                current_msg = to_multimodal_content(
+                    {"role": "user", "content": user_message, "attachments": attachments}
+                )
+            messages.append(current_msg)
 
             # Формируем запрос
             payload = {
@@ -225,31 +255,22 @@ class OpenRouterClient:
             # Извлекаем содержимое ответа
             content = data["choices"][0]["message"]["content"]
 
-            # Парсим JSON с промптами
+            # Парсим JSON с промптом
             import json
             try:
                 prompts_data = json.loads(content)
-                prompts = prompts_data.get("prompts", [])
+                prompt = prompts_data.get("prompt") or prompts_data.get("prompts", [None])[0]
             except json.JSONDecodeError as e:
                 logger.error(f"Failed to parse JSON response: {content}")
                 raise OpenRouterError(f"Invalid JSON response from AI: {e}")
 
-            # Валидация: должно быть ровно 3 промпта
-            if not prompts or len(prompts) != 3:
-                logger.warning(
-                    f"Expected 3 prompts, got {len(prompts)}. "
-                    f"Generating fallback prompts."
-                )
-                # Fallback: если AI вернул не 3 промпта, генерируем базовые на русском
-                prompts = [
-                    user_message,  # Короткий = оригинальный запрос
-                    f"{user_message}. Сделай описание чётче и дружелюбнее, добавь детали.",  # Средний
-                    f"{user_message}. Добавь конкретные детали композиции, освещения и стиля, чтобы результат был фотореалистичным.",  # Подробный
-                ][:3]
+            if not prompt:
+                logger.warning("AI did not return prompt, using user message as fallback")
+                prompt = user_message
 
-            logger.info(f"Generated {len(prompts)} prompts successfully")
+            logger.info("Generated prompt successfully")
 
-            return prompts
+            return prompt
 
         except (OpenRouterAuthError, OpenRouterRateLimitError, OpenRouterError):
             # Пробрасываем наши кастомные ошибки
@@ -264,13 +285,8 @@ class OpenRouterClient:
             logger.error(f"Unexpected error in OpenRouter client: {e}")
             raise OpenRouterError(f"Unexpected error: {e}")
 
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=2, max=10),
-        retry=retry_if_exception_type((httpx.TimeoutException, httpx.NetworkError)),
-        reraise=True,
-    )
-    async def generate_virtual_tryon(
+
+async def generate_virtual_tryon(
         self,
         user_photo_data: str,
         item_photo_data: str,
@@ -444,6 +460,7 @@ class OpenRouterClient:
         base_image_data: str,
         prompt: str,
         aspect_ratio: str = "1:1",
+        attachments_data: Optional[List[str]] = None,
     ) -> str:
         """
         Редактирование одного изображения по промпту через Gemini image model.
@@ -452,17 +469,23 @@ class OpenRouterClient:
             base_image_data: Base64 data URL of the source image.
             prompt: Text prompt describing the edit.
             aspect_ratio: Desired aspect ratio.
+            attachments_data: Дополнительные изображения (data URL или публичные ссылки)
 
         Returns:
             Base64 data URL of the generated image or a direct URL.
         """
         try:
+            attachments_data = attachments_data or []
             messages = [
                 {
                     "role": "user",
                     "content": [
                         {"type": "text", "text": prompt},
                         {"type": "image_url", "image_url": {"url": base_image_data}},
+                        *[
+                            {"type": "image_url", "image_url": {"url": att}}
+                            for att in attachments_data
+                        ],
                     ],
                 }
             ]

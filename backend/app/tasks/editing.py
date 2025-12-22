@@ -67,6 +67,7 @@ def generate_editing_task(
     session_id: str,
     base_image_url: str,
     prompt: str,
+    attachments: list[dict] | None = None,
     primary_provider: str | None = None,
     fallback_provider: str | None = None,
     disable_fallback: bool | None = None,
@@ -81,6 +82,7 @@ def generate_editing_task(
         session_id: UUID сессии чата
         base_image_url: URL базового изображения
         prompt: Промпт для редактирования
+        attachments: Дополнительные вложения (изображения-референсы)
 
     Returns:
         dict: Результат генерации
@@ -89,6 +91,7 @@ def generate_editing_task(
     async def _run_generation():
         """Async функция для выполнения генерации"""
         base_image_url_local = base_image_url  # избегаем UnboundLocal при переопределении в блоках ниже
+        attachment_items = attachments or []
         async with async_session() as session:
             try:
                 # Обновление статуса: processing
@@ -176,6 +179,47 @@ def generate_editing_task(
                 aspect_ratio = determine_image_size_for_editing(base_image_path)
                 logger.info(f"Determined aspect ratio for editing: {aspect_ratio}")
 
+                # Подготавливаем вложения: публичные URL и data URLs
+                attachment_public_urls: list[str] = []
+                attachment_data_urls: list[str] = []
+
+                for attachment in attachment_items:
+                    url = attachment.get("url")
+                    if not url:
+                        continue
+
+                    public_url = to_public_url(url)
+                    attachment_public_urls.append(public_url)
+
+                    att_path = None
+                    try:
+                        att_id = extract_file_id_from_url(url)
+                        att_path = get_file_by_id(att_id)
+                    except Exception:
+                        att_path = None
+
+                    if not att_path:
+                        try:
+                            raw_bytes, ext, content_type = await download_image_bytes(public_url)
+                            normalized_bytes, normalized_ext = normalize_image_bytes(raw_bytes, ext)
+                            new_id, saved_url, _ = await save_upload_file_by_content(
+                                content=normalized_bytes,
+                                user_id=user_id,
+                                filename=f"attachment_{generation_id}.{normalized_ext}",
+                                content_type=content_type or f"image/{normalized_ext}",
+                            )
+                            att_path = get_file_by_id(new_id)
+                            public_url = to_public_url(saved_url)
+                            attachment_public_urls[-1] = public_url
+                        except Exception as att_err:
+                            logger.warning("Failed to cache attachment %s: %s", public_url, att_err)
+
+                    if att_path:
+                        try:
+                            attachment_data_urls.append(image_to_base64_data_url(att_path))
+                        except Exception as data_err:
+                            logger.warning("Failed to convert attachment %s to data URL: %s", att_path, data_err)
+
                 # Публичный URL для kie.ai (требуются HTTP ссылки, не base64)
                 public_base_image_url = to_public_url(base_image_url_local or str(base_image_path))
 
@@ -237,6 +281,7 @@ def generate_editing_task(
                                     base_image_url=public_base_image_url,
                                     prompt=prompt,
                                     image_size=aspect_ratio,
+                                    attachments_urls=attachment_public_urls,
                                     progress_callback=progress_callback,
                                 )
 
@@ -267,6 +312,7 @@ def generate_editing_task(
                                     base_image_data=base_image_data,
                                     prompt=prompt,
                                     aspect_ratio=aspect_ratio,
+                                    attachments_data=attachment_data_urls,
                                 )
 
                             service_used = "openrouter"
@@ -372,6 +418,7 @@ def generate_editing_task(
                         role="assistant",
                         content=f"Image edited successfully with prompt: {prompt}",
                         image_url=image_url,
+                        attachments=attachment_items or None,
                     )
                     await session.commit()
                     logger.info(f"Added result to chat history {session_id}")

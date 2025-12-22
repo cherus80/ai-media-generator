@@ -10,7 +10,7 @@ Endpoints:
 """
 
 import logging
-from typing import Optional
+from typing import Optional, List
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
@@ -31,6 +31,7 @@ from app.schemas.editing import (
     ChatHistoryResponse,
     ResetSessionResponse,
     ChatHistoryMessage,
+    ChatAttachment,
 )
 from app.services.credits import deduct_credits, check_user_can_perform_action
 from app.services.billing_v5 import BillingV5Service
@@ -97,6 +98,51 @@ async def upload_base_image(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to save file: {str(e)}"
+        )
+
+
+@router.post(
+    "/attachment",
+    response_model=ChatAttachment,
+    status_code=status.HTTP_201_CREATED,
+    summary="Загрузить дополнительное изображение для чата",
+    description="Загружает дополнительный файл (референс) для сообщения в чате редактирования.",
+)
+async def upload_attachment(
+    file: UploadFile = File(..., description="Изображение (JPEG/PNG/WebP/HEIC, max 10MB)"),
+    current_user: User = Depends(require_verified_email),
+) -> ChatAttachment:
+    """
+    Загрузить дополнительное изображение (референс) для сообщения в чате.
+    """
+    await validate_image_file(file)
+
+    try:
+        file_id, file_url, file_size = await save_upload_file(
+            file,
+            user_id=current_user.id
+        )
+
+        logger.info(
+            "Uploaded attachment for user %s: %s (%s bytes)",
+            current_user.id,
+            file_url,
+            file_size,
+        )
+
+        return ChatAttachment(
+            id=str(file_id),
+            url=file_url,
+            type="image",
+            name=file.filename,
+            size=file_size,
+            role="reference",
+        )
+    except Exception as e:
+        logger.error(f"Failed to save attachment: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to save attachment: {str(e)}"
         )
 
 
@@ -201,6 +247,11 @@ async def send_message(
             require_active=True,
         )
 
+        # Подготовка вложений
+        attachments_payload: Optional[List[dict]] = None
+        if request.attachments:
+            attachments_payload = [attachment.model_dump() for attachment in request.attachments]
+
         # Добавление сообщения пользователя в историю
         await add_message(
             db=db,
@@ -208,6 +259,7 @@ async def send_message(
             user_id=current_user.id,
             role="user",
             content=request.message,
+            attachments=attachments_payload,
         )
 
         # Получение истории для контекста
@@ -219,18 +271,27 @@ async def send_message(
             max_messages=10,
         )
 
+        # Вложения для AI-контекста (добавляем базовое изображение как основной вход)
+        ai_attachments = attachments_payload.copy() if attachments_payload else []
+        if chat_session.base_image_url:
+            ai_attachments.append({
+                "id": "base-image",
+                "url": chat_session.base_image_url,
+                "type": "image",
+                "role": "base",
+            })
+
         # Вызов OpenRouter для генерации промптов
         openrouter_client = get_openrouter_client()
 
         try:
-            prompts = await openrouter_client.generate_prompts(
+            prompt = await openrouter_client.generate_prompts(
                 user_message=request.message,
                 chat_history=chat_history,
+                attachments=ai_attachments,
             )
 
-            logger.info(
-                f"Generated {len(prompts)} prompts for session {request.session_id}"
-            )
+            logger.info("Generated prompt for session %s", request.session_id)
 
             # ✅ СПИСЫВАЕМ КРЕДИТЫ ПОСЛЕ УСПЕШНОЙ ГЕНЕРАЦИИ ПРОМПТОВ
             if billing_v5_enabled:
@@ -258,12 +319,7 @@ async def send_message(
             )
 
         # Формируем ответ assistant с промптами
-        assistant_content = (
-            "Вот 3 варианта промпта для редактирования изображения:\n\n"
-            f"1. Короткий: {prompts[0]}\n\n"
-            f"2. Средний: {prompts[1]}\n\n"
-            f"3. Подробный: {prompts[2]}"
-        )
+        assistant_content = f"Готовый промпт для генерации:\n\n{prompt}"
 
         # Добавление ответа assistant в историю
         await add_message(
@@ -272,13 +328,16 @@ async def send_message(
             user_id=current_user.id,
             role="assistant",
             content=assistant_content,
+            attachments=attachments_payload,
+            prompt=prompt,
         )
 
         from datetime import datetime
         return ChatMessageResponse(
             role="assistant",
             content=assistant_content,
-            prompts=prompts,
+            prompt=prompt,
+            attachments=request.attachments,
             timestamp=datetime.now().isoformat(),
         )
 
@@ -360,6 +419,10 @@ async def generate_image(
             require_active=True,
         )
 
+        attachments_payload: list[dict] = []
+        if request.attachments:
+            attachments_payload = [att.model_dump() for att in request.attachments]
+
         # Создание записи Generation
         # credits_spent будет установлено в Celery task после успешной генерации
         generation = Generation(
@@ -389,6 +452,7 @@ async def generate_image(
                 request.session_id,
                 chat_session.base_image_url,
                 request.prompt,
+                attachments_payload,
             ],
             kwargs={
                 "primary_provider": primary_provider,

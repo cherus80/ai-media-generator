@@ -15,6 +15,7 @@ import { Layout } from '../components/common/Layout';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import toast from 'react-hot-toast';
+import type { ChatAttachment } from '../types/editing';
 
 export const EditingPage: React.FC = () => {
   const {
@@ -39,6 +40,7 @@ export const EditingPage: React.FC = () => {
   const [isUploadingImage, setIsUploadingImage] = React.useState(false);
   const [showResetConfirm, setShowResetConfirm] = React.useState(false);
   const [pendingPrompt, setPendingPrompt] = React.useState<string | null>(null);
+  const [pendingAttachments, setPendingAttachments] = React.useState<ChatAttachment[]>([]);
   const [showPromptDecision, setShowPromptDecision] = React.useState(false);
   const [decisionLoadingTarget, setDecisionLoadingTarget] = React.useState<'original' | 'ai' | null>(null);
 
@@ -74,8 +76,9 @@ export const EditingPage: React.FC = () => {
     }
   };
 
-  const handlePromptSubmit = (text: string) => {
+  const handlePromptSubmit = (text: string, attachments?: ChatAttachment[]) => {
     setPendingPrompt(text);
+    setPendingAttachments(attachments || []);
     setShowPromptDecision(true);
   };
 
@@ -91,11 +94,12 @@ export const EditingPage: React.FC = () => {
     setDecisionLoadingTarget('original');
     try {
       // Сначала отправляем генерацию, только после успеха показываем статус
-      await generateImage(pendingPrompt);
+      await generateImage(pendingPrompt, pendingAttachments);
 
       addMessage({
         role: 'user',
         content: pendingPrompt,
+        attachments: pendingAttachments,
       });
       addMessage({
         role: 'assistant',
@@ -105,6 +109,7 @@ export const EditingPage: React.FC = () => {
       toast.success('Промпт отправлен без AI-ассистента');
       setShowPromptDecision(false);
       setPendingPrompt(null);
+      setPendingAttachments([]);
     } catch (err: any) {
       console.error('[EditingPage] Error in handleUseOriginalPrompt:', err);
       toast.error(err.message || 'Ошибка генерации изображения');
@@ -120,10 +125,11 @@ export const EditingPage: React.FC = () => {
 
     setDecisionLoadingTarget('ai');
     try {
-      await sendMessage(pendingPrompt);
-      toast.success('AI предложил варианты промптов — выберите подходящий.');
+      await sendMessage(pendingPrompt, pendingAttachments);
+      toast.success('AI подготовил финальный промпт — отправьте на генерацию.');
       setShowPromptDecision(false);
       setPendingPrompt(null);
+      setPendingAttachments([]);
     } catch (err: any) {
       toast.error(err.message || 'Ошибка отправки запроса AI-ассистенту');
     } finally {
@@ -131,9 +137,9 @@ export const EditingPage: React.FC = () => {
     }
   };
 
-  const handleSelectPrompt = async (prompt: string) => {
+  const handleSelectPrompt = async (prompt: string, attachments?: ChatAttachment[]) => {
     try {
-      await generateImage(prompt);
+      await generateImage(prompt, attachments);
       toast.success('Изображение сгенерировано!');
     } catch (err: any) {
       toast.error(err.message || 'Ошибка генерации изображения');
@@ -318,6 +324,7 @@ export const EditingPage: React.FC = () => {
             if (decisionLoadingTarget) return;
             setShowPromptDecision(false);
             setPendingPrompt(null);
+            setPendingAttachments([]);
           }}
           onUseOriginal={handleUseOriginalPrompt}
           onUseAiHelper={handleUseAiHelper}

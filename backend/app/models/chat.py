@@ -112,6 +112,8 @@ class ChatHistory(Base, TimestampMixin):
         role: str,
         content: str,
         image_url: Optional[str] = None,
+        attachments: Optional[list[dict[str, str | int | None]]] = None,
+        prompt: Optional[str] = None,
     ) -> None:
         """
         Добавление сообщения в историю.
@@ -120,6 +122,8 @@ class ChatHistory(Base, TimestampMixin):
             role: Роль отправителя ('user' или 'assistant')
             content: Текст сообщения
             image_url: URL изображения (опционально)
+            attachments: Список вложений (опционально)
+            prompt: Финальный промпт ассистента (опционально)
         """
         from datetime import datetime
 
@@ -134,6 +138,12 @@ class ChatHistory(Base, TimestampMixin):
 
         if image_url:
             message["image_url"] = image_url
+
+        if attachments:
+            message["attachments"] = attachments
+
+        if prompt:
+            message["prompt"] = prompt
 
         self.messages.append(message)
 
@@ -152,7 +162,7 @@ class ChatHistory(Base, TimestampMixin):
 
         return self.messages[-n:]
 
-    def get_messages_for_ai(self, max_messages: int = 10) -> List[Dict[str, str]]:
+    def get_messages_for_ai(self, max_messages: int = 10) -> List[Dict[str, Any]]:
         """
         Получение сообщений в формате для OpenRouter API.
 
@@ -167,10 +177,12 @@ class ChatHistory(Base, TimestampMixin):
         # Форматирование для OpenRouter
         formatted = []
         for msg in messages:
-            formatted_msg = {
+            formatted_msg: Dict[str, Any] = {
                 "role": msg["role"],
                 "content": msg["content"],
             }
+            if msg.get("attachments"):
+                formatted_msg["attachments"] = msg["attachments"]
             formatted.append(formatted_msg)
 
         return formatted

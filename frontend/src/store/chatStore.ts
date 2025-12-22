@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type {
   ChatMessage,
   BaseImageUpload,
+  ChatAttachment,
 } from '../types/editing';
 import type { FittingStatusResponse, FittingResult } from '../types/fitting';
 import {
@@ -52,11 +53,11 @@ interface ChatState {
   loadHistory: (sessionId: string) => Promise<void>;
 
   // Actions: работа с чатом
-  sendMessage: (text: string) => Promise<void>;
-  selectPrompt: (prompt: string) => Promise<void>;
+  sendMessage: (text: string, attachments?: ChatAttachment[]) => Promise<void>;
+  selectPrompt: (prompt: string, attachments?: ChatAttachment[]) => Promise<void>;
 
   // Actions: генерация изображения
-  generateImage: (prompt: string) => Promise<FittingResult>;
+  generateImage: (prompt: string, attachments?: ChatAttachment[]) => Promise<FittingResult>;
 
   // Actions: управление сессией
   reset: () => void;
@@ -145,9 +146,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
         id: uuidv4(),
         role: msg.role,
         content: msg.content,
+        attachments: msg.attachments,
         image_url: msg.image_url,
         timestamp: new Date(msg.timestamp),
-        prompts: undefined, // Промпты не сохраняются в истории
+        prompt: msg.prompt,
       }));
 
       set({
@@ -164,7 +166,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   // Отправка сообщения AI-ассистенту
-  sendMessage: async (text: string) => {
+  sendMessage: async (text: string, attachments?: ChatAttachment[]) => {
     const { sessionId } = get();
 
     if (!sessionId) {
@@ -182,6 +184,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       id: uuidv4(),
       role: 'user',
       content: text,
+      attachments,
       timestamp: new Date(),
     };
     set((state) => ({ messages: [...state.messages, userMessage] }));
@@ -191,19 +194,21 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const response = await sendChatMessage({
         session_id: sessionId,
         message: text,
+        attachments,
       });
 
-      // Добавляем ответ ассистента с промптами
+      // Добавляем ответ ассистента с финальным промптом
       const assistantMessage: ChatMessage = {
         id: uuidv4(),
         role: 'assistant',
         content: response.content,
-        prompts: response.prompts,
+        prompt: response.prompt,
+        attachments: response.attachments,
         timestamp: new Date(response.timestamp),
       };
       set((state) => ({
         messages: [...state.messages, assistantMessage],
-        currentPrompts: response.prompts || null,
+        currentPrompts: response.prompt ? [response.prompt] : null,
         isSendingMessage: false,
       }));
 
@@ -223,13 +228,13 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   // Выбор промпта для генерации
-  selectPrompt: async (prompt: string) => {
+  selectPrompt: async (prompt: string, attachments?: ChatAttachment[]) => {
     // Просто генерируем изображение по выбранному промпту
-    await get().generateImage(prompt);
+    await get().generateImage(prompt, attachments);
   },
 
   // Генерация изображения по промпту
-  generateImage: async (prompt: string) => {
+  generateImage: async (prompt: string, attachments?: ChatAttachment[]) => {
     const { sessionId } = get();
 
     console.log('[chatStore] generateImage called with prompt:', prompt);
@@ -258,6 +263,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const response = await generateEditedImage({
         session_id: sessionId,
         prompt,
+        attachments,
       });
 
       console.log('[chatStore] API response:', response);
@@ -293,6 +299,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           role: 'assistant',
           content: `Изображение готово! Промпт: "${prompt}"`,
           image_url: resolvedResultUrl,
+          attachments,
           timestamp: new Date(),
         };
         set((state) => ({
