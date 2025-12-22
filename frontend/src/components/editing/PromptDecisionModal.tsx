@@ -54,7 +54,7 @@ export const PromptDecisionModal: React.FC<PromptDecisionModalProps> = ({
                 Как отправить промпт?
               </h3>
               <p className="text-dark-600 mt-1">
-                Выберите: отправить запрос сразу или сначала попросить AI улучшить формулировку. Улучшение тоже тратит кредиты.
+                Выберите: отправить запрос сразу или сначала попросить AI улучшить формулировку и вернуть один финальный промпт. Улучшение тоже тратит кредиты.
               </p>
             </div>
             <Button
@@ -133,7 +133,7 @@ export const PromptDecisionModal: React.FC<PromptDecisionModalProps> = ({
             </div>
           </div>
           <p className="text-sm text-dark-600 mb-3">
-            Помощник <span className="font-semibold">{modelName}</span> предложит улучшенные варианты и попросит подтвердить один из них перед отправкой. Генерация изображения также спишет 2 кредита.
+            Помощник <span className="font-semibold">{modelName}</span> вернёт один улучшенный промпт для генерации. Генерация изображения также спишет 2 кредита.
           </p>
           <form
             onSubmit={(e) => {

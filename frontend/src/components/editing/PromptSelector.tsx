@@ -1,6 +1,5 @@
 /**
- * Компонент выбора промпта из 3 вариантов, предложенных AI
- * Отображает карточки с разными уровнями детализации
+ * Компонент подтверждения/редактирования промпта, предложенного AI (1 или несколько вариантов)
  */
 
 import React from 'react';
@@ -75,7 +74,7 @@ export const PromptSelector: React.FC<PromptSelectorProps> = ({
             </svg>
           </div>
           <p className="text-base font-bold gradient-text">
-            Подтвердите или отредактируйте улучшенный промпт
+            Подтвердите или отредактируйте финальный промпт
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -215,7 +214,7 @@ export const PromptSelector: React.FC<PromptSelectorProps> = ({
             </div>
             <div className="flex-1">
               <p className="text-sm text-dark-700 leading-relaxed">
-                <span className="font-semibold">Генерация изображения списывает 2 кредит.</span> AI-ассистент уже списал 1 кредит за улучшение промпта — выберите или отредактируйте вариант перед стартом.
+                <span className="font-semibold">Генерация изображения списывает 2 кредита.</span> AI-ассистент уже списал 1 кредит за улучшение промпта — подтвердите или подредактируйте перед стартом.
               </p>
             </div>
           </div>
