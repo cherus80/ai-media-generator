@@ -228,7 +228,7 @@ services:
       - waf_logs:/var/log/modsecurity
     environment:
       MODSEC_RULE_ENGINE: DetectionOnly
-      MODSEC_AUDIT_LOG: /var/log/modsecurity/audit.log
+      MODSEC_AUDIT_LOG: /dev/stdout
       MODSEC_RESP_BODY_ACCESS: Off
       MODSEC_REQ_BODY_LIMIT: 20971520
     networks:
