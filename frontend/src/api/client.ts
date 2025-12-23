@@ -14,6 +14,22 @@ const API_BASE_URL = (
   .replace(/\/$/, '')
   .replace(/\/api$/, '');
 
+const AUTH_STORAGE_KEY = 'auth-storage';
+let isRedirectingToLogin = false;
+
+const handleUnauthorized = () => {
+  if (typeof window === 'undefined' || isRedirectingToLogin) return;
+  isRedirectingToLogin = true;
+  try {
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+  } catch (error) {
+    console.error('Не удалось очистить localStorage авторизации:', error);
+  }
+  if (window.location.pathname !== '/login') {
+    window.location.assign('/login');
+  }
+};
+
 // Create axios instance
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -62,9 +78,14 @@ apiClient.interceptors.response.use(
       _retry?: boolean;
     };
 
-    // Handle 401 Unauthorized — оставляем сессию, чтобы не выкидывать пользователя насильно
+    // Handle 401 Unauthorized — если запрос был с токеном, считаем сессию истёкшей
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
+      const authHeader =
+        originalRequest.headers?.Authorization || originalRequest.headers?.authorization;
+      if (authHeader) {
+        handleUnauthorized();
+      }
       // Возвращаем ошибку вызвавшему коду; UI сам покажет форму логина при необходимости
       return Promise.reject(error);
     }

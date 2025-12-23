@@ -78,7 +78,7 @@ export const PromptDecisionModal: React.FC<PromptDecisionModalProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4 mt-4 sm:mt-6">
             <Card variant="glass" padding="lg" className="border border-success-200 p-3 sm:p-4">
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-3">
                 <div className="flex items-center space-x-2">
                   <span className="text-2xl">🚀</span>
                   <p className="text-lg font-bold text-dark-900">Отправить как есть</p>
@@ -122,57 +122,57 @@ export const PromptDecisionModal: React.FC<PromptDecisionModalProps> = ({
             </Card>
 
             <Card variant="glass" padding="lg" className="border border-primary-200 p-3 sm:p-4">
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-3">
                 <div className="flex items-center space-x-2">
                   <span className="text-2xl">🤖</span>
                   <p className="text-lg font-bold text-dark-900">Улучшить с AI</p>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Badge variant="primary" size="sm">Ассистент</Badge>
-              <Badge variant="warning" size="sm">−1 кредит</Badge>
-            </div>
-          </div>
-          <p className="text-sm text-dark-600 mb-3">
-            Помощник <span className="font-semibold">{modelName}</span> вернёт один улучшенный промпт для генерации. Генерация изображения также спишет 2 кредита.
-          </p>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!isBusy) onUseAiHelper();
-            }}
-          >
-            <Button
-              variant="secondary"
-              size="lg"
-              fullWidth
-              type="submit"
-              disabled={isBusy}
-              isLoading={showAiProgress}
-              loadingLabel="Генерация..."
-              icon={
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l4 2" />
-                </svg>
-              }
-            >
-              Улучшить с AI
-            </Button>
-            {showAiProgress && (
-              <div className="mt-3">
-                <div className="h-2 bg-secondary-100 rounded-full overflow-hidden">
-                  <motion.div
-                    className="h-full bg-gradient-to-r from-secondary-500 via-primary-500 to-secondary-500"
-                    style={{ width: '50%' }}
-                    animate={{ x: ['-50%', '100%'] }}
-                    transition={{ repeat: Infinity, duration: 1.2, ease: 'linear' }}
-                  />
                 </div>
-                <p className="text-xs text-secondary-700 font-semibold mt-2">Генерация...</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="primary" size="sm">Ассистент</Badge>
+                  <Badge variant="warning" size="sm">−1 кредит</Badge>
+                </div>
               </div>
-            )}
-          </form>
-        </Card>
-      </div>
+              <p className="text-sm text-dark-600 mb-3">
+                Помощник <span className="font-semibold">{modelName}</span> вернёт один улучшенный промпт для генерации. Генерация изображения также спишет 2 кредита.
+              </p>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!isBusy) onUseAiHelper();
+                }}
+              >
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  fullWidth
+                  type="submit"
+                  disabled={isBusy}
+                  isLoading={showAiProgress}
+                  loadingLabel="Генерация..."
+                  icon={
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l4 2" />
+                    </svg>
+                  }
+                >
+                  Улучшить с AI
+                </Button>
+                {showAiProgress && (
+                  <div className="mt-3">
+                    <div className="h-2 bg-secondary-100 rounded-full overflow-hidden">
+                      <motion.div
+                        className="h-full bg-gradient-to-r from-secondary-500 via-primary-500 to-secondary-500"
+                        style={{ width: '50%' }}
+                        animate={{ x: ['-50%', '100%'] }}
+                        transition={{ repeat: Infinity, duration: 1.2, ease: 'linear' }}
+                      />
+                    </div>
+                    <p className="text-xs text-secondary-700 font-semibold mt-2">Генерация...</p>
+                  </div>
+                )}
+              </form>
+            </Card>
+          </div>
         </Card>
       </motion.div>
     </motion.div>

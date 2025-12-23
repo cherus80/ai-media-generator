@@ -134,7 +134,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   return (
     <div className="border-2 border-primary-100 backdrop-blur-md bg-gradient-to-r from-white via-white to-primary-50/60 px-3 sm:px-5 py-4 sm:py-5 shadow-soft rounded-2xl mb-10 shadow-lg shadow-primary-100/60">
       <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between mb-2">
           <span className="text-sm font-semibold text-dark-700">
             Поле ввода запроса
           </span>
@@ -142,9 +142,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             Прикрепляйте референсы через скрепку слева
           </span>
         </div>
-        <div className="flex items-end space-x-2 sm:space-x-3">
+        <div className="flex flex-wrap items-end gap-2 sm:gap-3">
           {/* Attach button слева */}
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <motion.div className="flex-shrink-0" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Button
               onClick={handleFileButtonClick}
               disabled={disabled || isUploadingAttachment}
@@ -160,7 +160,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           </motion.div>
 
           {/* Textarea */}
-          <div className="flex-1 relative">
+          <div className="flex-1 min-w-0 relative">
             <textarea
               ref={textareaRef}
               value={message}
@@ -183,7 +183,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           </div>
 
           {/* Send button */}
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <motion.div className="flex-shrink-0" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Button
               onClick={handleSubmit}
               disabled={!message.trim() || disabled || isUploadingAttachment}
@@ -191,6 +191,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               size="lg"
               className="!rounded-full !p-4 shadow-glow-primary"
               isLoading={disabled || isUploadingAttachment}
+              loadingLabel=""
               icon={
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />

@@ -106,5 +106,5 @@ export interface BaseImageUpload {
   file_id: string;
   url: string;
   preview: string; // data URL для превью
-  file: File;
+  file: File | null;
 }

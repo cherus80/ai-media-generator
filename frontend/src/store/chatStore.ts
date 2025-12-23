@@ -4,6 +4,7 @@
  */
 
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
 import type {
   ChatMessage,
@@ -69,7 +70,24 @@ interface ChatState {
   addMessage: (message: Omit<ChatMessage, 'id' | 'timestamp'>) => void;
 }
 
-export const useChatStore = create<ChatState>((set, get) => ({
+const CHAT_STORAGE_KEY = 'editing-chat-storage';
+
+const getStoredAuthToken = (): string | null => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const authStorage = localStorage.getItem('auth-storage');
+    if (!authStorage) return null;
+    const parsed = JSON.parse(authStorage);
+    return parsed?.state?.token || null;
+  } catch (error) {
+    console.error('Failed to parse auth storage:', error);
+    return null;
+  }
+};
+
+export const useChatStore = create<ChatState>()(
+  persist(
+    (set, get) => ({
   // Initial state
   sessionId: null,
   baseImage: null,
@@ -152,15 +170,34 @@ export const useChatStore = create<ChatState>((set, get) => ({
         prompt: msg.prompt,
       }));
 
+      const resolvedBaseUrl = history.base_image_url
+        ? history.base_image_url.startsWith('http')
+          ? history.base_image_url
+          : `${API_BASE_URL}${history.base_image_url.startsWith('/') ? history.base_image_url : `/${history.base_image_url}`}`
+        : null;
+
       set({
         sessionId: history.session_id,
         messages,
         isSessionActive: history.is_active,
+        baseImage: resolvedBaseUrl
+          ? {
+              file_id: 'base-image',
+              url: resolvedBaseUrl,
+              preview: resolvedBaseUrl,
+              file: null,
+            }
+          : get().baseImage,
         isLoading: false,
       });
     } catch (error: any) {
       const errorMessage = error.response?.data?.detail || error.message || 'Ошибка загрузки истории';
-      set({ error: errorMessage, isLoading: false });
+      const status = error.response?.status;
+      if (status === 404 || status === 410) {
+        get().reset();
+      } else {
+        set({ error: errorMessage, isLoading: false });
+      }
       throw error;
     }
   },
@@ -396,7 +433,39 @@ export const useChatStore = create<ChatState>((set, get) => ({
   clearError: () => {
     set({ error: null, uploadError: null });
   },
-}));
+    }),
+    {
+      name: CHAT_STORAGE_KEY,
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        sessionId: state.sessionId,
+        baseImage: state.baseImage
+          ? {
+              file_id: state.baseImage.file_id,
+              url: state.baseImage.url,
+              preview: state.baseImage.url,
+              file: null,
+            }
+          : null,
+        isSessionActive: state.isSessionActive,
+      }),
+      onRehydrateStorage: () => {
+        return (state, error) => {
+          if (error) {
+            console.error('Ошибка восстановления состояния чата:', error);
+            return;
+          }
+          if (!state?.sessionId) return;
+          const token = getStoredAuthToken();
+          if (!token) return;
+          state.loadHistory(state.sessionId).catch((loadError) => {
+            console.error('Ошибка авто-восстановления истории чата:', loadError);
+          });
+        };
+      },
+    }
+  )
+);
 
 /**
  * Утилита для создания preview изображения (data URL)
