@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Redis-based rate limiting для API с отдельными лимитами для auth, генерации и ассистента.
 - Явные лимиты пула подключений к PostgreSQL для защиты от перегрузки.
 - Периметр: rate limiting и лимиты соединений в Nginx, усиленные security headers в Caddy.
+- Добавлен WAF: Nginx + ModSecurity (OWASP CRS) между Caddy и сервисами.
 
 ## [0.15.21] - 2025-12-16
 

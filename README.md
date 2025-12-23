@@ -201,6 +201,7 @@ docker-compose exec backend alembic upgrade head
 - ✅ SQL-injection защита через ORM
 - ✅ XSS sanitization
 - ✅ GDPR: автоудаление файлов (24ч для примерки, 30 дней для чата)
+- ✅ WAF: Nginx + ModSecurity (OWASP CRS) на периметре
 
 ---
 

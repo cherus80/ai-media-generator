@@ -22,7 +22,7 @@ ai-generator.mix4.ru {
 
     @api path /api/* /health
     handle @api {
-        reverse_proxy backend:8000 {
+        reverse_proxy waf:80 {
             header_up X-Forwarded-Proto {scheme}
             header_up X-Forwarded-Host {host}
         }
@@ -30,14 +30,14 @@ ai-generator.mix4.ru {
 
     @uploads path /uploads/*
     handle @uploads {
-        reverse_proxy backend:8000 {
+        reverse_proxy waf:80 {
             header_up X-Forwarded-Proto {scheme}
             header_up X-Forwarded-Host {host}
         }
     }
 
     handle {
-        reverse_proxy frontend:80 {
+        reverse_proxy waf:80 {
             header_up X-Forwarded-Proto {scheme}
             header_up X-Forwarded-Host {host}
         }
