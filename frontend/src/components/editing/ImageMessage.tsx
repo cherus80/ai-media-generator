@@ -32,11 +32,10 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({ message }) => {
   };
 
   const handleShare = async () => {
-    const shareUrl = resolveAbsoluteUrl(message.image_url!);
     const shareText = 'Изображение сгенерировано в https://ai-generator.mix4.ru';
 
     if (window.Telegram?.WebApp?.openTelegramLink) {
-      const tgLink = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`;
+      const tgLink = `https://t.me/share/url?text=${encodeURIComponent(shareText)}`;
       window.Telegram.WebApp.openTelegramLink(tgLink);
       return;
     }
@@ -46,7 +45,6 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({ message }) => {
         await navigator.share({
           title: 'AI Generator',
           text: shareText,
-          url: shareUrl,
         });
         toast.success('Успешно поделились');
         return;
@@ -58,8 +56,8 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({ message }) => {
     }
 
     try {
-      await navigator.clipboard.writeText(shareUrl);
-      toast.success('Ссылка скопирована в буфер обмена');
+      await navigator.clipboard.writeText(shareText);
+      toast.success('Сообщение скопировано в буфер обмена');
     } catch {
       toast.error('Не удалось поделиться изображением');
     }

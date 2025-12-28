@@ -139,7 +139,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             Поле ввода запроса
           </span>
           <span className="text-xs text-primary-600 font-medium">
-            Прикрепляйте референсы через скрепку слева
+            <span className="inline sm:hidden">Референсы через скрепку</span>
+            <span className="hidden sm:inline">Прикрепляйте референсы через скрепку слева</span>
           </span>
         </div>
         <div className="flex flex-wrap items-end gap-2 sm:gap-3">
@@ -176,7 +177,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: message.length === 0 ? 1 : 0 }}
-              className="absolute right-4 bottom-3 text-xs text-dark-400 font-medium pointer-events-none"
+              className="absolute right-4 bottom-3 text-xs text-dark-400 font-medium pointer-events-none hidden sm:block"
             >
               Enter для отправки
             </motion.div>

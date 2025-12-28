@@ -30,6 +30,7 @@ export const EditingPage: React.FC = () => {
     isSendingMessage,
     isGenerating,
     uploadAndCreateSession,
+    loadHistory,
     sendMessage,
     generateImage,
     resetSession,
@@ -48,6 +49,7 @@ export const EditingPage: React.FC = () => {
   const [pendingAttachments, setPendingAttachments] = React.useState<ChatAttachment[]>([]);
   const [showPromptDecision, setShowPromptDecision] = React.useState(false);
   const [decisionLoadingTarget, setDecisionLoadingTarget] = React.useState<'original' | 'ai' | null>(null);
+  const historyLoadRef = React.useRef<string | null>(null);
   const [balanceWarning, setBalanceWarning] = React.useState<{
     title?: string;
     description: string;
@@ -82,6 +84,19 @@ export const EditingPage: React.FC = () => {
       clearError();
     }
   }, [uploadError, error, clearError]);
+
+  useEffect(() => {
+    if (!sessionId || !user) {
+      return;
+    }
+    if (historyLoadRef.current === sessionId) {
+      return;
+    }
+    historyLoadRef.current = sessionId;
+    loadHistory(sessionId).catch((loadError) => {
+      console.error('[EditingPage] Failed to load chat history:', loadError);
+    });
+  }, [sessionId, user, loadHistory]);
 
   const handleFileSelect = async (file: File) => {
     setIsUploadingImage(true);
@@ -415,7 +430,7 @@ export const EditingPage: React.FC = () => {
               <ChatInput
                 onSend={handlePromptSubmit}
                 disabled={isSendingMessage || isGenerating || decisionLoadingTarget !== null}
-                placeholder="Опишите, как хотите изменить изображение..."
+                placeholder="Опишите изменение..."
               />
               <p className="text-xs text-dark-400 px-4 mb-6 max-w-4xl mx-auto">
                 Сервис "AI Generator" не несёт ответственности за результаты сгенерированных изображений, так как генерация происходит на сторонних ресурсах с помощью ИИ.
