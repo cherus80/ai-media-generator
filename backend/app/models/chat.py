@@ -127,8 +127,7 @@ class ChatHistory(Base, TimestampMixin):
         """
         from datetime import datetime
 
-        if not self.messages:
-            self.messages = []
+        messages = list(self.messages) if self.messages else []
 
         message = {
             "role": role,
@@ -145,7 +144,8 @@ class ChatHistory(Base, TimestampMixin):
         if prompt:
             message["prompt"] = prompt
 
-        self.messages.append(message)
+        messages.append(message)
+        self.messages = messages
 
     def get_last_n_messages(self, n: int = 10) -> List[Dict[str, Any]]:
         """

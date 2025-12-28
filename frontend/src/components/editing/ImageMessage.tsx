@@ -33,11 +33,50 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({ message }) => {
 
   const handleShare = async () => {
     const shareText = 'Изображение сгенерировано в https://ai-generator.mix4.ru';
+    const shareUrl = resolveAbsoluteUrl(message.image_url!);
 
-    if (window.Telegram?.WebApp?.openTelegramLink) {
-      const tgLink = `https://t.me/share/url?text=${encodeURIComponent(shareText)}`;
-      window.Telegram.WebApp.openTelegramLink(tgLink);
-      return;
+    const buildShareFile = async () => {
+      const response = await fetch(shareUrl, { mode: 'cors', cache: 'no-store' });
+      if (!response.ok) {
+        throw new Error(`Ошибка загрузки изображения: ${response.status}`);
+      }
+      const blob = await response.blob();
+      const extension = blob.type?.split('/')[1] || 'png';
+      return new File([blob], `ai-generator-${Date.now()}.${extension}`, {
+        type: blob.type || 'image/png',
+      });
+    };
+
+    if (navigator.share && typeof navigator.canShare === 'function') {
+      try {
+        const file = await buildShareFile();
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: 'AI Generator',
+            text: shareText,
+            files: [file],
+          });
+          toast.success('Успешно поделились');
+          return;
+        }
+      } catch (error: any) {
+        if (error?.name === 'AbortError') {
+          return;
+        }
+      }
+    }
+
+    const ClipboardCtor = typeof ClipboardItem !== 'undefined' ? ClipboardItem : null;
+    if (navigator.clipboard && 'write' in navigator.clipboard && ClipboardCtor) {
+      try {
+        const file = await buildShareFile();
+        const item = new ClipboardCtor({ [file.type]: file });
+        await navigator.clipboard.write([item]);
+        toast.success('Изображение скопировано в буфер');
+        return;
+      } catch (error) {
+        console.error('Не удалось скопировать изображение в буфер:', error);
+      }
     }
 
     if (navigator.share) {
