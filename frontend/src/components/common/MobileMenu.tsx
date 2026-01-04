@@ -94,6 +94,22 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
     {
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8h-6a2 2 0 01-2-2V6a2 2 0 012-2h8l4 4v10a2 2 0 01-2 2h-2" />
+        </svg>
+      ),
+      label: 'Написать в MAX',
+      onClick: () => {
+        window.open(
+          'https://max.ru/join/LzUq8PZFGLKTP7Fv7Bzgh6ifDiWz15UYHVmOIkaI_EI',
+          '_blank',
+          'noopener,noreferrer'
+        );
+        onClose();
+      },
+    },
+    {
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       ),

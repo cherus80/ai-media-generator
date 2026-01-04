@@ -125,7 +125,15 @@ export const Layout: React.FC<LayoutProps> = ({
             </div>
 
             {/* Right side: Balance + Hamburger menu */}
-            <div className="flex items-center gap-3 ml-0 sm:ml-3 w-full sm:w-auto justify-end">
+            <div className="flex flex-wrap items-center gap-3 ml-0 sm:ml-3 w-full sm:w-auto justify-end">
+              <a
+                href="https://t.me/+Fj-R8QqIEEg5OTE6"
+                target="_blank"
+                rel="noreferrer"
+                className="px-3 py-1 rounded-full bg-white/80 border border-primary-100 text-primary-700 text-xs sm:text-sm font-semibold hover:bg-primary-50 transition whitespace-nowrap"
+              >
+                Наш канал в Telegram
+              </a>
               {showBalance && (
                 <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="w-full sm:w-auto">
                   <Card variant="gradient" padding="sm" className="border border-primary-200 w-full sm:w-auto">
