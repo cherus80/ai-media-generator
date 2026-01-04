@@ -45,7 +45,7 @@ scp .env $VPS_HOST:$VPS_PROJECT_DIR/.env || warn ".env файл не скопи�
 
 # Остановка контейнеров
 info "Шаг 5/6: Остановка контейнеров на VPS..."
-ssh $VPS_HOST "cd $VPS_PROJECT_DIR && docker-compose -f docker-compose.prod.yml down" || warn "Контейнеры не были запущены"
+ssh $VPS_HOST "cd $VPS_PROJECT_DIR && docker compose -f docker-compose.prod.yml down" || warn "Контейнеры не были запущены"
 
 # Сборка и запуск контейнеров
 info "Шаг 6/6: Сборка и запуск контейнеров на VPS..."
@@ -57,11 +57,11 @@ export $(grep -v '^#' .env | xargs)
 
 # Сборка образов
 echo "Сборка Docker образов..."
-DOCKER_BUILDKIT=1 docker-compose -f docker-compose.prod.yml build --no-cache
+DOCKER_BUILDKIT=1 docker compose -f docker-compose.prod.yml build --no-cache
 
 # Запуск контейнеров
 echo "Запуск контейнеров..."
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml up -d
 
 # Ожидание запуска
 echo "Ожидание запуска контейнеров (30 секунд)..."
@@ -69,14 +69,14 @@ sleep 30
 
 # Проверка статуса
 echo "Проверка статуса контейнеров:"
-docker-compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml ps
 
 # Проверка логов
 echo "Последние логи backend:"
-docker-compose -f docker-compose.prod.yml logs --tail=20 backend
+docker compose -f docker-compose.prod.yml logs --tail=20 backend
 
 echo "Последние логи frontend:"
-docker-compose -f docker-compose.prod.yml logs --tail=20 frontend
+docker compose -f docker-compose.prod.yml logs --tail=20 frontend
 ENDSSH
 
 if [ $? -eq 0 ]; then
@@ -85,7 +85,7 @@ if [ $? -eq 0 ]; then
     info "Проверьте приложение по адресу: https://ai-bot-media.mix4.ru"
     echo ""
     info "Для просмотра логов используйте:"
-    echo "  ssh $VPS_HOST 'cd $VPS_PROJECT_DIR && docker-compose -f docker-compose.prod.yml logs -f'"
+    echo "  ssh $VPS_HOST 'cd $VPS_PROJECT_DIR && docker compose -f docker-compose.prod.yml logs -f'"
 else
     error "Деплой завершился с ошибками!"
 fi

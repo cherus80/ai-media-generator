@@ -52,8 +52,8 @@ echo ""
 
 # Остановка контейнера frontend
 echo "⏹️  Остановка контейнера frontend..."
-docker-compose -f docker-compose.prod.yml stop frontend
-docker-compose -f docker-compose.prod.yml rm -f frontend
+docker compose -f docker-compose.prod.yml stop frontend
+docker compose -f docker-compose.prod.yml rm -f frontend
 
 # Удаление старого образа (чтобы точно пересобрать)
 echo "🗑️  Удаление старого образа..."
@@ -62,7 +62,7 @@ docker rmi ai-image-bot-frontend || true
 # Пересборка Docker образа фронтенда БЕЗ кэша
 # Docker сам соберёт фронтенд внутри (multi-stage build)
 echo "🔨 Сборка Docker образа (это займёт 2-3 минуты)..."
-DOCKER_BUILDKIT=1 docker-compose -f docker-compose.prod.yml build --no-cache frontend
+DOCKER_BUILDKIT=1 docker compose -f docker-compose.prod.yml build --no-cache frontend
 
 if [ $? -ne 0 ]; then
     echo "❌ Ошибка при сборке Docker образа!"
@@ -74,7 +74,7 @@ echo ""
 
 # Запуск контейнера frontend
 echo "🚀 Запуск контейнера frontend..."
-docker-compose -f docker-compose.prod.yml up -d --no-deps frontend
+docker compose -f docker-compose.prod.yml up -d --no-deps frontend
 
 if [ $? -ne 0 ]; then
     echo "❌ Ошибка при запуске контейнера!"
@@ -90,11 +90,11 @@ sleep 15
 
 # Проверка статуса
 echo "📊 Статус контейнера frontend:"
-docker-compose -f docker-compose.prod.yml ps frontend
+docker compose -f docker-compose.prod.yml ps frontend
 
 echo ""
 echo "📄 Последние 30 строк логов:"
-docker-compose -f docker-compose.prod.yml logs --tail=30 frontend
+docker compose -f docker-compose.prod.yml logs --tail=30 frontend
 
 ENDSSH
 
@@ -115,7 +115,7 @@ if [ $? -eq 0 ]; then
     step "Шаг 5/5: Финальная проверка..."
 
     # Проверка что контейнер работает
-    ssh $VPS_HOST "cd $VPS_PROJECT_DIR && docker-compose -f docker-compose.prod.yml ps frontend | grep Up" > /dev/null 2>&1
+    ssh $VPS_HOST "cd $VPS_PROJECT_DIR && docker compose -f docker-compose.prod.yml ps frontend | grep Up" > /dev/null 2>&1
 
     if [ $? -eq 0 ]; then
         echo ""
@@ -133,7 +133,7 @@ if [ $? -eq 0 ]; then
         echo "  2. Добавьте ?v=2 к URL, чтобы принудительно обновить ресурсы"
         echo ""
         info "📊 Для просмотра логов:"
-        echo "  ssh $VPS_HOST 'cd $VPS_PROJECT_DIR && docker-compose -f docker-compose.prod.yml logs -f frontend'"
+        echo "  ssh $VPS_HOST 'cd $VPS_PROJECT_DIR && docker compose -f docker-compose.prod.yml logs -f frontend'"
         echo ""
     else
         error "Контейнер frontend не запустился!"

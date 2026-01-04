@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Интеграционные тесты пропускаются, если тестовая PostgreSQL недоступна; тесты приведены к актуальным полям billing v5 и async-валидатору файлов.
 - Парсинг промптов OpenRouter корректно обрабатывает пустые массивы.
 - MODSEC_RESP_BODY_ACCESS в docker-compose.prod.yml зафиксирован как строка, чтобы docker-compose не падал на YAML boolean.
+- Добавлен /healthz для WAF и переопределён healthcheck, чтобы контейнер не зависал в состоянии unhealthy.
 
 ### Changed
 - Обновлены тексты про редактирование фото на лендинге и в приложении: референсы, сценарии работы и стоимость.
@@ -37,6 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Страница примеров показывает топ-6 востребованных, добавлены фильтры по меткам и сортировка по популярности.
 - Скрипт `deploy-frontend-to-vps.sh` теперь обновляет код с ветки `feature/instructions-examples`.
 - Деплой фронтенда запускается с `--no-deps`, чтобы не пересоздавать Redis/PostgreSQL при выкладке UI.
+- Скрипты деплоя используют `docker compose` (v2) вместо `docker-compose`.
+- Порог покрытия тестов временно снижен до 20%.
 
 ### Added
 - Redis-based rate limiting для API с отдельными лимитами для auth, генерации и ассистента.
