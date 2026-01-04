@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - В шапках всех страниц добавлена ссылка на Telegram-канал.
 - Страница примеров показывает топ-6 востребованных, добавлены фильтры по меткам и сортировка по популярности.
 - Скрипт `deploy-frontend-to-vps.sh` теперь обновляет код с ветки `feature/instructions-examples`.
+- Деплой фронтенда запускается с `--no-deps`, чтобы не пересоздавать Redis/PostgreSQL при выкладке UI.
 
 ### Added
 - Redis-based rate limiting для API с отдельными лимитами для auth, генерации и ассистента.

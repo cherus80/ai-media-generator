@@ -74,7 +74,7 @@ echo ""
 
 # Запуск контейнера frontend
 echo "🚀 Запуск контейнера frontend..."
-docker-compose -f docker-compose.prod.yml up -d frontend
+docker-compose -f docker-compose.prod.yml up -d --no-deps frontend
 
 if [ $? -ne 0 ]; then
     echo "❌ Ошибка при запуске контейнера!"
