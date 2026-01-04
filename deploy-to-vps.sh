@@ -20,6 +20,7 @@ error() { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 # Конфигурация VPS
 VPS_HOST="ai-bot-vps"  # Используем alias из ~/.ssh/config
 VPS_PROJECT_DIR="/root/ai-image-bot"
+DEPLOY_BRANCH="feature/instructions-examples"
 SSH_OPTS=""  # SSH config берёт всё из ~/.ssh/config
 
 info "Деплой AI Generator на VPS..."
@@ -33,11 +34,11 @@ info "Подключение к VPS успешно"
 
 # Push изменений в git
 info "Шаг 2/6: Push изменений в GitHub..."
-git push origin master || warn "Не удалось отправить изменения в GitHub. Продолжаем..."
+git push origin "$DEPLOY_BRANCH" || warn "Не удалось отправить изменения в GitHub. Продолжаем..."
 
 # Pull изменений на VPS
 info "Шаг 3/6: Обновление кода на VPS..."
-ssh $VPS_HOST "cd $VPS_PROJECT_DIR && git pull origin master" || error "Не удалось обновить код на VPS"
+ssh $VPS_HOST "cd $VPS_PROJECT_DIR && git fetch origin $DEPLOY_BRANCH && git checkout $DEPLOY_BRANCH && git pull origin $DEPLOY_BRANCH" || error "Не удалось обновить код на VPS"
 
 # Копирование .env файла на VPS
 info "Шаг 4/6: Копирование .env файла на VPS..."

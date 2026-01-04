@@ -40,6 +40,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Деплой фронтенда запускается с `--no-deps`, чтобы не пересоздавать Redis/PostgreSQL при выкладке UI.
 - Скрипты деплоя используют `docker compose` (v2) вместо `docker-compose`.
 - Порог покрытия тестов временно снижен до 20%.
+- Заголовок блока топовых примеров переименован в "ТОП 6".
+- `deploy-to-vps.sh` переключён на деплой ветки `feature/instructions-examples`.
 
 ### Added
 - Redis-based rate limiting для API с отдельными лимитами для auth, генерации и ассистента.

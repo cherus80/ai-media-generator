@@ -82,7 +82,7 @@ export const HomePage: React.FC = () => {
           >
             <div className="text-center mb-6">
               <h2 className="text-3xl font-bold gradient-text mb-2">
-                Самые востребованные примеры
+                ТОП 6
               </h2>
               <p className="text-dark-600">
                 Шесть самых популярных образцов, по которым чаще всего запускают генерацию.
