@@ -9,6 +9,7 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 
 # revision identifiers, used by Alembic.
@@ -30,7 +31,7 @@ def upgrade() -> None:
         $$;
         """
     )
-    instruction_type = sa.Enum("video", "text", name="instruction_type", create_type=False)
+    instruction_type = postgresql.ENUM("video", "text", name="instruction_type", create_type=False)
 
     op.create_table(
         "instructions",

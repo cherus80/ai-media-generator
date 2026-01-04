@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Парсинг промптов OpenRouter корректно обрабатывает пустые массивы.
 - MODSEC_RESP_BODY_ACCESS в docker-compose.prod.yml зафиксирован как строка, чтобы docker-compose не падал на YAML boolean.
 - Добавлен /healthz для WAF и переопределён healthcheck, чтобы контейнер не зависал в состоянии unhealthy.
+- Миграция инструкций использует PostgreSQL ENUM без автоматического CREATE TYPE, чтобы избежать ошибки DuplicateObjectError при повторном запуске.
 
 ### Changed
 - Обновлены тексты про редактирование фото на лендинге и в приложении: референсы, сценарии работы и стоимость.
