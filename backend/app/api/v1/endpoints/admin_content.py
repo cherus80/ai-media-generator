@@ -6,9 +6,10 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query, status
 import sqlalchemy as sa
+from sqlalchemy.orm import selectinload
 
 from app.api.dependencies import AdminUser, DBSession
-from app.models import Instruction, GenerationExample
+from app.models import Instruction, GenerationExample, GenerationExampleTag
 from app.schemas.content import (
     InstructionAdminListResponse,
     InstructionAdminItem,
@@ -24,11 +25,25 @@ from app.schemas.content import (
 router = APIRouter()
 
 
+def _normalize_tags(tags: list[str] | None) -> list[str]:
+    if not tags:
+        return []
+    normalized: list[str] = []
+    seen = set()
+    for tag in tags:
+        cleaned = tag.strip().lower()
+        if not cleaned or cleaned in seen:
+            continue
+        normalized.append(cleaned)
+        seen.add(cleaned)
+    return normalized
+
+
 @router.get("/instructions", response_model=InstructionAdminListResponse)
 async def list_instructions(
-    instruction_type: Optional[InstructionType] = Query(default=None, alias="type"),
     admin: AdminUser,
     db: DBSession,
+    instruction_type: Optional[InstructionType] = Query(default=None, alias="type"),
 ) -> InstructionAdminListResponse:
     stmt = sa.select(Instruction)
     if instruction_type:
@@ -43,6 +58,7 @@ async def list_instructions(
                 id=item.id,
                 type=InstructionType(item.type.value),
                 title=item.title,
+                description=item.description,
                 content=item.content,
                 sort_order=item.sort_order,
                 is_published=item.is_published,
@@ -66,6 +82,7 @@ async def create_instruction(
     item = Instruction(
         type=payload.type.value,
         title=payload.title.strip(),
+        description=payload.description.strip() if payload.description else None,
         content=payload.content.strip(),
         sort_order=payload.sort_order,
         is_published=payload.is_published,
@@ -79,6 +96,7 @@ async def create_instruction(
         id=item.id,
         type=InstructionType(item.type.value),
         title=item.title,
+        description=item.description,
         content=item.content,
         sort_order=item.sort_order,
         is_published=item.is_published,
@@ -104,6 +122,8 @@ async def update_instruction(
 
     if payload.title is not None:
         item.title = payload.title.strip()
+    if payload.description is not None:
+        item.description = payload.description.strip() if payload.description else None
     if payload.content is not None:
         item.content = payload.content.strip()
     if payload.sort_order is not None:
@@ -118,6 +138,7 @@ async def update_instruction(
         id=item.id,
         type=InstructionType(item.type.value),
         title=item.title,
+        description=item.description,
         content=item.content,
         sort_order=item.sort_order,
         is_published=item.is_published,
@@ -148,9 +169,13 @@ async def list_examples(
     admin: AdminUser,
     db: DBSession,
 ) -> GenerationExampleAdminListResponse:
-    stmt = sa.select(GenerationExample).order_by(
-        GenerationExample.uses_count.desc(),
-        GenerationExample.created_at.desc(),
+    stmt = (
+        sa.select(GenerationExample)
+        .options(selectinload(GenerationExample.tags))
+        .order_by(
+            GenerationExample.uses_count.desc(),
+            GenerationExample.created_at.desc(),
+        )
     )
     result = await db.execute(stmt)
     items = result.scalars().all()
@@ -163,6 +188,7 @@ async def list_examples(
                 prompt=item.prompt,
                 image_url=item.image_url,
                 uses_count=item.uses_count,
+                tags=[tag.tag for tag in item.tags],
                 is_published=item.is_published,
                 created_at=item.created_at,
                 updated_at=item.updated_at,
@@ -189,6 +215,9 @@ async def create_example(
         created_by_user_id=admin.id,
         updated_by_user_id=admin.id,
     )
+    normalized_tags = _normalize_tags(payload.tags)
+    if normalized_tags:
+        item.tags = [GenerationExampleTag(tag=tag) for tag in normalized_tags]
     db.add(item)
     await db.commit()
     await db.refresh(item)
@@ -198,6 +227,7 @@ async def create_example(
         prompt=item.prompt,
         image_url=item.image_url,
         uses_count=item.uses_count,
+        tags=[tag.tag for tag in item.tags],
         is_published=item.is_published,
         created_at=item.created_at,
         updated_at=item.updated_at,
@@ -224,6 +254,9 @@ async def update_example(
         item.prompt = payload.prompt.strip()
     if payload.image_url is not None:
         item.image_url = payload.image_url.strip()
+    if payload.tags is not None:
+        normalized_tags = _normalize_tags(payload.tags)
+        item.tags = [GenerationExampleTag(tag=tag) for tag in normalized_tags]
     if payload.is_published is not None:
         item.is_published = payload.is_published
     item.updated_by_user_id = admin.id
@@ -236,6 +269,7 @@ async def update_example(
         prompt=item.prompt,
         image_url=item.image_url,
         uses_count=item.uses_count,
+        tags=[tag.tag for tag in item.tags],
         is_published=item.is_published,
         created_at=item.created_at,
         updated_at=item.updated_at,

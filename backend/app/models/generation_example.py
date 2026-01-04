@@ -30,6 +30,31 @@ class GenerationExample(Base, TimestampMixin):
 
     created_by_user = relationship("User", foreign_keys=[created_by_user_id], lazy="joined")
     updated_by_user = relationship("User", foreign_keys=[updated_by_user_id], lazy="joined")
+    tags = relationship(
+        "GenerationExampleTag",
+        back_populates="example",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<GenerationExample id={self.id} uses={self.uses_count}>"
+
+
+class GenerationExampleTag(Base, TimestampMixin):
+    """
+    Метки для примеров генераций.
+    """
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    example_id: Mapped[int] = mapped_column(
+        ForeignKey("generation_examples.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    tag: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+
+    example = relationship("GenerationExample", back_populates="tags", lazy="joined")
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return f"<GenerationExampleTag example_id={self.example_id} tag={self.tag!r}>"

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useSeo } from '../hooks/useSeo';
 
 const featureCards = [
   { title: 'Виртуальная примерка', desc: 'AI показывает посадку и образ на вашем фото — цвет и фактура могут отличаться от оригинала, это ориентировочная визуализация.', icon: 'fa-solid fa-shirt', iconWrapperClass: 'bg-sky-500 text-white' },
@@ -73,6 +74,31 @@ const testimonials = [
 ];
 
 export const LandingPage: React.FC = () => {
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://ai-generator.mix4.ru';
+  const description =
+    'Виртуальная примерка одежды и AI-редактирование фото. Загружайте изображения, выбирайте промпты и получайте реалистичные результаты.';
+
+  useSeo({
+    title: 'AI Generator — виртуальная примерка и AI-редактирование фото',
+    description,
+    canonical: `${baseUrl}/`,
+    image: `${baseUrl}/logo.png`,
+    jsonLd: {
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      name: 'AI Generator',
+      url: `${baseUrl}/`,
+      applicationCategory: 'MultimediaApplication',
+      operatingSystem: 'All',
+      description,
+      offers: {
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: 'RUB',
+      },
+      sameAs: ['https://t.me/+Fj-R8QqIEEg5OTE6'],
+    },
+  });
   return (
     <div className="landing-page bg-slate-50 text-slate-900">
       <header className="fixed w-full top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
@@ -97,6 +123,14 @@ export const LandingPage: React.FC = () => {
             </nav>
 
             <div className="flex items-center gap-2 sm:gap-4 text-sm font-semibold flex-shrink-0">
+              <a
+                href="https://t.me/+Fj-R8QqIEEg5OTE6"
+                target="_blank"
+                rel="noreferrer"
+                className="px-3 py-1 rounded-full bg-white/80 border border-slate-200 text-slate-600 text-[11px] sm:text-xs hover:text-secondary-500 transition-colors whitespace-nowrap"
+              >
+                Наш канал в Telegram
+              </a>
               <Link
                 to="/login"
                 className="text-slate-700 hover:text-secondary-500 transition-colors px-3 py-2 rounded-full bg-white/80 border border-slate-200 shadow-sm whitespace-nowrap"

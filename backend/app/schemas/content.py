@@ -20,6 +20,7 @@ class InstructionPublicItem(BaseModel):
     id: int
     type: InstructionType
     title: str
+    description: Optional[str] = None
     content: str
     sort_order: int = Field(..., description="Порядок сортировки")
 
@@ -45,6 +46,7 @@ class InstructionAdminListResponse(BaseModel):
 class InstructionCreateRequest(BaseModel):
     type: InstructionType
     title: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = Field(default=None, max_length=300)
     content: str = Field(..., min_length=1)
     sort_order: int = Field(default=0, ge=0, description="Порядок сортировки")
     is_published: bool = Field(default=True, description="Публиковать сразу")
@@ -52,6 +54,7 @@ class InstructionCreateRequest(BaseModel):
 
 class InstructionUpdateRequest(BaseModel):
     title: Optional[str] = Field(default=None, min_length=1, max_length=200)
+    description: Optional[str] = Field(default=None, max_length=300)
     content: Optional[str] = Field(default=None, min_length=1)
     sort_order: Optional[int] = Field(default=None, ge=0)
     is_published: Optional[bool] = None
@@ -63,6 +66,7 @@ class GenerationExamplePublicItem(BaseModel):
     prompt: str
     image_url: str
     uses_count: int
+    tags: list[str] = Field(default_factory=list)
 
 
 class GenerationExamplePublicListResponse(BaseModel):
@@ -87,6 +91,7 @@ class GenerationExampleCreateRequest(BaseModel):
     title: Optional[str] = Field(default=None, max_length=200)
     prompt: str = Field(..., min_length=1)
     image_url: str = Field(..., min_length=1, max_length=500)
+    tags: list[str] = Field(default_factory=list)
     is_published: bool = Field(default=True)
 
 
@@ -94,9 +99,20 @@ class GenerationExampleUpdateRequest(BaseModel):
     title: Optional[str] = Field(default=None, max_length=200)
     prompt: Optional[str] = Field(default=None, min_length=1)
     image_url: Optional[str] = Field(default=None, min_length=1, max_length=500)
+    tags: Optional[list[str]] = None
     is_published: Optional[bool] = None
 
 
 class GenerationExampleUseResponse(BaseModel):
     success: bool
     uses_count: int
+
+
+class ExampleTagItem(BaseModel):
+    tag: str
+    count: int
+
+
+class ExampleTagListResponse(BaseModel):
+    items: list[ExampleTagItem]
+    total: int

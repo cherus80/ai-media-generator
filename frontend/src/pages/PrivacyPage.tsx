@@ -1,8 +1,18 @@
 import React from 'react';
 import { Layout } from '../components/common/Layout';
 import { Card } from '../components/ui/Card';
+import { useSeo } from '../hooks/useSeo';
 
 export const PrivacyPage: React.FC = () => {
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://ai-generator.mix4.ru';
+
+  useSeo({
+    title: 'Политика конфиденциальности — AI Generator',
+    description: 'Правила обработки персональных данных и конфиденциальности в AI Generator.',
+    canonical: `${baseUrl}/privacy`,
+    image: `${baseUrl}/logo.png`,
+  });
+
   return (
     <Layout
       title="Политика конфиденциальности"

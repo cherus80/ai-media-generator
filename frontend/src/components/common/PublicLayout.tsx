@@ -52,6 +52,14 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
           </nav>
 
           <div className="flex items-center gap-2">
+            <a
+              href="https://t.me/+Fj-R8QqIEEg5OTE6"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex px-3 py-1 rounded-full bg-white border border-primary-100 text-primary-700 text-[11px] sm:text-xs font-semibold hover:bg-primary-50 transition whitespace-nowrap"
+            >
+              Наш канал в Telegram
+            </a>
             <Link
               to="/login"
               className="px-4 py-2 text-sm font-semibold text-primary-700 border border-primary-200 rounded-xl hover:bg-primary-50 transition"

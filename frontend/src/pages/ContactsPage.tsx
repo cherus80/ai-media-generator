@@ -1,7 +1,17 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useSeo } from '../hooks/useSeo';
 
 export const ContactsPage: React.FC = () => {
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://ai-generator.mix4.ru';
+
+  useSeo({
+    title: 'Контакты — AI Generator',
+    description: 'Контакты, реквизиты и способы связи с AI Generator.',
+    canonical: `${baseUrl}/contacts`,
+    image: `${baseUrl}/logo.png`,
+  });
+
   return (
     <div className="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
       <header className="fixed w-full top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">

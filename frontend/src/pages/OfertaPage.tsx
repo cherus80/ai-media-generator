@@ -1,9 +1,18 @@
 import React from 'react';
 import { Layout } from '../components/common/Layout';
 import { Card } from '../components/ui/Card';
+import { useSeo } from '../hooks/useSeo';
 
 export const OfertaPage: React.FC = () => {
   const effectiveDate = '03.12.2025';
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://ai-generator.mix4.ru';
+
+  useSeo({
+    title: 'Публичная оферта — AI Generator',
+    description: 'Условия оказания услуг виртуальной примерки и AI-редактирования.',
+    canonical: `${baseUrl}/oferta`,
+    image: `${baseUrl}/logo.png`,
+  });
 
   return (
     <Layout

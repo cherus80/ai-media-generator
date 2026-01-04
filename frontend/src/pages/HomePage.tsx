@@ -10,9 +10,32 @@ import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { AuthGuard } from '../components/auth/AuthGuard';
 import { Layout } from '../components/common/Layout';
+import { getGenerationExamples, incrementExampleUse } from '../api/content';
+import type { GenerationExampleItem } from '../types/content';
+
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
+const resolveImageUrl = (url: string) =>
+  url.startsWith('http') ? url : `${API_BASE_URL}${url.startsWith('/') ? url : `/${url}`}`;
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
+  const [topExamples, setTopExamples] = React.useState<GenerationExampleItem[]>([]);
+  const [loadingTop, setLoadingTop] = React.useState(true);
+
+  React.useEffect(() => {
+    const loadTop = async () => {
+      setLoadingTop(true);
+      try {
+        const response = await getGenerationExamples({ sort: 'popular', limit: 6 });
+        setTopExamples(response.items);
+      } catch {
+        setTopExamples([]);
+      } finally {
+        setLoadingTop(false);
+      }
+    };
+    loadTop();
+  }, []);
 
   const features = [
     {
@@ -50,6 +73,82 @@ export const HomePage: React.FC = () => {
         }
       >
         <div className="max-w-6xl mx-auto px-4 py-12">
+          {/* Top Examples */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="mb-12"
+          >
+            <div className="text-center mb-6">
+              <h2 className="text-3xl font-bold gradient-text mb-2">
+                Самые востребованные примеры
+              </h2>
+              <p className="text-dark-600">
+                Шесть самых популярных образцов, по которым чаще всего запускают генерацию.
+              </p>
+            </div>
+
+            {loadingTop ? (
+              <div className="bg-white rounded-2xl shadow p-8 text-center text-slate-500">
+                Загружаем примеры...
+              </div>
+            ) : topExamples.length === 0 ? (
+              <div className="bg-white rounded-2xl shadow p-8 text-center text-slate-500">
+                Пока нет опубликованных примеров.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {topExamples.map((example) => (
+                  <Card
+                    key={example.id}
+                    variant="glass"
+                    hover
+                    padding="none"
+                    className="overflow-hidden border border-white/40"
+                  >
+                    <div className="relative">
+                      <img
+                        src={resolveImageUrl(example.image_url)}
+                        alt={example.title || 'Пример генерации'}
+                        className="w-full h-48 object-cover"
+                      />
+                      <div className="absolute top-3 right-3 bg-white/90 text-slate-700 text-xs font-semibold px-3 py-1 rounded-full shadow">
+                        {example.uses_count} запусков
+                      </div>
+                    </div>
+                    <div className="p-5 flex flex-col gap-3">
+                      <h3 className="text-lg font-bold text-dark-900">
+                        {example.title || 'Без названия'}
+                      </h3>
+                      <p className="text-sm text-dark-600 line-clamp-4 whitespace-pre-line">
+                        {example.prompt}
+                      </p>
+                      <button
+                        onClick={() => {
+                          incrementExampleUse(example.id).catch(() => undefined);
+                          navigate(`/editing?prompt=${encodeURIComponent(example.prompt)}`);
+                        }}
+                        className="mt-auto px-4 py-2 rounded-lg bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-semibold text-sm hover:shadow-lg transition"
+                      >
+                        Сгенерировать по этому образцу
+                      </button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            <div className="mt-6 text-center">
+              <button
+                onClick={() => navigate('/examples')}
+                className="px-6 py-3 rounded-full bg-white border border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-50"
+              >
+                Смотреть больше примеров
+              </button>
+            </div>
+          </motion.div>
+
           {/* Welcome Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}

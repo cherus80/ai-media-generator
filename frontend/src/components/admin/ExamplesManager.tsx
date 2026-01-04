@@ -19,6 +19,7 @@ interface DraftExample extends GenerationExampleAdminItem {
   draftTitle: string;
   draftPrompt: string;
   draftImageUrl: string;
+  draftTags: string[];
   draftPublished: boolean;
 }
 
@@ -31,6 +32,7 @@ export const ExamplesManager: React.FC = () => {
   const [newTitle, setNewTitle] = useState('');
   const [newPrompt, setNewPrompt] = useState('');
   const [newImageUrl, setNewImageUrl] = useState('');
+  const [newTags, setNewTags] = useState('');
   const [newPublished, setNewPublished] = useState(true);
 
   const load = async () => {
@@ -43,6 +45,7 @@ export const ExamplesManager: React.FC = () => {
           draftTitle: item.title || '',
           draftPrompt: item.prompt,
           draftImageUrl: item.image_url,
+          draftTags: item.tags || [],
           draftPublished: item.is_published,
         }))
       );
@@ -84,10 +87,12 @@ export const ExamplesManager: React.FC = () => {
       return;
     }
     try {
+      const parsedTags = parseTags(newTags);
       const created = await createExample({
         title: newTitle.trim() || null,
         prompt: newPrompt.trim(),
         image_url: newImageUrl.trim(),
+        tags: parsedTags,
         is_published: newPublished,
       });
       setItems((prev) => [
@@ -96,6 +101,7 @@ export const ExamplesManager: React.FC = () => {
           draftTitle: created.title || '',
           draftPrompt: created.prompt,
           draftImageUrl: created.image_url,
+          draftTags: created.tags || [],
           draftPublished: created.is_published,
         },
         ...prev,
@@ -103,6 +109,7 @@ export const ExamplesManager: React.FC = () => {
       setNewTitle('');
       setNewPrompt('');
       setNewImageUrl('');
+      setNewTags('');
       setNewPublished(true);
       toast.success('Пример добавлен');
     } catch (err: any) {
@@ -117,6 +124,7 @@ export const ExamplesManager: React.FC = () => {
         title: item.draftTitle.trim() || null,
         prompt: item.draftPrompt.trim(),
         image_url: item.draftImageUrl.trim(),
+        tags: item.draftTags,
         is_published: item.draftPublished,
       });
       setItems((prev) =>
@@ -127,6 +135,7 @@ export const ExamplesManager: React.FC = () => {
                 draftTitle: updated.title || '',
                 draftPrompt: updated.prompt,
                 draftImageUrl: updated.image_url,
+                draftTags: updated.tags || [],
                 draftPublished: updated.is_published,
               }
             : row
@@ -160,13 +169,20 @@ export const ExamplesManager: React.FC = () => {
     item.draftTitle.trim() !== (item.title || '') ||
     item.draftPrompt.trim() !== item.prompt ||
     item.draftImageUrl.trim() !== item.image_url ||
+    item.draftTags.join(',') !== item.tags.join(',') ||
     item.draftPublished !== item.is_published;
+
+  const parseTags = (value: string) =>
+    value
+      .split(',')
+      .map((tag) => tag.trim().toLowerCase())
+      .filter((tag) => tag.length > 0);
 
   const topExamples = useMemo(
     () =>
       [...items]
         .sort((a, b) => b.uses_count - a.uses_count)
-        .slice(0, 5),
+        .slice(0, 6),
     [items]
   );
 
@@ -199,6 +215,15 @@ export const ExamplesManager: React.FC = () => {
             />
             Публиковать сразу
           </label>
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-gray-600">Метки (через запятую)</label>
+          <input
+            value={newTags}
+            onChange={(e) => setNewTags(e.target.value)}
+            className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
+            placeholder="street, вечерний стиль, casual"
+          />
         </div>
         <div>
           <label className="text-xs font-semibold text-gray-600">Промпт</label>
@@ -296,6 +321,34 @@ export const ExamplesManager: React.FC = () => {
                       />
                       Опубликовано
                     </label>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-600">Метки</label>
+                    <input
+                      value={item.draftTags.join(', ')}
+                      onChange={(e) =>
+                        setItems((prev) =>
+                          prev.map((row) =>
+                            row.id === item.id
+                              ? { ...row, draftTags: parseTags(e.target.value) }
+                              : row
+                          )
+                        )
+                      }
+                      className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
+                    />
+                    {item.draftTags.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {item.draftTags.map((tag) => (
+                          <span
+                            key={`${item.id}-${tag}`}
+                            className="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-700"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <label className="text-xs font-semibold text-gray-600">Промпт</label>

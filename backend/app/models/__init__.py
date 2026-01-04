@@ -14,7 +14,7 @@ from app.models.credits_ledger import CreditsLedger, LedgerEntryType, LedgerSour
 from app.models.fitting_prompt import FittingPrompt
 from app.models.user_consent import UserConsent
 from app.models.instruction import Instruction, InstructionType
-from app.models.generation_example import GenerationExample
+from app.models.generation_example import GenerationExample, GenerationExampleTag
 
 __all__ = [
     "User",
@@ -36,4 +36,5 @@ __all__ = [
     "Instruction",
     "InstructionType",
     "GenerationExample",
+    "GenerationExampleTag",
 ]

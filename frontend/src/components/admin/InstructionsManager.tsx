@@ -10,6 +10,7 @@ import type { InstructionAdminItem, InstructionType } from '../../types/content'
 
 interface DraftInstruction extends InstructionAdminItem {
   draftTitle: string;
+  draftDescription: string;
   draftContent: string;
   draftSortOrder: number;
   draftPublished: boolean;
@@ -31,6 +32,7 @@ export const InstructionsManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<number | null>(null);
   const [newTitle, setNewTitle] = useState('');
+  const [newDescription, setNewDescription] = useState('');
   const [newContent, setNewContent] = useState('');
   const [newSortOrder, setNewSortOrder] = useState(0);
   const [newPublished, setNewPublished] = useState(true);
@@ -43,6 +45,7 @@ export const InstructionsManager: React.FC = () => {
         response.items.map((item) => ({
           ...item,
           draftTitle: item.title,
+          draftDescription: item.description || '',
           draftContent: item.content,
           draftSortOrder: item.sort_order,
           draftPublished: item.is_published,
@@ -68,6 +71,7 @@ export const InstructionsManager: React.FC = () => {
       const created = await createInstruction({
         type: activeType,
         title: newTitle.trim(),
+        description: newDescription.trim() || null,
         content: newContent.trim(),
         sort_order: newSortOrder,
         is_published: newPublished,
@@ -76,6 +80,7 @@ export const InstructionsManager: React.FC = () => {
         {
           ...created,
           draftTitle: created.title,
+          draftDescription: created.description || '',
           draftContent: created.content,
           draftSortOrder: created.sort_order,
           draftPublished: created.is_published,
@@ -83,6 +88,7 @@ export const InstructionsManager: React.FC = () => {
         ...prev,
       ]);
       setNewTitle('');
+      setNewDescription('');
       setNewContent('');
       setNewSortOrder(0);
       setNewPublished(true);
@@ -97,6 +103,7 @@ export const InstructionsManager: React.FC = () => {
     try {
       const updated = await updateInstruction(item.id, {
         title: item.draftTitle.trim(),
+        description: item.draftDescription.trim() || null,
         content: item.draftContent.trim(),
         sort_order: item.draftSortOrder,
         is_published: item.draftPublished,
@@ -107,6 +114,7 @@ export const InstructionsManager: React.FC = () => {
             ? {
                 ...updated,
                 draftTitle: updated.title,
+                draftDescription: updated.description || '',
                 draftContent: updated.content,
                 draftSortOrder: updated.sort_order,
                 draftPublished: updated.is_published,
@@ -140,6 +148,7 @@ export const InstructionsManager: React.FC = () => {
 
   const hasChanges = (item: DraftInstruction) =>
     item.draftTitle.trim() !== item.title ||
+    item.draftDescription.trim() !== (item.description || '') ||
     item.draftContent.trim() !== item.content ||
     item.draftSortOrder !== item.sort_order ||
     item.draftPublished !== item.is_published;
@@ -182,6 +191,15 @@ export const InstructionsManager: React.FC = () => {
               onChange={(e) => setNewTitle(e.target.value)}
               className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
               placeholder="Например: Как выбрать фото одежды"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-600">Краткое описание</label>
+            <input
+              value={newDescription}
+              onChange={(e) => setNewDescription(e.target.value)}
+              className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
+              placeholder="Коротко о видео или инструкции"
             />
           </div>
           <div>
@@ -237,26 +255,40 @@ export const InstructionsManager: React.FC = () => {
           )}
           {items.map((item) => (
             <div key={item.id} className="bg-white rounded-xl shadow p-6 space-y-3">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <label className="text-xs font-semibold text-gray-600">Заголовок</label>
-                  <input
-                    value={item.draftTitle}
-                    onChange={(e) =>
-                      setItems((prev) =>
-                        prev.map((row) =>
-                          row.id === item.id ? { ...row, draftTitle: e.target.value } : row
-                        )
-                      )
-                    }
-                    className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-gray-600">Порядок</label>
-                  <input
-                    type="number"
-                    value={item.draftSortOrder}
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="text-xs font-semibold text-gray-600">Заголовок</label>
+              <input
+                value={item.draftTitle}
+                onChange={(e) =>
+                  setItems((prev) =>
+                    prev.map((row) =>
+                      row.id === item.id ? { ...row, draftTitle: e.target.value } : row
+                    )
+                  )
+                }
+                className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-600">Краткое описание</label>
+              <input
+                value={item.draftDescription}
+                onChange={(e) =>
+                  setItems((prev) =>
+                    prev.map((row) =>
+                      row.id === item.id ? { ...row, draftDescription: e.target.value } : row
+                    )
+                  )
+                }
+                className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-gray-600">Порядок</label>
+              <input
+                type="number"
+                value={item.draftSortOrder}
                     onChange={(e) =>
                       setItems((prev) => {
                         const value = Number(e.target.value);

@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { PublicLayout } from '../components/common/PublicLayout';
 import { getInstructions } from '../api/content';
 import type { InstructionItem, InstructionType } from '../types/content';
+import { useSeo } from '../hooks/useSeo';
 
 const TYPE_LABELS: Record<InstructionType, string> = {
   video: 'Видео-Инструкции',
@@ -33,6 +34,16 @@ export const InstructionsPage: React.FC = () => {
   const activeTab: InstructionType = tabParam === 'text' ? 'text' : 'video';
   const [items, setItems] = useState<InstructionItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://ai-generator.mix4.ru';
+  const description =
+    'Видео и текстовые инструкции по использованию AI Generator: как загрузить фото и получить лучший результат.';
+
+  useSeo({
+    title: 'Инструкции по использованию — AI Generator',
+    description,
+    canonical: `${baseUrl}/instructions`,
+    image: `${baseUrl}/logo.png`,
+  });
 
   useEffect(() => {
     const load = async () => {
@@ -96,7 +107,10 @@ export const InstructionsPage: React.FC = () => {
             <div className="grid gap-6 md:grid-cols-2">
               {items.map((item) => (
                 <div key={item.id} className="bg-white rounded-2xl shadow p-6">
-                  <h3 className="text-lg font-bold text-slate-900 mb-3">{item.title}</h3>
+                  <h3 className="text-lg font-bold text-slate-900">{item.title}</h3>
+                  {item.description && (
+                    <p className="text-sm text-slate-500 mt-1 mb-3">{item.description}</p>
+                  )}
                   {activeTab === 'video' ? (
                     <div className="space-y-3">
                       <div className="relative pb-[56.25%] rounded-xl overflow-hidden border border-slate-200">

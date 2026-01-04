@@ -8,6 +8,7 @@ import type {
   InstructionType,
   GenerationExampleListResponse,
   GenerationExampleUseResponse,
+  ExampleTagListResponse,
 } from '../types/content';
 
 export const getInstructions = async (type?: InstructionType): Promise<InstructionListResponse> => {
@@ -17,8 +18,24 @@ export const getInstructions = async (type?: InstructionType): Promise<Instructi
   return response.data;
 };
 
-export const getGenerationExamples = async (): Promise<GenerationExampleListResponse> => {
-  const response = await apiClient.get<GenerationExampleListResponse>('/api/v1/content/examples');
+export const getGenerationExamples = async (params?: {
+  tags?: string[];
+  sort?: 'popular' | 'newest';
+  limit?: number;
+}): Promise<GenerationExampleListResponse> => {
+  const queryParams: Record<string, string | number | undefined> = {};
+  if (params?.tags && params.tags.length > 0) {
+    queryParams.tags = params.tags.join(',');
+  }
+  if (params?.sort) {
+    queryParams.sort = params.sort;
+  }
+  if (params?.limit) {
+    queryParams.limit = params.limit;
+  }
+  const response = await apiClient.get<GenerationExampleListResponse>('/api/v1/content/examples', {
+    params: queryParams,
+  });
   return response.data;
 };
 
@@ -26,5 +43,10 @@ export const incrementExampleUse = async (exampleId: number): Promise<Generation
   const response = await apiClient.post<GenerationExampleUseResponse>(
     `/api/v1/content/examples/${exampleId}/use`
   );
+  return response.data;
+};
+
+export const getExampleTags = async (): Promise<ExampleTagListResponse> => {
+  const response = await apiClient.get<ExampleTagListResponse>('/api/v1/content/example-tags');
   return response.data;
 };

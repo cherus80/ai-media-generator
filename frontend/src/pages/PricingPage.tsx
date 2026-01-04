@@ -3,11 +3,20 @@ import { PublicLayout } from '../components/common/PublicLayout';
 import { getTariffs } from '../api/payment';
 import type { TariffsListResponse, BackendTariff } from '../types/payment';
 import { Link } from 'react-router-dom';
+import { useSeo } from '../hooks/useSeo';
 
 export const PricingPage: React.FC = () => {
   const [data, setData] = useState<TariffsListResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://ai-generator.mix4.ru';
+
+  useSeo({
+    title: 'Тарифы и подписки — AI Generator',
+    description: 'Актуальные тарифы и подписки для генерации изображений и виртуальной примерки.',
+    canonical: `${baseUrl}/pricing`,
+    image: `${baseUrl}/logo.png`,
+  });
 
   useEffect(() => {
     const load = async () => {
