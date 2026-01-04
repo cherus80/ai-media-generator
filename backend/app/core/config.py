@@ -181,6 +181,7 @@ class Settings(BaseSettings):
     # Хранение файлов
     UPLOAD_DIR: str = Field(default="./uploads")
     MAX_FILE_SIZE_MB: int = Field(default=10)
+    MAX_VIDEO_FILE_SIZE_MB: int = Field(default=50)
     ALLOWED_EXTENSIONS: str = Field(default="jpg,jpeg,png,webp,heic,heif,mpo")
     PHOTO_RETENTION_HOURS: int = Field(default=24, description="Хранение фото для примерки")
     CHAT_HISTORY_RETENTION_DAYS: int = Field(default=30, description="Хранение истории чата")
@@ -194,6 +195,11 @@ class Settings(BaseSettings):
     def MAX_FILE_SIZE_BYTES(self) -> int:
         """Максимальный размер файла в байтах"""
         return self.MAX_FILE_SIZE_MB * 1024 * 1024
+
+    @property
+    def MAX_VIDEO_FILE_SIZE_BYTES(self) -> int:
+        """Максимальный размер видеофайла в байтах"""
+        return self.MAX_VIDEO_FILE_SIZE_MB * 1024 * 1024
 
     # Rate limiting
     RATE_LIMIT_PER_MINUTE: int = Field(default=10)

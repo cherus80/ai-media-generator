@@ -31,6 +31,7 @@ import type {
   InstructionAdminListResponse,
   InstructionCreateRequest,
   InstructionUpdateRequest,
+  InstructionVideoUploadResponse,
   GenerationExampleAdminListResponse,
   GenerationExampleCreateRequest,
   GenerationExampleUpdateRequest,
@@ -234,6 +235,21 @@ export const getAdminInstructions = async (
   const response = await apiClient.get<InstructionAdminListResponse>('/api/v1/admin/instructions', {
     params: type ? { type } : {},
   });
+  return response.data;
+};
+
+export const uploadInstructionVideo = async (
+  file: File
+): Promise<InstructionVideoUploadResponse> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await apiClient.post<InstructionVideoUploadResponse>(
+    '/api/v1/admin/instructions/upload',
+    formData,
+    {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }
+  );
   return response.data;
 };
 

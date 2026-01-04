@@ -113,6 +113,45 @@ async def save_upload_file(
         raise FileStorageError(f"Failed to save file: {str(e)}")
 
 
+async def save_raw_upload_file(
+    file: UploadFile,
+    user_id: int
+) -> tuple[UUID, str, int]:
+    """
+    Сохранить загруженный файл без обработки (например, видео).
+
+    Args:
+        file: Загруженный файл
+        user_id: ID пользователя (для логирования)
+
+    Returns:
+        tuple[UUID, str, int]: (file_id, file_url, file_size)
+    """
+    try:
+        file_id = uuid4()
+
+        extension = get_file_extension(file.content_type)
+        if not extension:
+            raise FileStorageError(f"Unknown content type: {file.content_type}")
+
+        content = await file.read()
+
+        file_path = _get_file_path(file_id, extension)
+
+        with open(file_path, "wb") as f:
+            f.write(content)
+
+        file_size = file_path.stat().st_size
+        file_url = f"/uploads/{file_id}.{extension}"
+
+        await file.seek(0)
+
+        return file_id, file_url, file_size
+
+    except Exception as e:
+        raise FileStorageError(f"Failed to save file: {str(e)}")
+
+
 async def save_upload_file_by_content(
     content: bytes,
     user_id: int,
@@ -196,7 +235,7 @@ def get_file_by_id(file_id: UUID) -> Optional[Path]:
     upload_dir = _ensure_upload_dir_exists()
 
     # Поиск файла с любым расширением (приоритет JPEG/PNG)
-    for ext in ['jpg', 'jpeg', 'png', 'webp']:
+    for ext in ['jpg', 'jpeg', 'png', 'webp', 'mp4', 'webm', 'mov']:
         file_path = upload_dir / f"{file_id}.{ext}"
         if file_path.exists():
             return file_path

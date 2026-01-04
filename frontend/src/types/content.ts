@@ -44,6 +44,12 @@ export interface InstructionUpdateRequest {
   is_published?: boolean;
 }
 
+export interface InstructionVideoUploadResponse {
+  file_id: string;
+  file_url: string;
+  file_size: number;
+}
+
 export interface GenerationExampleItem {
   id: number;
   title?: string | null;

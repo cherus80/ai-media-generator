@@ -5,6 +5,7 @@ import {
   createInstruction,
   updateInstruction,
   deleteInstruction,
+  uploadInstructionVideo,
 } from '../../api/admin';
 import type { InstructionAdminItem, InstructionType } from '../../types/content';
 
@@ -22,7 +23,7 @@ const TYPE_LABELS: Record<InstructionType, string> = {
 };
 
 const TYPE_HINTS: Record<InstructionType, string> = {
-  video: 'Вставьте ссылку на видео (YouTube, VK, RuTube или прямой файл).',
+  video: 'Вставьте ссылку на видео или загрузите файл (MP4/WebM/MOV).',
   text: 'Короткие правила и советы. Можно использовать простое форматирование.',
 };
 
@@ -31,6 +32,8 @@ export const InstructionsManager: React.FC = () => {
   const [items, setItems] = useState<DraftInstruction[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<number | null>(null);
+  const [uploadingId, setUploadingId] = useState<number | null>(null);
+  const [uploadingNew, setUploadingNew] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [newContent, setNewContent] = useState('');
@@ -95,6 +98,42 @@ export const InstructionsManager: React.FC = () => {
       toast.success('Инструкция добавлена');
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || 'Не удалось добавить инструкцию');
+    }
+  };
+
+  const handleNewVideoUpload = async (file: File | null) => {
+    if (!file) {
+      return;
+    }
+    setUploadingNew(true);
+    try {
+      const uploaded = await uploadInstructionVideo(file);
+      setNewContent(uploaded.file_url);
+      toast.success('Видео загружено');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || 'Не удалось загрузить видео');
+    } finally {
+      setUploadingNew(false);
+    }
+  };
+
+  const handleItemVideoUpload = async (itemId: number, file: File | null) => {
+    if (!file) {
+      return;
+    }
+    setUploadingId(itemId);
+    try {
+      const uploaded = await uploadInstructionVideo(file);
+      setItems((prev) =>
+        prev.map((row) =>
+          row.id === itemId ? { ...row, draftContent: uploaded.file_url } : row
+        )
+      );
+      toast.success('Видео загружено');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || 'Не удалось загрузить видео');
+    } finally {
+      setUploadingId(null);
     }
   };
 
@@ -224,6 +263,28 @@ export const InstructionsManager: React.FC = () => {
             className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
             placeholder={activeType === 'video' ? 'Ссылка на видео' : 'Текст инструкции'}
           />
+          {activeType === 'video' && (
+            <div className="mt-3 space-y-2">
+              <label className="text-xs font-semibold text-gray-600">
+                Загрузить видеофайл
+              </label>
+              <input
+                type="file"
+                accept="video/mp4,video/webm,video/quicktime"
+                onChange={(e) => handleNewVideoUpload(e.target.files?.[0] || null)}
+                className="block w-full text-sm text-gray-600"
+                disabled={uploadingNew}
+              />
+              {newContent && (
+                <p className="text-xs text-gray-500 break-all">
+                  Текущая ссылка: {newContent}
+                </p>
+              )}
+              {uploadingNew && (
+                <p className="text-xs text-gray-500">Загрузка видео...</p>
+              )}
+            </div>
+          )}
         </div>
         <label className="flex items-center gap-2 text-sm text-gray-700">
           <input
@@ -318,6 +379,28 @@ export const InstructionsManager: React.FC = () => {
                   rows={4}
                   className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                 />
+                {activeType === 'video' && (
+                  <div className="mt-3 space-y-2">
+                    <label className="text-xs font-semibold text-gray-600">
+                      Заменить видеофайл
+                    </label>
+                    <input
+                      type="file"
+                      accept="video/mp4,video/webm,video/quicktime"
+                      onChange={(e) => handleItemVideoUpload(item.id, e.target.files?.[0] || null)}
+                      className="block w-full text-sm text-gray-600"
+                      disabled={uploadingId === item.id}
+                    />
+                    {item.draftContent && (
+                      <p className="text-xs text-gray-500 break-all">
+                        Текущая ссылка: {item.draftContent}
+                      </p>
+                    )}
+                    {uploadingId === item.id && (
+                      <p className="text-xs text-gray-500">Загрузка видео...</p>
+                    )}
+                  </div>
+                )}
               </div>
               <label className="flex items-center gap-2 text-sm text-gray-700">
                 <input

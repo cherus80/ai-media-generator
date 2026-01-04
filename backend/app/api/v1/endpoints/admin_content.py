@@ -4,7 +4,7 @@
 
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, status, File, UploadFile
 import sqlalchemy as sa
 from sqlalchemy.orm import selectinload
 
@@ -16,11 +16,14 @@ from app.schemas.content import (
     InstructionCreateRequest,
     InstructionUpdateRequest,
     InstructionType,
+    InstructionVideoUploadResponse,
     GenerationExampleAdminListResponse,
     GenerationExampleAdminItem,
     GenerationExampleCreateRequest,
     GenerationExampleUpdateRequest,
 )
+from app.services.file_storage import save_raw_upload_file
+from app.services.file_validator import validate_video_file
 
 router = APIRouter()
 
@@ -70,6 +73,35 @@ async def list_instructions(
             for item in items
         ],
         total=len(items),
+    )
+
+
+@router.post(
+    "/instructions/upload",
+    response_model=InstructionVideoUploadResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def upload_instruction_video(
+    admin: AdminUser,
+    file: UploadFile = File(..., description="Видео (MP4/WebM/MOV)"),
+) -> InstructionVideoUploadResponse:
+    await validate_video_file(file)
+
+    try:
+        file_id, file_url, file_size = await save_raw_upload_file(
+            file,
+            user_id=admin.id,
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Не удалось сохранить файл: {exc}",
+        )
+
+    return InstructionVideoUploadResponse(
+        file_id=str(file_id),
+        file_url=file_url,
+        file_size=file_size,
     )
 
 

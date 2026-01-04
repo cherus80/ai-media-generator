@@ -111,7 +111,7 @@ export const HomePage: React.FC = () => {
                       <img
                         src={resolveImageUrl(example.image_url)}
                         alt={example.title || 'Пример генерации'}
-                        className="w-full h-48 object-cover"
+                        className="w-full h-48 object-contain bg-slate-50"
                       />
                       <div className="absolute top-3 right-3 bg-white/90 text-slate-700 text-xs font-semibold px-3 py-1 rounded-full shadow">
                         {example.uses_count} запусков

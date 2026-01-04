@@ -29,6 +29,22 @@ const toEmbedUrl = (rawUrl: string) => {
   }
 };
 
+const isDirectVideoUrl = (rawUrl: string) => {
+  const normalized = rawUrl.split('?')[0].split('#')[0].toLowerCase();
+  return normalized.endsWith('.mp4') || normalized.endsWith('.webm') || normalized.endsWith('.mov');
+};
+
+const getVideoRenderMode = (rawUrl: string) => {
+  const embedUrl = toEmbedUrl(rawUrl);
+  if (embedUrl !== rawUrl) {
+    return { mode: 'embed' as const, src: embedUrl };
+  }
+  if (isDirectVideoUrl(rawUrl)) {
+    return { mode: 'file' as const, src: rawUrl };
+  }
+  return { mode: 'link' as const, src: rawUrl };
+};
+
 export const InstructionsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
@@ -115,15 +131,38 @@ export const InstructionsPage: React.FC = () => {
                     )}
                     {activeTab === 'video' ? (
                       <div className="space-y-3">
-                        <div className="relative pb-[56.25%] rounded-xl overflow-hidden border border-slate-200">
-                          <iframe
-                            src={toEmbedUrl(item.content)}
-                            title={item.title}
-                            className="absolute inset-0 w-full h-full"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                          />
-                        </div>
+                        {(() => {
+                          const video = getVideoRenderMode(item.content);
+                          if (video.mode === 'file') {
+                            return (
+                              <video
+                                controls
+                                className="w-full rounded-xl border border-slate-200 bg-black"
+                              >
+                                <source src={video.src} />
+                                Ваш браузер не поддерживает воспроизведение видео.
+                              </video>
+                            );
+                          }
+                          if (video.mode === 'embed') {
+                            return (
+                              <div className="relative pb-[56.25%] rounded-xl overflow-hidden border border-slate-200">
+                                <iframe
+                                  src={video.src}
+                                  title={item.title}
+                                  className="absolute inset-0 w-full h-full"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  allowFullScreen
+                                />
+                              </div>
+                            );
+                          }
+                          return (
+                            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                              Ссылка на видео: {item.content}
+                            </div>
+                          );
+                        })()}
                         <a
                           href={item.content}
                           target="_blank"

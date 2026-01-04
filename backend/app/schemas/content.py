@@ -60,6 +60,12 @@ class InstructionUpdateRequest(BaseModel):
     is_published: Optional[bool] = None
 
 
+class InstructionVideoUploadResponse(BaseModel):
+    file_id: str
+    file_url: str
+    file_size: int
+
+
 class GenerationExamplePublicItem(BaseModel):
     id: int
     title: Optional[str] = None

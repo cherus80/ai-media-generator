@@ -17,6 +17,10 @@ class InstructionType(str, Enum):
     TEXT = "text"
 
 
+def _instruction_type_values(enum_cls: type[InstructionType]) -> list[str]:
+    return [item.value for item in enum_cls]
+
+
 class Instruction(Base, TimestampMixin):
     """
     Инструкции по использованию приложения (видео и текст).
@@ -24,7 +28,11 @@ class Instruction(Base, TimestampMixin):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     type: Mapped[InstructionType] = mapped_column(
-        SqlEnum(InstructionType, name="instruction_type"),
+        SqlEnum(
+            InstructionType,
+            name="instruction_type",
+            values_callable=_instruction_type_values,
+        ),
         nullable=False,
         index=True,
     )

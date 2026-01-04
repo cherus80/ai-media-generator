@@ -142,7 +142,7 @@ export const ExamplesPage: React.FC = () => {
                           <img
                             src={resolveImageUrl(item.image_url)}
                             alt={item.title || 'Пример генерации'}
-                            className="w-full h-56 object-cover"
+                            className="w-full h-56 object-contain bg-slate-50"
                           />
                           <div className="absolute top-3 right-3 bg-white/90 text-slate-700 text-xs font-semibold px-3 py-1 rounded-full shadow">
                             {item.uses_count} запусков
@@ -235,7 +235,7 @@ export const ExamplesPage: React.FC = () => {
                         <img
                           src={resolveImageUrl(item.image_url)}
                           alt={item.title || 'Пример генерации'}
-                          className="w-full h-56 object-cover"
+                          className="w-full h-56 object-contain bg-slate-50"
                         />
                         <div className="absolute top-3 right-3 bg-white/90 text-slate-700 text-xs font-semibold px-3 py-1 rounded-full shadow">
                           {item.uses_count} запусков

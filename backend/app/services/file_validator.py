@@ -26,6 +26,12 @@ IMAGE_SIGNATURES = {
     ],
 }
 
+VIDEO_SIGNATURES = {
+    'mp4': [b'ftyp'],
+    'mov': [b'ftyp'],
+    'webm': [bytes([0x1A, 0x45, 0xDF, 0xA3])],
+}
+
 
 class FileValidationError(Exception):
     """Ошибка валидации файла"""
@@ -158,6 +164,62 @@ async def validate_image_file(file: UploadFile) -> bool:
     return True
 
 
+async def validate_video_file(file: UploadFile) -> bool:
+    """
+    Валидация загруженного видеофайла.
+
+    Проверяет:
+    - MIME-тип
+    - Размер файла
+    - Базовые сигнатуры (ftyp для MP4/MOV, EBML для WebM)
+    """
+    if not file.content_type:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File content type is missing"
+        )
+
+    allowed_mime_types = ['video/mp4', 'video/webm', 'video/quicktime']
+    if file.content_type not in allowed_mime_types:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid file type. Allowed types: {', '.join(allowed_mime_types)}"
+        )
+
+    content = await file.read()
+    file_size = len(content)
+    await file.seek(0)
+
+    max_size = settings.MAX_VIDEO_FILE_SIZE_BYTES
+    if file_size > max_size:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"File too large. Maximum size: {settings.MAX_VIDEO_FILE_SIZE_MB}MB"
+        )
+
+    if file_size == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File is empty"
+        )
+
+    is_valid_signature = False
+    if len(content) >= 12 and content[4:8] == b'ftyp':
+        is_valid_signature = True
+
+    if not is_valid_signature and content.startswith(VIDEO_SIGNATURES['webm'][0]):
+        is_valid_signature = True
+
+    if not is_valid_signature:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid video file signature"
+        )
+
+    await file.seek(0)
+    return True
+
+
 def get_file_extension(content_type: str) -> Optional[str]:
     """
     Получить расширение файла по MIME-типу.
@@ -176,6 +238,9 @@ def get_file_extension(content_type: str) -> Optional[str]:
         'image/heic': 'heic',
         'image/heif': 'heif',
         'image/mpo': 'mpo',
+        'video/mp4': 'mp4',
+        'video/webm': 'webm',
+        'video/quicktime': 'mov',
     }
 
     return mime_to_ext.get(content_type)
