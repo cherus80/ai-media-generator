@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Заголовок блока топовых примеров переименован в "ТОП 6".
 - `deploy-to-vps.sh` переключён на деплой ветки `feature/instructions-examples`.
 - Страницы "Инструкции" и "Примеры генераций" перенесены внутрь приложения (роуты `/app/instructions` и `/app/examples`).
+- Миграция инструкций/примеров теперь идемпотентна при повторном запуске (enum instruction_type создаётся только при отсутствии).
 
 ### Added
 - Redis-based rate limiting для API с отдельными лимитами для auth, генерации и ассистента.

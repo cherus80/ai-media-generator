@@ -19,8 +19,18 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    instruction_type = sa.Enum("video", "text", name="instruction_type")
-    instruction_type.create(op.get_bind(), checkfirst=True)
+    op.execute(
+        """
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'instruction_type') THEN
+                CREATE TYPE instruction_type AS ENUM ('video', 'text');
+            END IF;
+        END
+        $$;
+        """
+    )
+    instruction_type = sa.Enum("video", "text", name="instruction_type", create_type=False)
 
     op.create_table(
         "instructions",
@@ -68,5 +78,14 @@ def downgrade() -> None:
     op.drop_index("ix_instructions_id", table_name="instructions")
     op.drop_table("instructions")
 
-    instruction_type = sa.Enum("video", "text", name="instruction_type")
-    instruction_type.drop(op.get_bind(), checkfirst=True)
+    op.execute(
+        """
+        DO $$
+        BEGIN
+            IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'instruction_type') THEN
+                DROP TYPE instruction_type;
+            END IF;
+        END
+        $$;
+        """
+    )
