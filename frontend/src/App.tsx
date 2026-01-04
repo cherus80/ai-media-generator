@@ -20,6 +20,8 @@ import { ContactsPage } from './pages/ContactsPage';
 import { CookieBanner } from './components/common/CookieBanner';
 import { YandexMetrika } from './components/analytics/YandexMetrika';
 import { PaymentReturnPage } from './pages/PaymentReturnPage';
+import { InstructionsPage } from './pages/InstructionsPage';
+import { ExamplesPage } from './pages/ExamplesPage';
 
 function App() {
   return (
@@ -39,6 +41,8 @@ function App() {
           <Route path="/contacts" element={<ContactsPage />} />
           <Route path="/oferta" element={<OfertaPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/instructions" element={<InstructionsPage />} />
+          <Route path="/examples" element={<ExamplesPage />} />
           <Route path="/payment/return" element={<PaymentReturnPage />} />
 
           {/* Главная страница приложения (после входа) */}

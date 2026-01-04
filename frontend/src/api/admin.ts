@@ -27,6 +27,14 @@ import type {
   ConsentExportRequest,
   DeleteConsentsResponse,
 } from '../types/admin';
+import type {
+  InstructionAdminListResponse,
+  InstructionCreateRequest,
+  InstructionUpdateRequest,
+  GenerationExampleAdminListResponse,
+  GenerationExampleCreateRequest,
+  GenerationExampleUpdateRequest,
+} from '../types/content';
 
 // ============================================================================
 // Dashboard API
@@ -214,6 +222,74 @@ export const updateFallbackSettings = async (
 ): Promise<FallbackSettings> => {
   const response = await apiClient.post<FallbackSettings>('/api/v1/admin/fallback', payload);
   return response.data;
+};
+
+// ============================================================================
+// Инструкции и примеры генераций (admin)
+// ============================================================================
+
+export const getAdminInstructions = async (
+  type?: 'video' | 'text'
+): Promise<InstructionAdminListResponse> => {
+  const response = await apiClient.get<InstructionAdminListResponse>('/api/v1/admin/instructions', {
+    params: type ? { type } : {},
+  });
+  return response.data;
+};
+
+export const createInstruction = async (
+  payload: InstructionCreateRequest
+): Promise<InstructionAdminListResponse['items'][number]> => {
+  const response = await apiClient.post<InstructionAdminListResponse['items'][number]>(
+    '/api/v1/admin/instructions',
+    payload
+  );
+  return response.data;
+};
+
+export const updateInstruction = async (
+  instructionId: number,
+  payload: InstructionUpdateRequest
+): Promise<InstructionAdminListResponse['items'][number]> => {
+  const response = await apiClient.put<InstructionAdminListResponse['items'][number]>(
+    `/api/v1/admin/instructions/${instructionId}`,
+    payload
+  );
+  return response.data;
+};
+
+export const deleteInstruction = async (instructionId: number): Promise<void> => {
+  await apiClient.delete(`/api/v1/admin/instructions/${instructionId}`);
+};
+
+export const getAdminExamples = async (): Promise<GenerationExampleAdminListResponse> => {
+  const response = await apiClient.get<GenerationExampleAdminListResponse>('/api/v1/admin/examples');
+  return response.data;
+};
+
+export const createExample = async (
+  payload: GenerationExampleCreateRequest
+): Promise<GenerationExampleAdminListResponse['items'][number]> => {
+  const response = await apiClient.post<GenerationExampleAdminListResponse['items'][number]>(
+    '/api/v1/admin/examples',
+    payload
+  );
+  return response.data;
+};
+
+export const updateExample = async (
+  exampleId: number,
+  payload: GenerationExampleUpdateRequest
+): Promise<GenerationExampleAdminListResponse['items'][number]> => {
+  const response = await apiClient.put<GenerationExampleAdminListResponse['items'][number]>(
+    `/api/v1/admin/examples/${exampleId}`,
+    payload
+  );
+  return response.data;
+};
+
+export const deleteExample = async (exampleId: number): Promise<void> => {
+  await apiClient.delete(`/api/v1/admin/examples/${exampleId}`);
 };
 
 /**

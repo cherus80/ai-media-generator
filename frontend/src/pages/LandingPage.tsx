@@ -152,12 +152,12 @@ export const LandingPage: React.FC = () => {
                   >
                     Попробовать бесплатно
                   </Link>
-                  <a
-                    href="#how-it-works"
+                  <Link
+                    to="/instructions?tab=video"
                     className="bg-white border border-slate-200 text-slate-700 text-lg px-8 py-4 rounded-full font-bold transition flex items-center justify-center gap-2 hover:bg-slate-50 hover:border-slate-300"
                   >
                     <i className="fa-solid fa-play text-slate-400 text-xs" /> Смотреть как работает
-                  </a>
+                  </Link>
                 </div>
               </div>
 

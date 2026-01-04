@@ -13,6 +13,8 @@ from app.models.email_verification import EmailVerificationToken
 from app.models.credits_ledger import CreditsLedger, LedgerEntryType, LedgerSource, LedgerUnit
 from app.models.fitting_prompt import FittingPrompt
 from app.models.user_consent import UserConsent
+from app.models.instruction import Instruction, InstructionType
+from app.models.generation_example import GenerationExample
 
 __all__ = [
     "User",
@@ -31,4 +33,7 @@ __all__ = [
     "LedgerUnit",
     "FittingPrompt",
     "UserConsent",
+    "Instruction",
+    "InstructionType",
+    "GenerationExample",
 ]

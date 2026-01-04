@@ -5,7 +5,7 @@
 
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ChatWindow } from '../components/editing/ChatWindow';
 import { ChatInput } from '../components/editing/ChatInput';
 import { PromptDecisionModal } from '../components/editing/PromptDecisionModal';
@@ -22,6 +22,7 @@ import type { ChatAttachment } from '../types/editing';
 
 export const EditingPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const {
     sessionId,
     baseImage,
@@ -50,6 +51,7 @@ export const EditingPage: React.FC = () => {
   const [showPromptDecision, setShowPromptDecision] = React.useState(false);
   const [decisionLoadingTarget, setDecisionLoadingTarget] = React.useState<'original' | 'ai' | null>(null);
   const historyLoadRef = React.useRef<string | null>(null);
+  const [prefillMessage, setPrefillMessage] = React.useState('');
   const [balanceWarning, setBalanceWarning] = React.useState<{
     title?: string;
     description: string;
@@ -97,6 +99,14 @@ export const EditingPage: React.FC = () => {
       console.error('[EditingPage] Failed to load chat history:', loadError);
     });
   }, [sessionId, user, loadHistory]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const promptParam = params.get('prompt');
+    if (promptParam) {
+      setPrefillMessage(promptParam);
+    }
+  }, [location.search]);
 
   const handleFileSelect = async (file: File) => {
     setIsUploadingImage(true);
@@ -344,6 +354,16 @@ export const EditingPage: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
               >
+                {prefillMessage && (
+                  <div className="mb-6 rounded-2xl border border-primary-100 bg-white/80 p-4 text-sm text-dark-700 shadow-soft">
+                    <p className="font-semibold text-dark-900 mb-1">
+                      Промпт из примера уже добавлен
+                    </p>
+                    <p className="text-dark-600">
+                      Загрузите фото, чтобы перейти к редактированию. При необходимости промпт можно изменить.
+                    </p>
+                  </div>
+                )}
                 <FileUpload
                   onFileSelect={handleFileSelect}
                   isLoading={isUploadingImage}
@@ -431,6 +451,7 @@ export const EditingPage: React.FC = () => {
                 onSend={handlePromptSubmit}
                 disabled={isSendingMessage || isGenerating || decisionLoadingTarget !== null}
                 placeholder="Опишите изменение..."
+                prefillMessage={prefillMessage}
               />
               <p className="text-xs text-dark-400 px-4 mb-6 max-w-4xl mx-auto">
                 Сервис "AI Generator" не несёт ответственности за результаты сгенерированных изображений, так как генерация происходит на сторонних ресурсах с помощью ИИ.

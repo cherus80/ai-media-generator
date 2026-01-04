@@ -109,16 +109,28 @@ export const Step2ItemPhoto: React.FC<Step2ItemPhotoProps> = ({
       </div>
 
       {/* Tips */}
-      <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-        <h3 className="text-sm font-semibold text-blue-900 mb-2">
-          Что можно примерить:
-        </h3>
-        <ul className="text-sm text-blue-800 space-y-1">
-          <li>• Одежду (футболки, рубашки, худи, джинсы, костюмы, куртки)</li>
-          <li>• Обувь (кроссовки, ботинки, лоферы)</li>
-          <li>• Аксессуары (очки, шляпы, украшения)</li>
-          <li>• Чем четче изображение предмета, тем лучше результат</li>
-        </ul>
+      <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-4">
+        <div>
+          <h3 className="text-sm font-semibold text-blue-900 mb-2">
+            Что можно примерить:
+          </h3>
+          <ul className="text-sm text-blue-800 space-y-1">
+            <li>• Одежду (футболки, рубашки, худи, джинсы, костюмы, куртки)</li>
+            <li>• Обувь (кроссовки, ботинки, лоферы)</li>
+            <li>• Аксессуары (очки, шляпы, украшения)</li>
+          </ul>
+        </div>
+        <div>
+          <h3 className="text-sm font-semibold text-blue-900 mb-2">
+            Рекомендации к фото одежды:
+          </h3>
+          <ul className="text-sm text-blue-800 space-y-1">
+            <li>• Лучше всего — фото одежды без человека (каталог/манекен/flat-lay).</li>
+            <li>• Если одежда на модели, кадрируйте так, чтобы не было лица, рук и ног.</li>
+            <li>• Одежда должна быть полностью в кадре, без сильных перекрытий и складок.</li>
+            <li>• Однотонный фон и хорошее освещение повышают качество примерки.</li>
+          </ul>
+        </div>
       </div>
     </div>
   );

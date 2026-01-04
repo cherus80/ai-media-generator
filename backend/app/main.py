@@ -251,7 +251,7 @@ async def health_check():
 
 
 # Подключение API роутеров
-from app.api.v1.endpoints import auth, auth_web, fitting, editing, payments, referrals, admin, billing
+from app.api.v1.endpoints import auth, auth_web, fitting, editing, payments, referrals, admin, billing, content, admin_content
 
 # Legacy Telegram auth (для обратной совместимости)
 app.include_router(
@@ -290,7 +290,19 @@ app.include_router(
 )
 
 app.include_router(
+    content.router,
+    prefix=f"{settings.API_V1_PREFIX}/content",
+    tags=["content"],
+)
+
+app.include_router(
     admin.router,
+    prefix=f"{settings.API_V1_PREFIX}/admin",
+    tags=["admin"],
+)
+
+app.include_router(
+    admin_content.router,
     prefix=f"{settings.API_V1_PREFIX}/admin",
     tags=["admin"],
 )

@@ -16,12 +16,14 @@ interface ChatInputProps {
   onSend: (message: string, attachments?: ChatAttachment[]) => void;
   disabled?: boolean;
   placeholder?: string;
+  prefillMessage?: string;
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({
   onSend,
   disabled = false,
   placeholder = 'Опишите, как хотите изменить изображение...',
+  prefillMessage,
 }) => {
   const [message, setMessage] = React.useState('');
   const [attachments, setAttachments] = React.useState<ChatAttachment[]>([]);
@@ -46,6 +48,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
   }, [message]);
+
+  React.useEffect(() => {
+    if (prefillMessage && !message.trim()) {
+      setMessage(prefillMessage);
+    }
+  }, [prefillMessage, message]);
 
   const handleSubmit = () => {
     const trimmedMessage = message.trim();
