@@ -44,7 +44,7 @@ export interface InstructionUpdateRequest {
   is_published?: boolean;
 }
 
-export interface InstructionVideoUploadResponse {
+export interface InstructionUploadResponse {
   file_id: string;
   file_url: string;
   file_size: number;

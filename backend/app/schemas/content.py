@@ -60,7 +60,7 @@ class InstructionUpdateRequest(BaseModel):
     is_published: Optional[bool] = None
 
 
-class InstructionVideoUploadResponse(BaseModel):
+class InstructionUploadResponse(BaseModel):
     file_id: str
     file_url: str
     file_size: int

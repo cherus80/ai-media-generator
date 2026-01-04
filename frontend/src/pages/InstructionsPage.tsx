@@ -11,6 +11,9 @@ const TYPE_LABELS: Record<InstructionType, string> = {
   text: 'Текстовые инструкции',
 };
 
+const resolveImageUrl = (url: string, baseUrl: string) =>
+  url.startsWith('http') ? url : `${baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+
 const toEmbedUrl = (rawUrl: string) => {
   try {
     const url = new URL(rawUrl);
@@ -43,6 +46,32 @@ const getVideoRenderMode = (rawUrl: string) => {
     return { mode: 'file' as const, src: rawUrl };
   }
   return { mode: 'link' as const, src: rawUrl };
+};
+
+const renderTextBlocks = (content: string, baseUrl: string) => {
+  const blocks = content.split(/\n\s*\n/).filter((block) => block.trim().length > 0);
+  return blocks.map((block, index) => {
+    const trimmed = block.trim();
+    const match = trimmed.match(/^!\[(.*?)\]\((.*?)\)$/);
+    if (match) {
+      const alt = match[1] || 'Иллюстрация';
+      const src = resolveImageUrl(match[2], baseUrl);
+      return (
+        <img
+          key={`img-${index}`}
+          src={src}
+          alt={alt}
+          className="w-full rounded-xl border border-slate-200 bg-slate-50"
+          loading="lazy"
+        />
+      );
+    }
+    return (
+      <p key={`text-${index}`} className="text-slate-600 whitespace-pre-line leading-relaxed">
+        {block}
+      </p>
+    );
+  });
 };
 
 export const InstructionsPage: React.FC = () => {
@@ -173,9 +202,9 @@ export const InstructionsPage: React.FC = () => {
                         </a>
                       </div>
                     ) : (
-                      <p className="text-slate-600 whitespace-pre-line leading-relaxed">
-                        {item.content}
-                      </p>
+                      <div className="space-y-3">
+                        {renderTextBlocks(item.content, baseUrl)}
+                      </div>
                     )}
                   </div>
                 ))}

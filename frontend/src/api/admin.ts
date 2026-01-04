@@ -31,7 +31,7 @@ import type {
   InstructionAdminListResponse,
   InstructionCreateRequest,
   InstructionUpdateRequest,
-  InstructionVideoUploadResponse,
+  InstructionUploadResponse,
   GenerationExampleAdminListResponse,
   GenerationExampleCreateRequest,
   GenerationExampleUpdateRequest,
@@ -240,11 +240,26 @@ export const getAdminInstructions = async (
 
 export const uploadInstructionVideo = async (
   file: File
-): Promise<InstructionVideoUploadResponse> => {
+): Promise<InstructionUploadResponse> => {
   const formData = new FormData();
   formData.append('file', file);
-  const response = await apiClient.post<InstructionVideoUploadResponse>(
+  const response = await apiClient.post<InstructionUploadResponse>(
     '/api/v1/admin/instructions/upload',
+    formData,
+    {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }
+  );
+  return response.data;
+};
+
+export const uploadInstructionImage = async (
+  file: File
+): Promise<InstructionUploadResponse> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await apiClient.post<InstructionUploadResponse>(
+    '/api/v1/admin/instructions/upload-image',
     formData,
     {
       headers: { 'Content-Type': 'multipart/form-data' },

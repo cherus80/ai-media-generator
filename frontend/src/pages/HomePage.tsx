@@ -98,20 +98,20 @@ export const HomePage: React.FC = () => {
                 Пока нет опубликованных примеров.
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 justify-items-center">
                 {topExamples.map((example) => (
                   <Card
                     key={example.id}
                     variant="glass"
                     hover
                     padding="none"
-                    className="overflow-hidden border border-white/40"
+                    className="overflow-hidden border border-white/40 max-w-[360px] w-full"
                   >
                     <div className="relative">
                       <img
                         src={resolveImageUrl(example.image_url)}
                         alt={example.title || 'Пример генерации'}
-                        className="w-full h-48 object-contain bg-slate-50"
+                        className="w-full h-56 object-contain bg-slate-50"
                       />
                       <div className="absolute top-3 right-3 bg-white/90 text-slate-700 text-xs font-semibold px-3 py-1 rounded-full shadow">
                         {example.uses_count} запусков

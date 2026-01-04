@@ -6,6 +6,7 @@ import {
   updateInstruction,
   deleteInstruction,
   uploadInstructionVideo,
+  uploadInstructionImage,
 } from '../../api/admin';
 import type { InstructionAdminItem, InstructionType } from '../../types/content';
 
@@ -34,6 +35,8 @@ export const InstructionsManager: React.FC = () => {
   const [savingId, setSavingId] = useState<number | null>(null);
   const [uploadingId, setUploadingId] = useState<number | null>(null);
   const [uploadingNew, setUploadingNew] = useState(false);
+  const [uploadingImageId, setUploadingImageId] = useState<number | null>(null);
+  const [uploadingImageNew, setUploadingImageNew] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [newContent, setNewContent] = useState('');
@@ -117,6 +120,26 @@ export const InstructionsManager: React.FC = () => {
     }
   };
 
+  const handleNewImageUpload = async (file: File | null) => {
+    if (!file) {
+      return;
+    }
+    setUploadingImageNew(true);
+    try {
+      const uploaded = await uploadInstructionImage(file);
+      const snippet = `![Скриншот](${uploaded.file_url})`;
+      setNewContent((prev) => {
+        const base = prev.trim();
+        return base ? `${base}\n\n${snippet}\n` : `${snippet}\n`;
+      });
+      toast.success('Изображение добавлено');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || 'Не удалось загрузить изображение');
+    } finally {
+      setUploadingImageNew(false);
+    }
+  };
+
   const handleItemVideoUpload = async (itemId: number, file: File | null) => {
     if (!file) {
       return;
@@ -134,6 +157,34 @@ export const InstructionsManager: React.FC = () => {
       toast.error(err?.response?.data?.detail || 'Не удалось загрузить видео');
     } finally {
       setUploadingId(null);
+    }
+  };
+
+  const handleItemImageUpload = async (itemId: number, file: File | null) => {
+    if (!file) {
+      return;
+    }
+    setUploadingImageId(itemId);
+    try {
+      const uploaded = await uploadInstructionImage(file);
+      const snippet = `![Скриншот](${uploaded.file_url})`;
+      setItems((prev) =>
+        prev.map((row) =>
+          row.id === itemId
+            ? {
+                ...row,
+                draftContent: row.draftContent.trim()
+                  ? `${row.draftContent.trim()}\n\n${snippet}\n`
+                  : `${snippet}\n`,
+              }
+            : row
+        )
+      );
+      toast.success('Изображение добавлено');
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || 'Не удалось загрузить изображение');
+    } finally {
+      setUploadingImageId(null);
     }
   };
 
@@ -285,6 +336,26 @@ export const InstructionsManager: React.FC = () => {
               )}
             </div>
           )}
+          {activeType === 'text' && (
+            <div className="mt-3 space-y-2">
+              <label className="text-xs font-semibold text-gray-600">
+                Добавить изображение
+              </label>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/heic,image/heif,image/mpo"
+                onChange={(e) => handleNewImageUpload(e.target.files?.[0] || null)}
+                className="block w-full text-sm text-gray-600"
+                disabled={uploadingImageNew}
+              />
+              <p className="text-xs text-gray-500">
+                Изображение вставляется как Markdown: <span className="font-mono">![описание](url)</span>
+              </p>
+              {uploadingImageNew && (
+                <p className="text-xs text-gray-500">Загрузка изображения...</p>
+              )}
+            </div>
+          )}
         </div>
         <label className="flex items-center gap-2 text-sm text-gray-700">
           <input
@@ -398,6 +469,26 @@ export const InstructionsManager: React.FC = () => {
                     )}
                     {uploadingId === item.id && (
                       <p className="text-xs text-gray-500">Загрузка видео...</p>
+                    )}
+                  </div>
+                )}
+                {activeType === 'text' && (
+                  <div className="mt-3 space-y-2">
+                    <label className="text-xs font-semibold text-gray-600">
+                      Добавить изображение
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/heic,image/heif,image/mpo"
+                      onChange={(e) => handleItemImageUpload(item.id, e.target.files?.[0] || null)}
+                      className="block w-full text-sm text-gray-600"
+                      disabled={uploadingImageId === item.id}
+                    />
+                    <p className="text-xs text-gray-500">
+                      Изображение вставится в текст Markdown-строкой.
+                    </p>
+                    {uploadingImageId === item.id && (
+                      <p className="text-xs text-gray-500">Загрузка изображения...</p>
                     )}
                   </div>
                 )}

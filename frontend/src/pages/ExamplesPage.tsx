@@ -135,14 +135,14 @@ export const ExamplesPage: React.FC = () => {
                       Обновляется по активности пользователей
                     </span>
                   </div>
-                  <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                  <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 justify-items-center">
                     {topItems.map((item) => (
-                      <div key={item.id} className="bg-white rounded-2xl shadow overflow-hidden flex flex-col">
+                      <div key={item.id} className="bg-white rounded-2xl shadow overflow-hidden flex flex-col max-w-[360px] w-full">
                         <div className="relative">
                           <img
                             src={resolveImageUrl(item.image_url)}
                             alt={item.title || 'Пример генерации'}
-                            className="w-full h-56 object-contain bg-slate-50"
+                            className="w-full h-60 object-contain bg-slate-50"
                           />
                           <div className="absolute top-3 right-3 bg-white/90 text-slate-700 text-xs font-semibold px-3 py-1 rounded-full shadow">
                             {item.uses_count} запусков
@@ -228,14 +228,14 @@ export const ExamplesPage: React.FC = () => {
                   По выбранным фильтрам нет результатов.
                 </div>
               ) : (
-                <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 justify-items-center">
                   {filteredItems.map((item) => (
-                    <div key={item.id} className="bg-white rounded-2xl shadow overflow-hidden flex flex-col">
+                    <div key={item.id} className="bg-white rounded-2xl shadow overflow-hidden flex flex-col max-w-[360px] w-full">
                       <div className="relative">
                         <img
                           src={resolveImageUrl(item.image_url)}
                           alt={item.title || 'Пример генерации'}
-                          className="w-full h-56 object-contain bg-slate-50"
+                          className="w-full h-60 object-contain bg-slate-50"
                         />
                         <div className="absolute top-3 right-3 bg-white/90 text-slate-700 text-xs font-semibold px-3 py-1 rounded-full shadow">
                           {item.uses_count} запусков

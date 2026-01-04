@@ -16,14 +16,14 @@ from app.schemas.content import (
     InstructionCreateRequest,
     InstructionUpdateRequest,
     InstructionType,
-    InstructionVideoUploadResponse,
+    InstructionUploadResponse,
     GenerationExampleAdminListResponse,
     GenerationExampleAdminItem,
     GenerationExampleCreateRequest,
     GenerationExampleUpdateRequest,
 )
-from app.services.file_storage import save_raw_upload_file
-from app.services.file_validator import validate_video_file
+from app.services.file_storage import save_raw_upload_file, save_upload_file
+from app.services.file_validator import validate_video_file, validate_image_file
 
 router = APIRouter()
 
@@ -78,13 +78,13 @@ async def list_instructions(
 
 @router.post(
     "/instructions/upload",
-    response_model=InstructionVideoUploadResponse,
+    response_model=InstructionUploadResponse,
     status_code=status.HTTP_201_CREATED,
 )
 async def upload_instruction_video(
     admin: AdminUser,
     file: UploadFile = File(..., description="Видео (MP4/WebM/MOV)"),
-) -> InstructionVideoUploadResponse:
+) -> InstructionUploadResponse:
     await validate_video_file(file)
 
     try:
@@ -98,7 +98,36 @@ async def upload_instruction_video(
             detail=f"Не удалось сохранить файл: {exc}",
         )
 
-    return InstructionVideoUploadResponse(
+    return InstructionUploadResponse(
+        file_id=str(file_id),
+        file_url=file_url,
+        file_size=file_size,
+    )
+
+
+@router.post(
+    "/instructions/upload-image",
+    response_model=InstructionUploadResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def upload_instruction_image(
+    admin: AdminUser,
+    file: UploadFile = File(..., description="Изображение (JPEG/PNG/WebP/HEIC)"),
+) -> InstructionUploadResponse:
+    await validate_image_file(file)
+
+    try:
+        file_id, file_url, file_size = await save_upload_file(
+            file,
+            user_id=admin.id,
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Не удалось сохранить файл: {exc}",
+        )
+
+    return InstructionUploadResponse(
         file_id=str(file_id),
         file_url=file_url,
         file_size=file_size,
