@@ -12,7 +12,6 @@ import type {
   GenerateImageRequest,
   GenerateImageResponse,
   ExampleGenerateRequest,
-  ExampleGenerateResponse,
   ChatHistoryResponse,
   ResetSessionResponse,
   ChatAttachment,
@@ -119,8 +118,8 @@ export const generateEditedImage = async (
  */
 export const generateExampleImage = async (
   request: ExampleGenerateRequest
-): Promise<ExampleGenerateResponse> => {
-  const response = await apiClient.post<ExampleGenerateResponse>(
+): Promise<GenerateImageResponse> => {
+  const response = await apiClient.post<GenerateImageResponse>(
     '/api/v1/editing/example-generate',
     request
   );

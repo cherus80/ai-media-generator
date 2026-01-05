@@ -57,13 +57,6 @@ export interface ExampleGenerateRequest {
   attachments?: ChatAttachment[];
 }
 
-// Ответ при запуске генерации по образцу
-export interface ExampleGenerateResponse {
-  task_ids: string[];
-  status: string;
-  message: string;
-}
-
 // Ответ при запуске генерации
 export interface GenerateImageResponse {
   task_id: string;

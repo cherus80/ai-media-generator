@@ -40,7 +40,7 @@ export const ExampleGenerationProgress: React.FC = () => {
         </motion.div>
 
         <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          Генерируем изображения
+          Генерируем изображение
         </h2>
         <p className="text-gray-600 mb-8">{getMessage()}</p>
 

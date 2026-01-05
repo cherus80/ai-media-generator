@@ -17,7 +17,7 @@ export const ExampleGenerationPage: React.FC = () => {
 
   const {
     isGenerating,
-    results,
+    result,
     startGeneration,
     reset,
   } = useExampleGenerationStore();
@@ -46,7 +46,7 @@ export const ExampleGenerationPage: React.FC = () => {
     reset();
   };
 
-  const stage = results.length > 0 ? 'result' : isGenerating ? 'generating' : 'input';
+  const stage = result ? 'result' : isGenerating ? 'generating' : 'input';
 
   return (
     <AuthGuard>

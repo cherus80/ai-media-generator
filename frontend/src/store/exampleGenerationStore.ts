@@ -11,27 +11,25 @@ import toast from 'react-hot-toast';
 
 interface ExampleGenerationState {
   isGenerating: boolean;
-  taskIds: string[];
+  taskId: string | null;
   generationStatus: GenerationStatus | null;
   progress: number;
-  progressByTask: Record<string, number>;
   statusMessage: string | null;
-  results: FittingResult[];
+  result: FittingResult | null;
   error: string | null;
 
-  startGeneration: (prompt: string, attachments: ChatAttachment[]) => Promise<FittingResult[]>;
+  startGeneration: (prompt: string, attachments: ChatAttachment[]) => Promise<FittingResult>;
   reset: () => void;
-  updateProgress: (taskId: string, status: FittingStatusResponse) => void;
+  updateProgress: (status: FittingStatusResponse) => void;
 }
 
 export const useExampleGenerationStore = create<ExampleGenerationState>((set, get) => ({
   isGenerating: false,
-  taskIds: [],
+  taskId: null,
   generationStatus: null,
   progress: 0,
-  progressByTask: {},
   statusMessage: null,
-  results: [],
+  result: null,
   error: null,
 
   startGeneration: async (prompt: string, attachments: ChatAttachment[]) => {
@@ -47,9 +45,8 @@ export const useExampleGenerationStore = create<ExampleGenerationState>((set, ge
       isGenerating: true,
       error: null,
       progress: 0,
-      progressByTask: {},
       statusMessage: 'Запускаем генерацию...',
-      results: [],
+      result: null,
     });
 
     try {
@@ -58,65 +55,42 @@ export const useExampleGenerationStore = create<ExampleGenerationState>((set, ge
         attachments,
       });
 
-      const taskIds = response.task_ids || [];
-      if (taskIds.length === 0) {
+      if (!response.task_id) {
         throw new Error('Не удалось запустить генерацию');
       }
-      const progressByTask: Record<string, number> = {};
-      taskIds.forEach((taskId) => {
-        progressByTask[taskId] = 0;
-      });
 
       set({
-        taskIds,
+        taskId: response.task_id,
         generationStatus: response.status as GenerationStatus,
         statusMessage: response.message,
-        progressByTask,
       });
 
-      const results = await Promise.all(
-        taskIds.map(async (taskId) => {
-          try {
-            return await pollEditingStatus(
-              taskId,
-              (status) => {
-                get().updateProgress(taskId, status);
-              },
-              {
-                slowWarningMs: 60000,
-                onSlowWarning: () =>
-                  toast(
-                    'Генерация может занять до 3 минут из-за нагрузки на сервис. Приложение продолжает ждать ответ.',
-                    { icon: '⏳' }
-                  ),
-              }
-            );
-          } catch (pollError: any) {
-            return {
-              task_id: taskId,
-              status: 'failed',
-              error_message: pollError?.message || 'Ошибка генерации',
-              has_watermark: false,
-              credits_spent: 0,
-              created_at: new Date().toISOString(),
-            } as FittingResult;
-          }
-        })
+      const result = await pollEditingStatus(
+        response.task_id,
+        (status) => {
+          get().updateProgress(status);
+        },
+        {
+          slowWarningMs: 60000,
+          onSlowWarning: () =>
+            toast(
+              'Генерация может занять до 3 минут из-за нагрузки на сервис. Приложение продолжает ждать ответ.',
+              { icon: '⏳' }
+            ),
+        }
       );
 
-      const hasFailures = results.some((item) => item.status === 'failed');
-
       set({
-        results,
+        result,
         isGenerating: false,
-        generationStatus: hasFailures ? 'failed' : 'completed',
+        generationStatus: result.status,
         progress: 100,
-        statusMessage: hasFailures ? 'Произошла ошибка' : 'Готово!',
+        statusMessage: result.status === 'completed' ? 'Готово!' : 'Произошла ошибка',
       });
 
       await useAuthStore.getState().refreshProfile();
 
-      return results;
+      return result;
     } catch (error: any) {
       const errorMessage = error.response?.data?.detail || error.message || 'Ошибка генерации';
       set({
@@ -129,31 +103,22 @@ export const useExampleGenerationStore = create<ExampleGenerationState>((set, ge
     }
   },
 
-  updateProgress: (taskId: string, status: FittingStatusResponse) => {
-    set((state) => {
-      const nextProgressByTask = { ...state.progressByTask, [taskId]: status.progress };
-      const progressValues = Object.values(nextProgressByTask);
-      const avgProgress = progressValues.length
-        ? progressValues.reduce((sum, value) => sum + value, 0) / progressValues.length
-        : 0;
-      return {
-        generationStatus: status.status,
-        progress: avgProgress,
-        statusMessage: status.message,
-        progressByTask: nextProgressByTask,
-      };
+  updateProgress: (status: FittingStatusResponse) => {
+    set({
+      generationStatus: status.status,
+      progress: status.progress,
+      statusMessage: status.message,
     });
   },
 
   reset: () => {
     set({
       isGenerating: false,
-      taskIds: [],
+      taskId: null,
       generationStatus: null,
       progress: 0,
-      progressByTask: {},
       statusMessage: null,
-      results: [],
+      result: null,
       error: null,
     });
   },

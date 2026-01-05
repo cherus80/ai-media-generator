@@ -17,23 +17,19 @@ export const ExampleGenerationResult: React.FC<ExampleGenerationResultProps> = (
   onBackToExamples,
   onTryAgain,
 }) => {
-  const { results } = useExampleGenerationStore();
+  const { result } = useExampleGenerationStore();
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [activeImageUrl, setActiveImageUrl] = useState<string | null>(null);
 
-  if (!results.length) {
+  if (!result) {
     return null;
   }
 
-  const successfulResults = results.filter(
-    (item) => item.status === 'completed' && item.image_url
-  );
-  const failedResults = results.filter((item) => item.status === 'failed');
+  const resolvedImageUrl = resolveAbsoluteUrl(result.image_url || '');
 
-  const handleDownload = async (imageUrl: string, taskId: string) => {
-    if (!imageUrl) return;
+  const handleDownload = async () => {
+    if (!result.image_url) return;
     try {
-      await downloadImage(imageUrl, `example-${taskId}.png`);
+      await downloadImage(result.image_url, `example-${result.task_id}.png`);
       toast.success('Изображение скачано!');
     } catch (error) {
       console.error('Не удалось скачать изображение:', error);
@@ -41,10 +37,10 @@ export const ExampleGenerationResult: React.FC<ExampleGenerationResultProps> = (
     }
   };
 
-  const handleShare = async (imageUrl: string) => {
-    if (!imageUrl) return;
+  const handleShare = async () => {
+    if (!result.image_url) return;
 
-    const shareUrl = resolveAbsoluteUrl(imageUrl);
+    const shareUrl = resolveAbsoluteUrl(result.image_url);
 
     if (window.Telegram?.WebApp?.openTelegramLink) {
       const tgLink = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}`;
@@ -72,8 +68,7 @@ export const ExampleGenerationResult: React.FC<ExampleGenerationResultProps> = (
     }
   };
 
-  if (successfulResults.length === 0) {
-    const firstError = failedResults[0];
+  if (result.status === 'failed') {
     return (
       <div className="max-w-2xl mx-auto px-4 py-12">
         <div className="text-center">
@@ -93,7 +88,7 @@ export const ExampleGenerationResult: React.FC<ExampleGenerationResultProps> = (
             Произошла ошибка
           </h2>
           <p className="text-gray-600 mb-8">
-            {firstError?.error_message || 'Не удалось сгенерировать изображение'}
+            {result.error_message || 'Не удалось сгенерировать изображение'}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -135,63 +130,53 @@ export const ExampleGenerationResult: React.FC<ExampleGenerationResultProps> = (
             </div>
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            {successfulResults.length > 1 ? 'Изображения готовы!' : 'Изображение готово!'}
+            Изображение готово!
           </h2>
           <p className="text-gray-600">
             Скачайте результат или поделитесь им
           </p>
         </div>
 
-        {failedResults.length > 0 && (
-          <div className="mb-6 rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
-            Для {failedResults.length} фото не удалось завершить генерацию. Попробуйте ещё раз или выберите другой образец.
+        <div className="mb-6 relative">
+          <img
+            src={resolvedImageUrl}
+            alt="Example generation result"
+            className="w-full rounded-lg shadow-lg cursor-pointer"
+            onClick={() => setIsFullscreen(true)}
+            onError={() => toast.error('Не удалось загрузить превью изображения')}
+          />
+          {result.has_watermark && (
+            <div className="absolute top-4 right-4 bg-yellow-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
+              Freemium
+            </div>
+          )}
+        </div>
+
+        <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-600">Потрачено ⭐️звезд:</span>
+            <span className="font-semibold text-gray-900">{result.credits_spent}</span>
           </div>
-        )}
+          {result.has_watermark && (
+            <p className="mt-2 text-xs text-yellow-700">
+              На изображении есть водяной знак. Оформите подписку для генерации без водяных знаков.
+            </p>
+          )}
+        </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          {successfulResults.map((item) => {
-            const imageUrl = item.image_url ? resolveAbsoluteUrl(item.image_url) : '';
-            return (
-              <div key={item.task_id} className="bg-white rounded-2xl shadow p-4">
-                <div className="relative mb-4">
-                  <img
-                    src={imageUrl}
-                    alt="Example generation result"
-                    className="w-full rounded-lg shadow-lg cursor-pointer"
-                    onClick={() => {
-                      setActiveImageUrl(imageUrl);
-                      setIsFullscreen(true);
-                    }}
-                    onError={() => toast.error('Не удалось загрузить превью изображения')}
-                  />
-                  {item.has_watermark && (
-                    <div className="absolute top-4 right-4 bg-yellow-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
-                      Freemium
-                    </div>
-                  )}
-                </div>
-
-                <div className="mb-4 text-sm text-slate-600">
-                  Потрачено ⭐️звезд: <span className="font-semibold text-slate-900">{item.credits_spent}</span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => handleDownload(item.image_url || '', item.task_id)}
-                    className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-                  >
-                    Скачать
-                  </button>
-                  <button
-                    onClick={() => handleShare(item.image_url || '')}
-                    className="px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-                  >
-                    Поделиться
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <button
+            onClick={handleDownload}
+            className="px-4 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+          >
+            Скачать
+          </button>
+          <button
+            onClick={handleShare}
+            className="px-4 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+          >
+            Поделиться
+          </button>
         </div>
 
         <button
@@ -208,7 +193,7 @@ export const ExampleGenerationResult: React.FC<ExampleGenerationResultProps> = (
           onClick={() => setIsFullscreen(false)}
         >
           <img
-            src={activeImageUrl || ''}
+            src={result.image_url}
             alt="Example generation fullscreen"
             className="max-w-full max-h-full rounded-lg"
           />
