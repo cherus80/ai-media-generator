@@ -113,7 +113,7 @@ export const CreditsCard: React.FC<CreditsCardProps> = ({
                 до {editsWithAssistant}-{editsWithoutAssistant} раз
               </div>
               <div className="text-[10px] leading-tight text-gray-500 max-[360px]:text-[9px]">
-                2 ⭐️звезды за действие, +1 при использовании AI-помощника
+                2 ⭐️звезды за генерацию, +1 при использовании AI-помощника
               </div>
             </div>
           </div>

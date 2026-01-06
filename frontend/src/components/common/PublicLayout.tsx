@@ -20,7 +20,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50 text-dark-900 flex flex-col">
       <header className="sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-white/40 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4 min-h-[72px]">
           <Link to="/" className="flex items-center gap-3 group">
             <img
               src="/logo.png"
@@ -49,27 +49,29 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
             ))}
           </nav>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 max-[600px]:w-full max-[600px]:flex-col max-[600px]:items-end">
             <a
               href="https://t.me/+Fj-R8QqIEEg5OTE6"
               target="_blank"
               rel="noreferrer"
-              className="inline-flex px-3 py-1 rounded-full bg-white border border-primary-100 text-primary-700 text-[11px] sm:text-xs font-semibold hover:bg-primary-50 transition whitespace-nowrap"
+              className="inline-flex px-3 py-1 rounded-full bg-white border border-primary-100 text-primary-700 text-[11px] sm:text-xs font-semibold hover:bg-primary-50 transition whitespace-nowrap max-[600px]:order-2"
             >
               Наш канал в Telegram
             </a>
-            <Link
-              to="/login"
-              className="px-4 py-2 text-sm font-semibold text-primary-700 border border-primary-200 rounded-xl hover:bg-primary-50 transition"
-            >
-              Войти
-            </Link>
-            <Link
-              to="/register"
-              className="px-4 py-2 text-sm font-semibold text-white rounded-xl bg-gradient-to-r from-primary-500 to-secondary-500 shadow-lg hover:shadow-xl transition hover:-translate-y-0.5"
-            >
-              Попробовать бесплатно
-            </Link>
+            <div className="flex items-center gap-2 max-[600px]:order-1">
+              <Link
+                to="/login"
+                className="px-4 py-2 text-sm font-semibold text-primary-700 border border-primary-200 rounded-xl hover:bg-primary-50 transition"
+              >
+                Войти
+              </Link>
+              <Link
+                to="/register"
+                className="px-4 py-2 text-sm font-semibold text-white rounded-xl bg-gradient-to-r from-primary-500 to-secondary-500 shadow-lg hover:shadow-xl transition hover:-translate-y-0.5"
+              >
+                Попробовать бесплатно
+              </Link>
+            </div>
           </div>
         </div>
       </header>

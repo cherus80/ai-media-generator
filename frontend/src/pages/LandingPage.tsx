@@ -1,19 +1,25 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSeo } from '../hooks/useSeo';
+import { getGenerationExamples } from '../api/content';
+import type { GenerationExampleItem } from '../types/content';
+
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
+const resolveImageUrl = (url: string) =>
+  url.startsWith('http') ? url : `${API_BASE_URL}${url.startsWith('/') ? url : `/${url}`}`;
 
 const featureCards = [
   { title: 'Виртуальная примерка', desc: 'AI показывает посадку и образ на вашем фото — цвет и фактура могут отличаться от оригинала, это ориентировочная визуализация.', icon: 'fa-solid fa-shirt', iconWrapperClass: 'bg-sky-500 text-white' },
   { title: 'Редактирование фото в чате', desc: 'Опишите правки, прикрепите референсы и получите улучшенный промпт от AI.', icon: 'fa-solid fa-comments', iconWrapperClass: 'bg-purple-500 text-white' },
-  { title: 'Мастер из 3 шагов', desc: 'Загрузка → выбор действия → результат за несколько секунд.', icon: 'fa-solid fa-shoe-prints', iconWrapperClass: 'bg-slate-800 text-white' },
-  { title: 'Гибкая система оплаты', desc: 'Используйте действия по подписке или ⭐️звезды без ограничений.', icon: 'fa-solid fa-wallet', iconWrapperClass: 'bg-orange-100 text-orange-500' },
+  { title: 'Мастер из 3 шагов', desc: 'Загрузка → выбор генерации → результат за несколько секунд.', icon: 'fa-solid fa-shoe-prints', iconWrapperClass: 'bg-slate-800 text-white' },
+  { title: 'Гибкая система оплаты', desc: 'Используйте генерации по подписке или ⭐️звезды без ограничений.', icon: 'fa-solid fa-wallet', iconWrapperClass: 'bg-orange-100 text-orange-500' },
   { title: 'Бесплатный старт', desc: '10 ⭐️звезд бесплатно сразу после регистрации.', icon: 'fa-solid fa-bolt', iconWrapperClass: 'bg-green-100 text-green-500' },
   { title: 'Безопасность данных', desc: 'Фото хранятся временно и автоматически удаляются.', icon: 'fa-solid fa-shield-halved', iconWrapperClass: 'bg-slate-200 text-slate-600' },
 ];
 
 const steps = [
   { title: 'Загрузите фотографию', desc: 'Добавьте своё фото или изображение товара.', accent: 'primary' },
-  { title: 'Выберите действие', desc: 'Виртуальная примерка или редактирование фото в чате.', accent: 'secondary' },
+  { title: 'Выберите тип генерации', desc: 'Виртуальная примерка или редактирование фото в чате.', accent: 'secondary' },
   { title: 'Получите результат', desc: 'Скачайте готовое изображение и используйте его дальше.', accent: 'accent' },
 ];
 
@@ -59,9 +65,9 @@ const creditPackages = [
 
 const faqs = [
   { question: 'Насколько точна виртуальная примерка?', answer: 'Это AI-визуализация посадки. Из-за специфики моделей оттенок, фактура и детали могут отличаться от реального товара, поэтому не ждите 100% совпадения — используйте как наглядный предварительный пример.' },
-  { question: 'Что такое действия?', answer: 'Действия — это количество генераций по подписке.' },
+  { question: 'Что такое генерации по подписке?', answer: 'Генерации — это количество запусков по подписке.' },
   { question: 'Что такое ⭐️звезды?', answer: '⭐️Звезды — это внутренняя валюта для генераций и AI-ассистента.' },
-  { question: 'Сколько стоит одна генерация?', answer: '1 действие по подписке или 2 ⭐️звезды без подписки.' },
+  { question: 'Сколько стоит одна генерация?', answer: '1 генерация по подписке или 2 ⭐️звезды без подписки.' },
   { question: 'Сколько стоит AI-ассистент?', answer: '1 ⭐️звезда за одно обращение.' },
   { question: 'Как работает редактирование фото?', answer: 'Загрузите фото, опишите правки в чате и при необходимости прикрепите референсы. Можно отправить промпт сразу или улучшить через AI — затем запустить генерацию.' },
   { question: 'Что выдаётся бесплатно?', answer: '10 ⭐️звезд при регистрации.' },
@@ -77,6 +83,34 @@ export const LandingPage: React.FC = () => {
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://ai-generator.mix4.ru';
   const description =
     'Виртуальная примерка одежды и AI-редактирование фото. Загружайте изображения, выбирайте промпты и получайте реалистичные результаты.';
+  const [topExamples, setTopExamples] = useState<GenerationExampleItem[]>([]);
+  const [topExamplesLoading, setTopExamplesLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadTopExamples = async () => {
+      setTopExamplesLoading(true);
+      try {
+        const response = await getGenerationExamples({ sort: 'popular', limit: 6 });
+        if (isMounted) {
+          setTopExamples(response.items);
+        }
+      } catch {
+        if (isMounted) {
+          setTopExamples([]);
+        }
+      } finally {
+        if (isMounted) {
+          setTopExamplesLoading(false);
+        }
+      }
+    };
+
+    loadTopExamples();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useSeo({
     title: 'AI Generator — виртуальная примерка и AI-редактирование фото',
@@ -103,7 +137,7 @@ export const LandingPage: React.FC = () => {
     <div className="landing-page bg-slate-50 text-slate-900">
       <header className="fixed w-full top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20 gap-3">
+          <div className="flex flex-wrap justify-between items-center gap-3 min-h-[80px] py-3">
             <Link to="/" className="flex items-center gap-2 sm:gap-3 min-w-0">
               <img
                 src="/logo.png"
@@ -122,27 +156,29 @@ export const LandingPage: React.FC = () => {
               <a href="#faq" className="text-slate-600 hover:text-secondary-500 transition-colors">FAQ</a>
             </nav>
 
-            <div className="flex items-center gap-2 sm:gap-4 text-sm font-semibold flex-shrink-0">
+            <div className="flex items-center gap-2 sm:gap-4 text-sm font-semibold flex-shrink-0 max-[600px]:w-full max-[600px]:flex-col max-[600px]:items-end">
               <a
                 href="https://t.me/+Fj-R8QqIEEg5OTE6"
                 target="_blank"
                 rel="noreferrer"
-                className="px-3 py-1 rounded-full bg-white/80 border border-slate-200 text-slate-600 text-[11px] sm:text-xs hover:text-secondary-500 transition-colors whitespace-nowrap"
+                className="px-3 py-1 rounded-full bg-white/80 border border-slate-200 text-slate-600 text-[11px] sm:text-xs hover:text-secondary-500 transition-colors whitespace-nowrap max-[600px]:order-2"
               >
                 Наш канал в Telegram
               </a>
-              <Link
-                to="/login"
-                className="text-slate-700 hover:text-secondary-500 transition-colors px-3 py-2 rounded-full bg-white/80 border border-slate-200 shadow-sm whitespace-nowrap"
-              >
-                Войти
-              </Link>
-              <Link
-                to="/register"
-                className="bg-gradient-to-r from-purple-500 to-purple-700 text-white px-5 sm:px-6 py-2.5 rounded-full transition-all transform hover:scale-[1.02] shadow-lg whitespace-nowrap"
-              >
-                Регистрация
-              </Link>
+              <div className="flex items-center gap-2 sm:gap-4 max-[600px]:order-1">
+                <Link
+                  to="/login"
+                  className="text-slate-700 hover:text-secondary-500 transition-colors px-3 py-2 rounded-full bg-white/80 border border-slate-200 shadow-sm whitespace-nowrap"
+                >
+                  Войти
+                </Link>
+                <Link
+                  to="/register"
+                  className="bg-gradient-to-r from-purple-500 to-purple-700 text-white px-5 sm:px-6 py-2.5 rounded-full transition-all transform hover:scale-[1.02] shadow-lg whitespace-nowrap"
+                >
+                  Регистрация
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -199,7 +235,7 @@ export const LandingPage: React.FC = () => {
                 <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden">
                   <div className="p-6 sm:p-8 border-b border-slate-100 bg-slate-50">
                     <h3 className="text-2xl font-bold text-slate-800 mb-2">Выберите функцию</h3>
-                    <p className="text-sm text-slate-500 leading-relaxed">Начните с загрузки вашего фото, а затем выберите одно из основных действий.</p>
+                    <p className="text-sm text-slate-500 leading-relaxed">Начните с загрузки вашего фото, а затем выберите один из основных режимов генерации.</p>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 sm:p-8">
@@ -238,7 +274,7 @@ export const LandingPage: React.FC = () => {
                         <p className="text-slate-600">Опишите правки, прикрепите референсы и выберите: отправить промпт сразу или улучшить его с AI</p>
                         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 text-slate-700 text-sm font-semibold self-start">
                           <i className="fa-solid fa-bolt text-orange-500" />
-                          <span>1 ⭐️звезда за ассистента + 2 за генерацию (или действие по подписке)</span>
+                          <span>1 ⭐️звезда за ассистента + 2 за генерацию (или 1 генерация по подписке)</span>
                         </div>
                         <Link
                           to="/register"
@@ -253,7 +289,7 @@ export const LandingPage: React.FC = () => {
                   <div className="px-6 sm:px-8 pb-6">
                     <div className="bg-slate-50 p-3 rounded-xl text-center border border-slate-100">
                       <p className="text-xs text-slate-500 font-medium">
-                        <i className="fa-solid fa-circle-info text-orange-500 mr-1" /> Все действия списывают 1 действие по подписке или 2 ⭐️звезды.
+                        <i className="fa-solid fa-circle-info text-orange-500 mr-1" /> Каждая генерация списывает 1 генерацию по подписке или 2 ⭐️звезды.
                       </p>
                     </div>
                   </div>
@@ -262,6 +298,59 @@ export const LandingPage: React.FC = () => {
                 <div className="absolute -z-10 top-10 -right-10 w-full h-full bg-gradient-to-br from-blue-100 to-purple-100 rounded-3xl opacity-50 blur-3xl" />
               </div>
             </div>
+          </div>
+        </section>
+
+        <section className="py-20 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 mb-3">ТОП 6</p>
+              <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900">Самые популярные образцы</h2>
+              <p className="text-slate-500 mt-4 max-w-2xl mx-auto">
+                Шесть образцов, по которым чаще всего запускают генерацию.
+              </p>
+            </div>
+
+            {topExamplesLoading ? (
+              <div className="bg-slate-50 border border-slate-100 rounded-2xl p-8 text-center text-slate-500">
+                Загружаем примеры...
+              </div>
+            ) : topExamples.length === 0 ? (
+              <div className="bg-slate-50 border border-slate-100 rounded-2xl p-8 text-center text-slate-500">
+                Пока нет опубликованных примеров.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 justify-items-center">
+                {topExamples.map((item) => (
+                  <div key={item.id} className="bg-white rounded-2xl shadow-soft border border-slate-100 overflow-hidden flex flex-col max-w-[360px] w-full">
+                    <div className="relative">
+                      <img
+                        src={resolveImageUrl(item.image_url)}
+                        alt={item.title || 'Пример генерации'}
+                        className="w-full h-56 object-contain bg-slate-50"
+                      />
+                      <div className="absolute top-3 right-3 bg-white/90 text-slate-700 text-xs font-semibold px-3 py-1 rounded-full shadow">
+                        {item.uses_count} запусков
+                      </div>
+                    </div>
+                    <div className="p-5 flex flex-col gap-3 flex-1">
+                      <h3 className="text-lg font-bold text-slate-900">
+                        {item.title || 'Без названия'}
+                      </h3>
+                      <p className="text-sm text-slate-600 line-clamp-4 whitespace-pre-line">
+                        {item.prompt}
+                      </p>
+                      <Link
+                        to="/register"
+                        className="mt-auto px-4 py-2 rounded-lg bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-semibold text-sm hover:shadow-lg transition text-center"
+                      >
+                        Сгенерировать по этому образцу
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
 
@@ -309,9 +398,9 @@ export const LandingPage: React.FC = () => {
                   <i className="fa-solid fa-info text-lg" />
                 </div>
                 <div>
-                  <div className="font-bold text-slate-800 mb-2 text-lg">Стоимость операций:</div>
+                  <div className="font-bold text-slate-800 mb-2 text-lg">Стоимость генераций:</div>
                   <ul className="text-slate-500 space-y-2">
-                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-slate-300" /> 1 генерация = 1 действие по подписке</li>
+                    <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-slate-300" /> 1 генерация = 1 генерация по подписке</li>
                     <li className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-slate-300" /> или 2 ⭐️звезды без подписки</li>
                   </ul>
                 </div>
@@ -334,7 +423,7 @@ export const LandingPage: React.FC = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
               <h2 className="text-3xl md:text-4xl font-extrabold mb-4 text-slate-900">Выберите подписку</h2>
-              <p className="text-slate-500 text-lg max-w-2xl mx-auto">Подписка даёт вам действия для генераций каждый месяц.</p>
+              <p className="text-slate-500 text-lg max-w-2xl mx-auto">Подписка даёт вам лимит генераций каждый месяц.</p>
             </div>
 
             <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
@@ -357,7 +446,7 @@ export const LandingPage: React.FC = () => {
                   </div>
                   <div className={`mb-8 p-4 rounded-2xl ${plan.highlight ? 'bg-blue-50 border border-blue-100' : 'bg-slate-50'}`}>
                     <div className={`text-4xl font-bold ${plan.highlight ? 'text-primary-500' : 'text-slate-800'} mb-1`}>{plan.actions}</div>
-                    <div className={`text-xs uppercase font-bold tracking-wider ${plan.highlight ? 'text-blue-400' : 'text-slate-400'}`}>действий</div>
+                    <div className={`text-xs uppercase font-bold tracking-wider ${plan.highlight ? 'text-blue-400' : 'text-slate-400'}`}>генераций</div>
                   </div>
                   <p className={`text-slate-500 mb-8 flex-grow ${plan.highlight ? 'text-slate-600' : ''}`}>
                     {plan.name === 'Basic' && 'Подходит для первых тестов и личного использования.'}
@@ -376,7 +465,7 @@ export const LandingPage: React.FC = () => {
 
             <div className="mt-12 text-center">
               <p className="text-sm text-slate-500 bg-slate-50 inline-block px-6 py-3 rounded-full border border-slate-200">
-                <i className="fa-solid fa-circle-exclamation text-orange-500 mr-2" /> Действия списываются в первую очередь. Когда они заканчиваются — используются ⭐️звезды.
+                <i className="fa-solid fa-circle-exclamation text-orange-500 mr-2" /> Генерации по подписке списываются в первую очередь. Когда они заканчиваются — используются ⭐️звезды.
               </p>
             </div>
           </div>

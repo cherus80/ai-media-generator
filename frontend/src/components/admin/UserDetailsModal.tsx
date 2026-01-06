@@ -162,7 +162,7 @@ export const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Freemium действий</p>
+                        <p className="text-sm text-gray-600">Freemium генераций</p>
                         <p className="text-2xl font-bold text-green-600">
                           {userDetails.user.freemium_actions_remaining}
                         </p>

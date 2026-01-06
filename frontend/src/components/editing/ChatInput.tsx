@@ -149,6 +149,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     }
   };
 
+  const hintTextMobile =
+    attachmentsHint === undefined ? 'Референсы через скрепку' : attachmentsHint;
+  const hintTextDesktop =
+    attachmentsHint === undefined
+      ? 'Прикрепляйте референсы через скрепку слева'
+      : attachmentsHint;
+  const showHint = Boolean(hintTextMobile);
+
   return (
     <div className="border-2 border-primary-100 backdrop-blur-md bg-gradient-to-r from-white via-white to-primary-50/60 px-3 sm:px-5 py-4 sm:py-5 shadow-soft rounded-2xl mb-10 shadow-lg shadow-primary-100/60">
       <div className="max-w-4xl mx-auto">
@@ -156,14 +164,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           <span className="text-sm font-semibold text-dark-700">
             Поле ввода запроса
           </span>
-          <span className="text-xs text-primary-600 font-medium">
-            <span className="inline sm:hidden">
-              {attachmentsHint || 'Референсы через скрепку'}
+          {showHint && (
+            <span className="text-xs text-primary-600 font-medium">
+              <span className="inline sm:hidden">{hintTextMobile}</span>
+              <span className="hidden sm:inline">{hintTextDesktop}</span>
             </span>
-            <span className="hidden sm:inline">
-              {attachmentsHint || 'Прикрепляйте референсы через скрепку слева'}
-            </span>
-          </span>
+          )}
         </div>
         <div className="flex flex-wrap items-end gap-2 sm:gap-3">
           {/* Attach button слева */}
@@ -269,7 +275,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               </Badge>
               {hasActiveSubscription && (
                 <Badge variant="primary" size="sm" dot>
-                  Действия: {Math.max(user.subscription_ops_remaining || 0, 0)} / {user.subscription_ops_limit ?? 0}
+                  Генерации: {Math.max(user.subscription_ops_remaining || 0, 0)} / {user.subscription_ops_limit ?? 0}
                 </Badge>
               )}
             </div>

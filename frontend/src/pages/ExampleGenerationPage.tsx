@@ -72,7 +72,7 @@ export const ExampleGenerationPage: React.FC = () => {
                 placeholder="Опишите желаемый результат..."
                 prefillMessage={prompt}
                 requireAttachments
-                attachmentsHint="Фото обязательно через скрепку слева (можно несколько)"
+                attachmentsHint=""
                 attachmentTooltip="Нужно обязательно прикрепить фото (можно несколько)"
               />
             </div>

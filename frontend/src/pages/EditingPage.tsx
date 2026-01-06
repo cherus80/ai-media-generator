@@ -156,7 +156,7 @@ export const EditingPage: React.FC = () => {
       return true;
     }
     openBalanceWarning({
-      description: 'Для генерации нужно 2 ⭐️звезды или активная подписка с действиями.',
+      description: 'Для генерации нужно 2 ⭐️звезды или активная подписка с генерациями.',
       requiredCredits: 2,
       requiredActions: 1,
     });
@@ -178,7 +178,7 @@ export const EditingPage: React.FC = () => {
     openBalanceWarning({
       title: 'Недостаточно ⭐️звезд для ассистента',
       description: hasActiveSubscriptionActions
-        ? 'Для улучшения через AI нужна 1 ⭐️звезда. Генерация спишет действие по подписке.'
+        ? 'Для улучшения через AI нужна 1 ⭐️звезда. Генерация спишет 1 генерацию по подписке.'
         : 'Для улучшения через AI и последующей генерации нужно 3 ⭐️звезды (1 за ассистента и 2 за генерацию).',
       requiredCredits,
       requiredActions: hasActiveSubscriptionActions ? 1 : undefined,
@@ -410,7 +410,7 @@ export const EditingPage: React.FC = () => {
                     <div className="flex-1">
                       <h3 className="text-base font-bold text-dark-900 mb-2">Прозрачная оплата</h3>
                       <p className="text-sm text-dark-600">
-                        1 ⭐️звезда за сообщение AI. Генерация: 1 действие по подписке или 2 ⭐️звезды без подписки.
+                        1 ⭐️звезда за сообщение AI. Генерация: 1 генерация по подписке или 2 ⭐️звезды без подписки.
                       </p>
                     </div>
                   </div>

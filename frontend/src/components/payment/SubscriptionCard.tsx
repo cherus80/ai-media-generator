@@ -54,7 +54,7 @@ export const SubscriptionCard: React.FC<SubscriptionCardProps> = ({
           <span className="ml-1 text-gray-600">{tariff.currency}</span>
         </div>
         <div className="text-sm text-gray-500 mt-1 max-[360px]:text-[12px]">
-          {tariff.actions_count} действий на {tariff.duration_days} дней
+          {tariff.actions_count} генераций на {tariff.duration_days} дней
         </div>
       </div>
 

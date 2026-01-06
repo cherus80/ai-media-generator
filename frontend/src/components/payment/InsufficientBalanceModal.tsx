@@ -76,7 +76,7 @@ export const InsufficientBalanceModal: React.FC<InsufficientBalanceModalProps> =
             )}
             {typeof requiredActions === 'number' && requiredActions > 0 && (
               <Badge variant="primary" size="sm">
-                Нужно действий: {requiredActions}
+                Нужно генераций: {requiredActions}
               </Badge>
             )}
           </div>

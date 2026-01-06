@@ -1,6 +1,6 @@
 /**
  * ProfilePage Component
- * Страница профиля пользователя с балансом, подпиской, историей действий и платежей
+ * Страница профиля пользователя с балансом, подпиской, историей генераций и платежей
  */
 
 import React, { useEffect, useState } from 'react';
@@ -205,7 +205,7 @@ export const ProfilePage: React.FC = () => {
     if (hasActiveSubscription && subscriptionExpiresAt) {
       const daysText = daysLeft !== null ? `${daysLeft} дн.` : null;
       const actionsText =
-        actionsRemaining != null ? `действий осталось: ${actionsRemaining}` : null;
+        actionsRemaining != null ? `генераций осталось: ${actionsRemaining}` : null;
       const details = [actionsText, daysText].filter(Boolean).join(' · ');
       return `Активна до ${formatDate(subscriptionExpiresAt.toISOString())}${details ? ` · ${details}` : ''}`;
     }
@@ -403,7 +403,7 @@ export const ProfilePage: React.FC = () => {
                   <div className="mt-4 space-y-2">
                     {actionsRemaining != null && (
                       <div className="inline-flex items-center px-3 py-1 rounded-lg bg-white/15 text-xs font-semibold">
-                        Осталось действий по подписке: {actionsRemaining}
+                        Осталось генераций по подписке: {actionsRemaining}
                       </div>
                     )}
                     {daysLeft !== null && (

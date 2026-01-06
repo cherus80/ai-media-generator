@@ -125,7 +125,7 @@ export const usePaymentStore = create<PaymentState>()(
             type: 'subscription',
             subscription: type,
             price: tariff.price,
-            description: `${tariff.name} — ${tariff.actions_count} действий на ${tariff.duration_days} дней`,
+            description: `${tariff.name} — ${tariff.actions_count} генераций на ${tariff.duration_days} дней`,
           },
           error: null,
         });
@@ -186,7 +186,7 @@ export const usePaymentStore = create<PaymentState>()(
             duration_days: tariff.duration_days ?? 30,
             is_recommended: tariff.is_popular ?? false,
             features: [
-              `${tariff.actions_limit ?? tariff.credits_amount ?? 0} действий`,
+              `${tariff.actions_limit ?? tariff.credits_amount ?? 0} генераций`,
               `Срок ${tariff.duration_days ?? 30} дней`,
             ],
           });

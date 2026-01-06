@@ -48,7 +48,7 @@ export const PricingPage: React.FC = () => {
       <p className="text-sm text-dark-600">{tariff.description}</p>
       <p className="text-3xl font-bold text-dark-900">{Number(tariff.price)} ₽</p>
       <ul className="text-sm text-dark-700 space-y-1">
-        <li>Действий/⭐️звезд: {tariff.credits_amount ?? 0}</li>
+        <li>Генераций/⭐️звезд: {tariff.credits_amount ?? 0}</li>
         {isSubscription && tariff.duration_days && <li>Срок: {tariff.duration_days} дней</li>}
         {!isSubscription && <li>⭐️Звезды не сгорают</li>}
       </ul>
