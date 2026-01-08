@@ -81,7 +81,7 @@ export interface FittingError {
 export interface UploadedFile {
   file_id: string;
   url: string;
-  preview: string; // data URL для превью
+  preview: string; // data URL или URL с сервера для превью
   file: File; // оригинальный файл
   size: number;
   mime_type: string;

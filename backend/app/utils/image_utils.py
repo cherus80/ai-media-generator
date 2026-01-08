@@ -117,15 +117,27 @@ def normalize_image_bytes(image_bytes: bytes, fallback_ext: Optional[str] = None
     """
     try:
         with Image.open(BytesIO(image_bytes)) as im:
-            oriented = ImageOps.exif_transpose(im)
+            try:
+                oriented = ImageOps.exif_transpose(im)
+            except Exception as err:
+                logger.warning("Failed to apply EXIF orientation: %s", err)
+                oriented = im
+
             fmt = (im.format or fallback_ext or "PNG").upper()
+            if fmt in {"HEIC", "HEIF", "MPO"}:
+                fmt = "JPEG"
+
+            if fmt == "JPEG" and oriented.mode not in ("RGB", "L"):
+                oriented = oriented.convert("RGB")
+
             buf = BytesIO()
             save_kwargs = {"format": fmt}
             try:
                 oriented.save(buf, exif=b"", **save_kwargs)
             except TypeError:
                 oriented.save(buf, **save_kwargs)
-            return buf.getvalue(), fmt.lower()
+            extension = "jpg" if fmt == "JPEG" else fmt.lower()
+            return buf.getvalue(), extension
     except Exception as err:
         logger.warning("Failed to normalize image bytes: %s", err)
         return image_bytes, (fallback_ext or "png").lower()

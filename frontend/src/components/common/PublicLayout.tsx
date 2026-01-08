@@ -49,16 +49,16 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
             ))}
           </nav>
 
-          <div className="flex items-center gap-2 max-[600px]:w-full max-[600px]:flex-col max-[600px]:items-end">
+          <div className="flex items-center gap-2 max-[600px]:w-full max-[600px]:justify-end">
             <a
               href="https://t.me/+Fj-R8QqIEEg5OTE6"
               target="_blank"
               rel="noreferrer"
-              className="inline-flex px-3 py-1 rounded-full bg-white border border-primary-100 text-primary-700 text-[11px] sm:text-xs font-semibold hover:bg-primary-50 transition whitespace-nowrap max-[600px]:order-2"
+              className="inline-flex px-3 py-1 rounded-full bg-white border border-primary-100 text-primary-700 text-[11px] sm:text-xs font-semibold hover:bg-primary-50 transition whitespace-nowrap"
             >
               Наш канал в Telegram
             </a>
-            <div className="flex items-center gap-2 max-[600px]:order-1">
+            <div className="flex items-center gap-2">
               <Link
                 to="/login"
                 className="px-4 py-2 text-sm font-semibold text-primary-700 border border-primary-200 rounded-xl hover:bg-primary-50 transition"

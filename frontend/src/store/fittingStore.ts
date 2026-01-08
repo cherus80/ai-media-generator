@@ -92,13 +92,15 @@ export const useFittingStore = create<FittingState>((set, get) => ({
 
       // Загружаем на сервер
       const uploadResponse = await uploadPhoto(file);
+      const resolvedUrl = resolveUploadUrl(uploadResponse.file_url);
+      const finalPreview = shouldUseServerPreview(file) ? resolvedUrl : preview;
 
       // Сохраняем в state
       set({
         userPhoto: {
           file_id: uploadResponse.file_id,
           url: uploadResponse.file_url, // Исправлено: file_url вместо url
-          preview,
+          preview: finalPreview,
           file,
           size: uploadResponse.file_size, // Исправлено: file_size вместо size
           mime_type: uploadResponse.mime_type,
@@ -131,13 +133,15 @@ export const useFittingStore = create<FittingState>((set, get) => ({
 
       // Загружаем на сервер
       const uploadResponse = await uploadPhoto(file);
+      const resolvedUrl = resolveUploadUrl(uploadResponse.file_url);
+      const finalPreview = shouldUseServerPreview(file) ? resolvedUrl : preview;
 
       // Сохраняем в state
       set({
         itemPhoto: {
           file_id: uploadResponse.file_id,
           url: uploadResponse.file_url, // Исправлено: file_url вместо url
-          preview,
+          preview: finalPreview,
           file,
           size: uploadResponse.file_size, // Исправлено: file_size вместо size
           mime_type: uploadResponse.mime_type,
@@ -260,6 +264,19 @@ export const useFittingStore = create<FittingState>((set, get) => ({
     set({ error: null, uploadError: null });
   },
 }));
+
+const resolveUploadUrl = (url: string): string => {
+  if (!url) return url;
+  if (url.startsWith('http')) return url;
+  const baseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000')
+    .replace(/\/$/, '')
+    .replace(/\/api$/, '');
+  if (!baseUrl) return url;
+  return `${baseUrl}${url.startsWith('/') ? url : `/${url}`}`;
+};
+
+const shouldUseServerPreview = (file: File): boolean =>
+  /^image\/(heic|heif|mpo)/i.test(file.type);
 
 /**
  * Утилита для создания preview изображения (data URL)

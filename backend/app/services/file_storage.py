@@ -239,7 +239,7 @@ def get_file_by_id(file_id: UUID) -> Optional[Path]:
     upload_dir = _ensure_upload_dir_exists()
 
     # Поиск файла с любым расширением (приоритет JPEG/PNG)
-    for ext in ['jpg', 'jpeg', 'png', 'webp', 'mp4', 'webm', 'mov']:
+    for ext in ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'mpo', 'mp4', 'webm', 'mov']:
         file_path = upload_dir / f"{file_id}.{ext}"
         if file_path.exists():
             return file_path

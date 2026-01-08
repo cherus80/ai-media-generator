@@ -121,9 +121,6 @@ export const HomePage: React.FC = () => {
                       <h3 className="text-lg font-bold text-dark-900">
                         {example.title || 'Без названия'}
                       </h3>
-                      <p className="text-sm text-dark-600 line-clamp-4 whitespace-pre-line">
-                        {example.prompt}
-                      </p>
                       <button
                         onClick={() => {
                           incrementExampleUse(example.id).catch(() => undefined);

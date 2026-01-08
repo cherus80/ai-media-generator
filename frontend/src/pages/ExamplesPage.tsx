@@ -179,9 +179,6 @@ export const ExamplesPage: React.FC = () => {
                           <h3 className="text-lg font-bold text-slate-900">
                             {item.title || 'Без названия'}
                           </h3>
-                          <p className="text-sm text-slate-600 line-clamp-4 whitespace-pre-line">
-                            {item.prompt}
-                          </p>
                           {item.tags.length > 0 && (
                             <div className="flex flex-wrap gap-2 text-xs text-slate-600">
                               {item.tags.map((tag) => (
@@ -285,9 +282,6 @@ export const ExamplesPage: React.FC = () => {
                         <h3 className="text-lg font-bold text-slate-900">
                           {item.title || 'Без названия'}
                         </h3>
-                        <p className="text-sm text-slate-600 line-clamp-5 whitespace-pre-line">
-                          {item.prompt}
-                        </p>
                         {item.tags.length > 0 && (
                           <div className="flex flex-wrap gap-2 text-xs text-slate-600">
                             {item.tags.map((tag) => (

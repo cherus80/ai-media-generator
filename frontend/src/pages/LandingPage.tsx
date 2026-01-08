@@ -304,8 +304,8 @@ export const LandingPage: React.FC = () => {
         <section className="py-20 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 mb-3">ТОП 6</p>
-              <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900">Самые популярные образцы</h2>
+              <h2 className="text-3xl md:text-4xl font-bold gradient-text mb-2">ТОП 6</h2>
+              <p className="text-xl md:text-2xl font-extrabold text-slate-900">Самые популярные образцы</p>
               <p className="text-slate-500 mt-4 max-w-2xl mx-auto">
                 Шесть образцов, по которым чаще всего запускают генерацию.
               </p>
@@ -337,9 +337,6 @@ export const LandingPage: React.FC = () => {
                       <h3 className="text-lg font-bold text-slate-900">
                         {item.title || 'Без названия'}
                       </h3>
-                      <p className="text-sm text-slate-600 line-clamp-4 whitespace-pre-line">
-                        {item.prompt}
-                      </p>
                       <Link
                         to="/register"
                         className="mt-auto px-4 py-2 rounded-lg bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-semibold text-sm hover:shadow-lg transition text-center"
