@@ -95,7 +95,10 @@ async def upload_instruction_video(
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Не удалось сохранить файл: {exc}",
+            detail=(
+                "Не удалось сохранить файл на сервере. "
+                "Попробуйте повторить загрузку позже."
+            ),
         )
 
     return InstructionUploadResponse(
@@ -125,7 +128,10 @@ async def upload_instruction_image(
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Не удалось сохранить файл: {exc}",
+            detail=(
+                "Не удалось сохранить файл на сервере. "
+                "Попробуйте повторить загрузку позже."
+            ),
         )
 
     return InstructionUploadResponse(
@@ -155,7 +161,10 @@ async def upload_example_image(
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Не удалось сохранить файл: {exc}",
+            detail=(
+                "Не удалось сохранить файл на сервере. "
+                "Попробуйте повторить загрузку позже."
+            ),
         )
 
     return InstructionUploadResponse(

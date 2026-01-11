@@ -9,6 +9,7 @@ import {
 } from '../../api/admin';
 import { FileUpload } from '../common/FileUpload';
 import type { GenerationExampleAdminItem } from '../../types/content';
+import { getUploadErrorMessage } from '../../utils/uploadErrors';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 
@@ -75,7 +76,14 @@ export const ExamplesManager: React.FC = () => {
       }
       toast.success('Изображение загружено');
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail || 'Не удалось загрузить изображение');
+      toast.error(
+        getUploadErrorMessage(err, {
+          kind: 'image',
+          maxSizeMb: 10,
+          allowedTypesLabel: 'JPEG, PNG, WebP, HEIC/HEIF, MPO',
+          fallback: 'Не удалось загрузить изображение. Попробуйте еще раз.',
+        })
+      );
     } finally {
       setUploadingId(null);
     }

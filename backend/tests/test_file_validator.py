@@ -63,7 +63,7 @@ class TestValidateImageFile:
         with pytest.raises(HTTPException) as exc_info:
             await validate_image_file(file)
         assert exc_info.value.status_code == 400
-        assert "Invalid file type" in exc_info.value.detail
+        assert "Неподдерживаемый формат" in exc_info.value.detail
 
     @pytest.mark.asyncio
     async def test_file_too_large(self):
@@ -78,7 +78,7 @@ class TestValidateImageFile:
         with pytest.raises(HTTPException) as exc_info:
             await validate_image_file(file)
         assert exc_info.value.status_code == 413
-        assert "File too large" in exc_info.value.detail
+        assert "Файл слишком большой" in exc_info.value.detail
 
     @pytest.mark.asyncio
     async def test_invalid_magic_bytes_jpeg(self):
@@ -94,7 +94,7 @@ class TestValidateImageFile:
         with pytest.raises(HTTPException) as exc_info:
             await validate_image_file(file)
         assert exc_info.value.status_code == 400
-        assert "Invalid image file signature" in exc_info.value.detail
+        assert "Файл поврежден" in exc_info.value.detail
 
     @pytest.mark.asyncio
     async def test_invalid_magic_bytes_png(self):
@@ -109,7 +109,7 @@ class TestValidateImageFile:
         with pytest.raises(HTTPException) as exc_info:
             await validate_image_file(file)
         assert exc_info.value.status_code == 400
-        assert "Invalid image file signature" in exc_info.value.detail
+        assert "Файл поврежден" in exc_info.value.detail
 
     @pytest.mark.asyncio
     async def test_mime_type_mismatch(self):

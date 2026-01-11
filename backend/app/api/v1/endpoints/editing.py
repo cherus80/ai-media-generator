@@ -100,7 +100,10 @@ async def upload_base_image(
         logger.error(f"Failed to save base image: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to save file: {str(e)}"
+            detail=(
+                "Не удалось сохранить файл на сервере. "
+                "Попробуйте повторить загрузку позже."
+            ),
         )
 
 
@@ -145,7 +148,10 @@ async def upload_attachment(
         logger.error(f"Failed to save attachment: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to save attachment: {str(e)}"
+            detail=(
+                "Не удалось сохранить файл на сервере. "
+                "Попробуйте повторить загрузку позже."
+            ),
         )
 
 

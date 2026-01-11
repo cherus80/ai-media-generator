@@ -18,6 +18,7 @@ import {
 } from '../api/fitting';
 import { useAuthStore } from './authStore';
 import toast from 'react-hot-toast';
+import { getUploadErrorMessage } from '../utils/uploadErrors';
 
 interface FittingState {
   // State: загруженные файлы
@@ -80,11 +81,15 @@ export const useFittingStore = create<FittingState>((set, get) => ({
     try {
       // Валидация на клиенте
       if (!file.type.match(/^image\/(jpeg|png|webp|heic|heif|mpo)$/)) {
-        throw new Error('Поддерживаются JPEG, PNG, WebP, HEIC/HEIF, MPO');
+        throw new Error(
+          'Неподдерживаемый формат. Используйте JPEG, PNG, WebP, HEIC/HEIF или MPO.'
+        );
       }
 
       if (file.size > 10 * 1024 * 1024) {
-        throw new Error('Размер файла не должен превышать 10MB');
+        throw new Error(
+          'Файл слишком большой. Максимальный размер: 10MB. Сожмите изображение или выберите файл меньшего размера.'
+        );
       }
 
       // Создаём preview
@@ -108,9 +113,14 @@ export const useFittingStore = create<FittingState>((set, get) => ({
         uploadError: null,
       });
     } catch (error: any) {
-      const errorMessage = error.response?.data?.detail || error.message || 'Ошибка загрузки фото';
+      const errorMessage = getUploadErrorMessage(error, {
+        kind: 'image',
+        maxSizeMb: 10,
+        allowedTypesLabel: 'JPEG, PNG, WebP, HEIC/HEIF, MPO',
+        fallback: 'Не удалось загрузить фото. Попробуйте еще раз.',
+      });
       set({ uploadError: errorMessage });
-      throw error;
+      throw new Error(errorMessage);
     }
   },
 
@@ -121,11 +131,15 @@ export const useFittingStore = create<FittingState>((set, get) => ({
     try {
       // Валидация на клиенте
       if (!file.type.match(/^image\/(jpeg|png|webp|heic|heif|mpo)$/)) {
-        throw new Error('Поддерживаются JPEG, PNG, WebP, HEIC/HEIF, MPO');
+        throw new Error(
+          'Неподдерживаемый формат. Используйте JPEG, PNG, WebP, HEIC/HEIF или MPO.'
+        );
       }
 
       if (file.size > 10 * 1024 * 1024) {
-        throw new Error('Размер файла не должен превышать 10MB');
+        throw new Error(
+          'Файл слишком большой. Максимальный размер: 10MB. Сожмите изображение или выберите файл меньшего размера.'
+        );
       }
 
       // Создаём preview
@@ -149,9 +163,14 @@ export const useFittingStore = create<FittingState>((set, get) => ({
         uploadError: null,
       });
     } catch (error: any) {
-      const errorMessage = error.response?.data?.detail || error.message || 'Ошибка загрузки фото';
+      const errorMessage = getUploadErrorMessage(error, {
+        kind: 'image',
+        maxSizeMb: 10,
+        allowedTypesLabel: 'JPEG, PNG, WebP, HEIC/HEIF, MPO',
+        fallback: 'Не удалось загрузить фото. Попробуйте еще раз.',
+      });
       set({ uploadError: errorMessage });
-      throw error;
+      throw new Error(errorMessage);
     }
   },
 

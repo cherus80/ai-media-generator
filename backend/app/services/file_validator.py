@@ -60,14 +60,29 @@ async def validate_image_file(file: UploadFile) -> bool:
     if not file.content_type:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File content type is missing"
+            detail=(
+                "Не удалось определить тип файла. "
+                "Выберите изображение в поддерживаемом формате и попробуйте снова."
+            ),
         )
 
-    allowed_mime_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'image/mpo']
+    allowed_mime_types = [
+        'image/jpeg',
+        'image/jpg',
+        'image/png',
+        'image/webp',
+        'image/heic',
+        'image/heif',
+        'image/mpo',
+    ]
+    allowed_types_label = "JPEG, PNG, WebP, HEIC/HEIF, MPO"
     if file.content_type not in allowed_mime_types:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid file type. Allowed types: {', '.join(allowed_mime_types)}"
+            detail=(
+                "Неподдерживаемый формат файла. "
+                f"Используйте {allowed_types_label}."
+            ),
         )
 
     # Чтение файла для проверки
@@ -82,13 +97,17 @@ async def validate_image_file(file: UploadFile) -> bool:
     if file_size > max_size:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=f"File too large. Maximum size: {settings.MAX_FILE_SIZE_MB}MB"
+            detail=(
+                "Файл слишком большой. "
+                f"Максимальный размер: {settings.MAX_FILE_SIZE_MB}MB. "
+                "Сожмите изображение или выберите файл меньшего размера."
+            ),
         )
 
     if file_size == 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File is empty"
+            detail="Файл пустой. Выберите изображение и попробуйте снова.",
         )
 
     # Проверка magic bytes (сигнатуры файла)
@@ -122,7 +141,10 @@ async def validate_image_file(file: UploadFile) -> bool:
     if not is_valid_signature:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid image file signature"
+            detail=(
+                "Файл поврежден или не является изображением. "
+                "Пересохраните его или выберите другой файл."
+            ),
         )
 
     # Дополнительная проверка через Pillow (imghdr deprecated с Python 3.11)
@@ -144,7 +166,11 @@ async def validate_image_file(file: UploadFile) -> bool:
         if image_format not in allowed_formats:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid image format detected: {image_format}"
+                detail=(
+                    "Не удалось определить корректный формат изображения "
+                    f"({image_format or 'неизвестный'}). "
+                    "Сохраните файл в JPEG/PNG/WebP/HEIC и попробуйте снова."
+                ),
             )
 
         # Закрываем изображение
@@ -153,9 +179,22 @@ async def validate_image_file(file: UploadFile) -> bool:
     except HTTPException:
         raise
     except Exception as e:
+        detail_text = str(e)
+        detail_text_lower = detail_text.lower()
+        if "dimensions" in detail_text_lower or "resolution" in detail_text_lower:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    "Недопустимое разрешение изображения. "
+                    "Уменьшите ширину/высоту и попробуйте снова."
+                ),
+            )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Failed to validate image: {str(e)}"
+            detail=(
+                "Не удалось проверить изображение. "
+                "Пересохраните файл или выберите другое изображение."
+            ),
         )
     finally:
         # Возвращаем указатель в начало
@@ -176,14 +215,21 @@ async def validate_video_file(file: UploadFile) -> bool:
     if not file.content_type:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File content type is missing"
+            detail=(
+                "Не удалось определить тип видеофайла. "
+                "Выберите видео в формате MP4/WebM/MOV и попробуйте снова."
+            ),
         )
 
     allowed_mime_types = ['video/mp4', 'video/webm', 'video/quicktime']
+    allowed_video_label = "MP4, WebM, MOV"
     if file.content_type not in allowed_mime_types:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid file type. Allowed types: {', '.join(allowed_mime_types)}"
+            detail=(
+                "Неподдерживаемый формат видео. "
+                f"Используйте {allowed_video_label}."
+            ),
         )
 
     content = await file.read()
@@ -194,13 +240,17 @@ async def validate_video_file(file: UploadFile) -> bool:
     if file_size > max_size:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=f"File too large. Maximum size: {settings.MAX_VIDEO_FILE_SIZE_MB}MB"
+            detail=(
+                "Видео слишком большое. "
+                f"Максимальный размер: {settings.MAX_VIDEO_FILE_SIZE_MB}MB. "
+                "Сожмите видео или выберите файл меньшего размера."
+            ),
         )
 
     if file_size == 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File is empty"
+            detail="Файл пустой. Выберите видеофайл и попробуйте снова.",
         )
 
     is_valid_signature = False
@@ -213,7 +263,10 @@ async def validate_video_file(file: UploadFile) -> bool:
     if not is_valid_signature:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid video file signature"
+            detail=(
+                "Файл поврежден или не является видео. "
+                "Загрузите корректный файл и попробуйте снова."
+            ),
         )
 
     await file.seek(0)

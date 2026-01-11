@@ -6,6 +6,10 @@
 import React, { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import clsx from 'clsx';
+import {
+  buildAcceptedTypesLabel,
+  getDropzoneErrorMessage,
+} from '../../utils/uploadErrors';
 
 interface FileUploadProps {
   onFileSelect: (file: File) => void;
@@ -60,8 +64,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   });
 
   // Ошибки валидации
-  const validationError = fileRejections.length > 0
-    ? fileRejections[0].errors[0].message
+  const validationError = fileRejections.length > 0 && fileRejections[0].errors.length > 0
+    ? getDropzoneErrorMessage(fileRejections[0].errors[0], {
+        maxSizeBytes: maxSize,
+        allowedTypesLabel: buildAcceptedTypesLabel(accept),
+      })
     : null;
 
   const displayError = error || validationError;

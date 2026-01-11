@@ -24,6 +24,7 @@ import {
 import { useAuthStore } from './authStore';
 import toast from 'react-hot-toast';
 import { getAuthToken } from '../utils/authToken';
+import { getUploadErrorMessage } from '../utils/uploadErrors';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000')
   .replace(/\/$/, '')
@@ -105,11 +106,15 @@ export const useChatStore = create<ChatState>()(
         /\.(heic|heif|mpo)$/i.test(file.name);
 
       if (!isSupportedType) {
-        throw new Error('Поддерживаются JPEG, PNG, WebP, HEIC/HEIF и MPO форматы');
+        throw new Error(
+          'Неподдерживаемый формат. Используйте JPEG, PNG, WebP, HEIC/HEIF или MPO.'
+        );
       }
 
       if (file.size > 10 * 1024 * 1024) {
-        throw new Error('Размер файла не должен превышать 10MB');
+        throw new Error(
+          'Файл слишком большой. Максимальный размер: 10MB. Сожмите изображение или выберите файл меньшего размера.'
+        );
       }
 
       // Создаём preview
@@ -141,9 +146,14 @@ export const useChatStore = create<ChatState>()(
         uploadError: null,
       });
     } catch (error: any) {
-      const errorMessage = error.response?.data?.detail || error.message || 'Ошибка загрузки изображения';
+      const errorMessage = getUploadErrorMessage(error, {
+        kind: 'image',
+        maxSizeMb: 10,
+        allowedTypesLabel: 'JPEG, PNG, WebP, HEIC/HEIF, MPO',
+        fallback: 'Не удалось загрузить изображение. Попробуйте еще раз.',
+      });
       set({ uploadError: errorMessage, isLoading: false });
-      throw error;
+      throw new Error(errorMessage);
     }
   },
 

@@ -9,6 +9,7 @@ import {
   uploadInstructionImage,
 } from '../../api/admin';
 import type { InstructionAdminItem, InstructionType } from '../../types/content';
+import { getUploadErrorMessage } from '../../utils/uploadErrors';
 
 interface DraftInstruction extends InstructionAdminItem {
   draftTitle: string;
@@ -30,7 +31,9 @@ const isVideoSizeAllowed = (file: File): boolean => {
   if (file.size <= MAX_VIDEO_SIZE_BYTES) {
     return true;
   }
-  toast.error(`Файл слишком большой. Максимум ${MAX_VIDEO_SIZE_MB}MB.`);
+  toast.error(
+    `Файл слишком большой. Максимальный размер: ${MAX_VIDEO_SIZE_MB}MB. Сожмите видео или выберите файл меньшего размера.`
+  );
   return false;
 };
 
@@ -128,7 +131,14 @@ export const InstructionsManager: React.FC = () => {
       setNewContent(uploaded.file_url);
       toast.success('Видео загружено');
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail || 'Не удалось загрузить видео');
+      toast.error(
+        getUploadErrorMessage(err, {
+          kind: 'video',
+          maxSizeMb: MAX_VIDEO_SIZE_MB,
+          allowedTypesLabel: 'MP4, WebM, MOV',
+          fallback: 'Не удалось загрузить видео. Попробуйте еще раз.',
+        })
+      );
     } finally {
       setUploadingNew(false);
     }
@@ -148,7 +158,14 @@ export const InstructionsManager: React.FC = () => {
       });
       toast.success('Изображение добавлено');
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail || 'Не удалось загрузить изображение');
+      toast.error(
+        getUploadErrorMessage(err, {
+          kind: 'image',
+          maxSizeMb: 10,
+          allowedTypesLabel: 'JPEG, PNG, WebP, HEIC/HEIF, MPO',
+          fallback: 'Не удалось загрузить изображение. Попробуйте еще раз.',
+        })
+      );
     } finally {
       setUploadingImageNew(false);
     }
@@ -171,7 +188,14 @@ export const InstructionsManager: React.FC = () => {
       );
       toast.success('Видео загружено');
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail || 'Не удалось загрузить видео');
+      toast.error(
+        getUploadErrorMessage(err, {
+          kind: 'video',
+          maxSizeMb: MAX_VIDEO_SIZE_MB,
+          allowedTypesLabel: 'MP4, WebM, MOV',
+          fallback: 'Не удалось загрузить видео. Попробуйте еще раз.',
+        })
+      );
     } finally {
       setUploadingId(null);
     }
@@ -199,7 +223,14 @@ export const InstructionsManager: React.FC = () => {
       );
       toast.success('Изображение добавлено');
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail || 'Не удалось загрузить изображение');
+      toast.error(
+        getUploadErrorMessage(err, {
+          kind: 'image',
+          maxSizeMb: 10,
+          allowedTypesLabel: 'JPEG, PNG, WebP, HEIC/HEIF, MPO',
+          fallback: 'Не удалось загрузить изображение. Попробуйте еще раз.',
+        })
+      );
     } finally {
       setUploadingImageId(null);
     }

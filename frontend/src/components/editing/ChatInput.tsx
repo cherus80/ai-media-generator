@@ -11,6 +11,7 @@ import { uploadAttachment } from '../../api/editing';
 import { Badge } from '../ui/Badge';
 import type { ChatAttachment } from '../../types/editing';
 import toast from 'react-hot-toast';
+import { getUploadErrorMessage } from '../../utils/uploadErrors';
 
 interface ChatInputProps {
   onSend: (message: string, attachments?: ChatAttachment[]) => void;
@@ -107,15 +108,26 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       return;
     }
 
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'image/mpo'];
+    const allowedTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+      'image/heic',
+      'image/heif',
+      'image/mpo',
+    ];
     if (!allowedTypes.includes(file.type)) {
-      toast.error('Поддерживаются изображения JPEG/PNG/WebP/HEIC');
+      toast.error(
+        'Неподдерживаемый формат. Используйте JPEG, PNG, WebP, HEIC/HEIF или MPO.'
+      );
       e.target.value = '';
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      toast.error('Размер файла до 10MB');
+      toast.error(
+        'Файл слишком большой. Максимальный размер: 10MB. Сожмите изображение или выберите файл меньшего размера.'
+      );
       e.target.value = '';
       return;
     }
@@ -130,7 +142,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       }));
       toast.success('Файл прикреплён');
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail || err?.message || 'Не удалось загрузить файл');
+      toast.error(
+        getUploadErrorMessage(err, {
+          kind: 'image',
+          maxSizeMb: 10,
+          allowedTypesLabel: 'JPEG, PNG, WebP, HEIC/HEIF, MPO',
+          fallback: 'Не удалось загрузить файл. Попробуйте еще раз.',
+        })
+      );
     } finally {
       setIsUploadingAttachment(false);
       e.target.value = '';
