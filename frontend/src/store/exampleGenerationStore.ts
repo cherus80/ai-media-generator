@@ -9,6 +9,8 @@ import { generateExampleImage, pollEditingStatus } from '../api/editing';
 import { useAuthStore } from './authStore';
 import toast from 'react-hot-toast';
 
+const MAX_PROMPT_LENGTH = 2000;
+
 interface ExampleGenerationState {
   isGenerating: boolean;
   taskId: string | null;
@@ -36,6 +38,9 @@ export const useExampleGenerationStore = create<ExampleGenerationState>((set, ge
     const trimmedPrompt = prompt.trim();
     if (!trimmedPrompt) {
       throw new Error('Промпт не может быть пустым');
+    }
+    if (trimmedPrompt.length > MAX_PROMPT_LENGTH) {
+      throw new Error(`Промпт превышает ${MAX_PROMPT_LENGTH} символов`);
     }
     if (!attachments || attachments.length === 0) {
       throw new Error('Необходимо прикрепить хотя бы одно фото');
