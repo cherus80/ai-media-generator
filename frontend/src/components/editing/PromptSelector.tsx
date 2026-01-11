@@ -19,18 +19,25 @@ export const PromptSelector: React.FC<PromptSelectorProps> = ({
   onSelect,
   isGenerating = false,
 }) => {
+  const MAX_PROMPT_LENGTH = 2000;
   const [selectedPrompt, setSelectedPrompt] = React.useState<string | null>(null);
   const [editingPrompt, setEditingPrompt] = React.useState<string | null>(null);
   const [customPrompt, setCustomPrompt] = React.useState<string>('');
   const promptAssistantModel =
     import.meta.env.VITE_PROMPT_ASSISTANT_MODEL || 'AI-ассистент';
   const isSinglePrompt = prompts.length === 1;
+  const customPromptLength = customPrompt.trim().length;
+  const isCustomPromptTooLong = customPromptLength > MAX_PROMPT_LENGTH;
 
   if (prompts.length === 0) {
     return null;
   }
 
   const handleSelect = (prompt: string) => {
+    const normalizedPrompt = prompt.trim();
+    if (!normalizedPrompt || normalizedPrompt.length > MAX_PROMPT_LENGTH) {
+      return;
+    }
     setSelectedPrompt(prompt);
     onSelect(prompt);
   };
@@ -41,8 +48,9 @@ export const PromptSelector: React.FC<PromptSelectorProps> = ({
   };
 
   const handleSaveEdit = () => {
-    if (customPrompt.trim()) {
-      handleSelect(customPrompt.trim());
+    const normalizedPrompt = customPrompt.trim();
+    if (normalizedPrompt && normalizedPrompt.length <= MAX_PROMPT_LENGTH) {
+      handleSelect(normalizedPrompt);
       setEditingPrompt(null);
       setCustomPrompt('');
     }
@@ -89,6 +97,8 @@ export const PromptSelector: React.FC<PromptSelectorProps> = ({
           const { label, icon, variant } = isSinglePrompt ? fallbackLabel : (promptLabels[index] || promptLabels[0]);
           const isEditing = editingPrompt === prompt;
           const isSelected = selectedPrompt === prompt;
+          const promptLength = prompt.trim().length;
+          const isPromptTooLong = promptLength > MAX_PROMPT_LENGTH;
 
           return (
             <motion.div
@@ -143,6 +153,16 @@ export const PromptSelector: React.FC<PromptSelectorProps> = ({
                     className="w-full px-4 py-3 glass border-2 border-primary-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 font-medium text-dark-900"
                     rows={4}
                   />
+                  <div className="mt-2 flex items-center justify-between text-xs text-dark-500">
+                    <span>
+                      {customPromptLength} / {MAX_PROMPT_LENGTH}
+                    </span>
+                    {isCustomPromptTooLong && (
+                      <span className="font-semibold text-danger-700">
+                        Превышен лимит символов
+                      </span>
+                    )}
+                  </div>
                   <div className="mt-3 flex justify-end space-x-2">
                     <Button
                       variant="outline"
@@ -155,7 +175,7 @@ export const PromptSelector: React.FC<PromptSelectorProps> = ({
                       variant="primary"
                       size="md"
                       onClick={handleSaveEdit}
-                      disabled={!customPrompt.trim()}
+                      disabled={!customPrompt.trim() || isCustomPromptTooLong}
                       icon={
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -171,11 +191,16 @@ export const PromptSelector: React.FC<PromptSelectorProps> = ({
                   <p className="text-sm text-dark-700 mb-4 leading-relaxed">
                     {prompt}
                   </p>
+                  {isPromptTooLong && (
+                    <p className="text-xs text-danger-700 font-semibold mb-3">
+                      Промпт превышает лимит {MAX_PROMPT_LENGTH} символов. Отредактируйте его перед генерацией.
+                    </p>
+                  )}
 
                   {/* Generate button */}
                   <Button
                     onClick={() => handleSelect(prompt)}
-                    disabled={isGenerating}
+                    disabled={isGenerating || isPromptTooLong}
                     variant={isSelected ? 'success' : 'primary'}
                     size="lg"
                     fullWidth

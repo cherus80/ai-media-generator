@@ -39,6 +39,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { user } = useAuthStore();
+  const MAX_PROMPT_LENGTH = 2000;
+  const warningThreshold = MAX_PROMPT_LENGTH - 500;
+  const dangerThreshold = MAX_PROMPT_LENGTH - 100;
+  const trimmedMessage = message.trim();
+  const promptLength = trimmedMessage.length;
+  const isPromptTooLong = promptLength > MAX_PROMPT_LENGTH;
 
   const hasActiveSubscription = !!(
     user?.subscription_type &&
@@ -63,8 +69,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   }, [prefillMessage, message]);
 
   const handleSubmit = () => {
-    const trimmedMessage = message.trim();
     if (!trimmedMessage || disabled || isUploadingAttachment) {
+      return;
+    }
+    if (isPromptTooLong) {
+      toast.error(
+        `Промпт превышает ${MAX_PROMPT_LENGTH} символов. Сократите текст, чтобы продолжить.`
+      );
       return;
     }
     if (requireAttachments && attachments.length === 0) {
@@ -226,11 +237,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               style={{ maxHeight: '200px' }}
             />
             {/* Hint text */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: message.length === 0 ? 1 : 0 }}
-              className="absolute right-4 bottom-3 text-xs text-dark-400 font-medium pointer-events-none hidden sm:block"
-            >
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: message.length === 0 ? 1 : 0 }}
+            className="absolute right-4 bottom-3 text-xs text-dark-400 font-medium pointer-events-none hidden sm:block"
+          >
               Enter для отправки
             </motion.div>
           </div>
@@ -239,7 +250,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           <motion.div className="flex-shrink-0" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Button
               onClick={handleSubmit}
-              disabled={!message.trim() || disabled || isUploadingAttachment || (requireAttachments && attachments.length === 0)}
+              disabled={
+                !trimmedMessage ||
+                disabled ||
+                isUploadingAttachment ||
+                isPromptTooLong ||
+                (requireAttachments && attachments.length === 0)
+              }
               variant="primary"
               size="lg"
               className="!rounded-full !p-4 shadow-glow-primary"
@@ -298,15 +315,20 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 </Badge>
               )}
             </div>
-            {message.length > 1500 && (
+            {promptLength > warningThreshold && (
               <Badge
-                variant={message.length > 1900 ? "danger" : "warning"}
+                variant={promptLength > MAX_PROMPT_LENGTH || promptLength > dangerThreshold ? 'danger' : 'warning'}
                 size="sm"
               >
-                {message.length} / 2000
+                {promptLength} / {MAX_PROMPT_LENGTH}
               </Badge>
             )}
           </motion.div>
+        )}
+        {isPromptTooLong && (
+          <div className="mt-2 text-xs font-semibold text-danger-700">
+            Промпт превышает лимит {MAX_PROMPT_LENGTH} символов. Сократите текст, чтобы запустить генерацию.
+          </div>
         )}
 
         <input

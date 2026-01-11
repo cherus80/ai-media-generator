@@ -53,6 +53,7 @@ export const EditingPage: React.FC = () => {
   const [decisionLoadingTarget, setDecisionLoadingTarget] = React.useState<'original' | 'ai' | null>(null);
   const historyLoadRef = React.useRef<string | null>(null);
   const [prefillMessage, setPrefillMessage] = React.useState('');
+  const MAX_PROMPT_LENGTH = 2000;
   const [balanceWarning, setBalanceWarning] = React.useState<{
     title?: string;
     description: string;
@@ -124,6 +125,12 @@ export const EditingPage: React.FC = () => {
   };
 
   const handlePromptSubmit = (text: string, attachments?: ChatAttachment[]) => {
+    if (text.trim().length > MAX_PROMPT_LENGTH) {
+      toast.error(
+        `Промпт превышает ${MAX_PROMPT_LENGTH} символов. Сократите текст, чтобы продолжить.`
+      );
+      return;
+    }
     setPendingPrompt(text);
     setPendingAttachments(attachments || []);
     setShowPromptDecision(true);
@@ -192,6 +199,12 @@ export const EditingPage: React.FC = () => {
       console.warn('[EditingPage] No pending prompt');
       return;
     }
+    if (pendingPrompt.trim().length > MAX_PROMPT_LENGTH) {
+      toast.error(
+        `Промпт превышает ${MAX_PROMPT_LENGTH} символов. Сократите текст, чтобы запустить генерацию.`
+      );
+      return;
+    }
     if (!ensureCanGenerate()) {
       return;
     }
@@ -230,6 +243,12 @@ export const EditingPage: React.FC = () => {
     if (!pendingPrompt) {
       return;
     }
+    if (pendingPrompt.trim().length > MAX_PROMPT_LENGTH) {
+      toast.error(
+        `Промпт превышает ${MAX_PROMPT_LENGTH} символов. Сократите текст, чтобы продолжить.`
+      );
+      return;
+    }
     if (!ensureCanUseAssistant()) {
       return;
     }
@@ -249,6 +268,12 @@ export const EditingPage: React.FC = () => {
   };
 
   const handleSelectPrompt = async (prompt: string, attachments?: ChatAttachment[]) => {
+    if (prompt.trim().length > MAX_PROMPT_LENGTH) {
+      toast.error(
+        `Промпт превышает ${MAX_PROMPT_LENGTH} символов. Сократите текст, чтобы запустить генерацию.`
+      );
+      return;
+    }
     if (!ensureCanGenerate()) {
       return;
     }

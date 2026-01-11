@@ -29,6 +29,7 @@ import { getUploadErrorMessage } from '../utils/uploadErrors';
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000')
   .replace(/\/$/, '')
   .replace(/\/api$/, '');
+const MAX_PROMPT_LENGTH = 2000;
 
 interface ChatState {
   // State: сессия чата
@@ -219,6 +220,9 @@ export const useChatStore = create<ChatState>()(
     if (!text.trim()) {
       throw new Error('Сообщение не может быть пустым');
     }
+    if (text.trim().length > MAX_PROMPT_LENGTH) {
+      throw new Error(`Промпт превышает ${MAX_PROMPT_LENGTH} символов`);
+    }
 
     set({ isSendingMessage: true, error: null, currentPrompts: null });
 
@@ -291,6 +295,10 @@ export const useChatStore = create<ChatState>()(
     if (!prompt.trim()) {
       console.error('[chatStore] Empty prompt - throwing error');
       throw new Error('Промпт не может быть пустым');
+    }
+    if (prompt.trim().length > MAX_PROMPT_LENGTH) {
+      console.error('[chatStore] Prompt too long - throwing error');
+      throw new Error(`Промпт превышает ${MAX_PROMPT_LENGTH} символов`);
     }
 
     set({
