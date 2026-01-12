@@ -52,10 +52,24 @@ from app.services.file_validator import validate_image_file
 from app.services.file_storage import save_upload_file
 from app.tasks.editing import generate_editing_task
 from app.utils.runtime_config import get_generation_providers_for_worker
+from app.utils.upload_urls import normalize_upload_url
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def _normalize_attachments(
+    attachments: Optional[List[ChatAttachment]],
+) -> Optional[List[ChatAttachment]]:
+    if not attachments:
+        return None
+    normalized: List[ChatAttachment] = []
+    for attachment in attachments:
+        data = attachment.model_dump()
+        data["url"] = normalize_upload_url(data["url"])
+        normalized.append(ChatAttachment(**data))
+    return normalized
 
 
 @router.post(
@@ -174,10 +188,11 @@ async def create_session(
     Создать новую сессию чата для редактирования изображения.
     """
     try:
+        base_image_url = normalize_upload_url(request.base_image_url)
         chat_session = await create_chat_session(
             db=db,
             user_id=current_user.id,
-            base_image_url=request.base_image_url,
+            base_image_url=base_image_url,
         )
 
         logger.info(
@@ -257,9 +272,10 @@ async def send_message(
         )
 
         # Подготовка вложений
+        safe_attachments = _normalize_attachments(request.attachments)
         attachments_payload: Optional[List[dict]] = None
-        if request.attachments:
-            attachments_payload = [attachment.model_dump() for attachment in request.attachments]
+        if safe_attachments:
+            attachments_payload = [attachment.model_dump() for attachment in safe_attachments]
 
         # Добавление сообщения пользователя в историю
         await add_message(
@@ -346,7 +362,7 @@ async def send_message(
             role="assistant",
             content=assistant_content,
             prompt=prompt,
-            attachments=request.attachments,
+            attachments=safe_attachments,
             timestamp=datetime.now().isoformat(),
         )
 
@@ -428,9 +444,10 @@ async def generate_image(
             require_active=True,
         )
 
+        safe_attachments = _normalize_attachments(request.attachments)
         attachments_payload: list[dict] = []
-        if request.attachments:
-            attachments_payload = [att.model_dump() for att in request.attachments]
+        if safe_attachments:
+            attachments_payload = [att.model_dump() for att in safe_attachments]
 
         # Добавляем сообщение пользователя в историю (для сохранения истории генераций)
         try:
@@ -536,9 +553,10 @@ async def generate_image_from_example(
     """
     Сгенерировать изображение по образцу без сохранения истории чата.
     """
+    safe_attachments = _normalize_attachments(request.attachments)
     attachments_payload: list[dict] = []
-    if request.attachments:
-        attachments_payload = [att.model_dump() for att in request.attachments]
+    if safe_attachments:
+        attachments_payload = [att.model_dump() for att in safe_attachments]
 
     base_image_urls = [
         att.get("url")

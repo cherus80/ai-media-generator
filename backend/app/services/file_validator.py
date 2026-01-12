@@ -149,6 +149,7 @@ async def validate_image_file(file: UploadFile) -> bool:
 
     # Дополнительная проверка через Pillow (imghdr deprecated с Python 3.11)
     try:
+        import warnings
         from PIL import Image
         import io
 
@@ -158,8 +159,21 @@ async def validate_image_file(file: UploadFile) -> bool:
         await file.seek(0)
 
         # Открываем изображение через Pillow для финальной проверки
-        image = Image.open(io.BytesIO(image_data))
+        Image.MAX_IMAGE_PIXELS = settings.MAX_IMAGE_PIXELS
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", Image.DecompressionBombWarning)
+            image = Image.open(io.BytesIO(image_data))
+
         image_format = image.format.lower() if image.format else None
+        width, height = image.size
+        if width * height > settings.MAX_IMAGE_PIXELS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    "Слишком большое разрешение изображения. "
+                    "Уменьшите размер и попробуйте снова."
+                ),
+            )
 
         # Проверяем формат (включая MPO и HEIC/HEIF для iPhone)
         allowed_formats = ['jpeg', 'png', 'webp', 'mpo', 'heic', 'heif']
@@ -176,6 +190,14 @@ async def validate_image_file(file: UploadFile) -> bool:
         # Закрываем изображение
         image.close()
 
+    except (Image.DecompressionBombError, Image.DecompressionBombWarning):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "Слишком большое разрешение изображения. "
+                "Уменьшите размер и попробуйте снова."
+            ),
+        )
     except HTTPException:
         raise
     except Exception as e:

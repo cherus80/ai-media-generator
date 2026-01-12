@@ -19,6 +19,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request, Header
 from sqlalchemy import select, desc, func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.db.session import get_db
 from app.api.dependencies import get_current_user, require_verified_email
 from app.models.user import User
@@ -347,7 +348,12 @@ async def yukassa_webhook(
 
         # Верификация подписи
         yukassa_client = get_yukassa_client()
-        if x_yookassa_signature:
+        if not settings.PAYMENT_MOCK_MODE:
+            if not x_yookassa_signature:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Missing signature",
+                )
             is_valid = yukassa_client.verify_webhook_signature(
                 payload=body_str,
                 signature=x_yookassa_signature,

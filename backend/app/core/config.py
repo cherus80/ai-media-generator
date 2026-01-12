@@ -182,6 +182,10 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = Field(default="./uploads")
     MAX_FILE_SIZE_MB: int = Field(default=10)
     MAX_VIDEO_FILE_SIZE_MB: int = Field(default=200)
+    MAX_IMAGE_PIXELS: int = Field(
+        default=25_000_000,
+        description="Максимальное количество пикселей для изображения",
+    )
     ALLOWED_EXTENSIONS: str = Field(default="jpg,jpeg,png,webp,heic,heif,mpo")
     PHOTO_RETENTION_HOURS: int = Field(default=24, description="Хранение фото для примерки")
     CHAT_HISTORY_RETENTION_DAYS: int = Field(default=30, description="Хранение истории чата")
