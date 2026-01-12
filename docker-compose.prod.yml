@@ -62,6 +62,7 @@ services:
     environment:
       - ENVIRONMENT=production
       - DEBUG=False
+      - HOME=/home/appuser
       - POSTGRES_HOST=postgres
       - REDIS_URL=redis://redis:6379/0
       - BILLING_V5_ENABLED=${BILLING_V5_ENABLED:-true}
@@ -104,6 +105,7 @@ services:
     environment:
       - ENVIRONMENT=production
       - DEBUG=False
+      - HOME=/home/appuser
       - POSTGRES_HOST=postgres
       - REDIS_URL=redis://redis:6379/0
       - BILLING_V5_ENABLED=${BILLING_V5_ENABLED:-true}
