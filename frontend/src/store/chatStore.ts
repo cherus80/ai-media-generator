@@ -348,7 +348,7 @@ export const useChatStore = create<ChatState>()(
         const imageMessage: ChatMessage = {
           id: uuidv4(),
           role: 'assistant',
-          content: `Изображение готово! Промпт: "${prompt}"`,
+          content: 'Изображение готово!',
           image_url: resolvedResultUrl,
           attachments,
           timestamp: new Date(),

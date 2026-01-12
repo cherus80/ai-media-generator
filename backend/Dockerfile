@@ -24,8 +24,11 @@ RUN pip install --no-cache-dir --upgrade pip && \
 # Копирование кода приложения
 COPY . .
 
-# Создание директории для uploads
-RUN mkdir -p /app/uploads
+# Создание директории для uploads/logs и пользователя приложения
+RUN groupadd -g 10001 appuser \
+    && useradd -u 10001 -g appuser -m appuser \
+    && mkdir -p /app/uploads /app/logs \
+    && chown -R appuser:appuser /app/uploads /app/logs
 
 # Установка переменных окружения
 ENV PYTHONUNBUFFERED=1

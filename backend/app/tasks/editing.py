@@ -416,7 +416,7 @@ def generate_editing_task(
                     chat.base_image_url = image_url
                     chat.add_message(
                         role="assistant",
-                        content=f"Image edited successfully with prompt: {prompt}",
+                        content="Изображение готово!",
                         image_url=image_url,
                         attachments=attachment_items or None,
                     )
