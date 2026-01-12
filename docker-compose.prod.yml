@@ -155,7 +155,7 @@ services:
       - ai_image_bot_network
     command: >
       sh -c "chown -R 10001:10001 /app/logs
-      && exec celery -A app.tasks.celery_app beat --loglevel=info --uid=10001 --gid=10001"
+      && exec celery -A app.tasks.celery_app beat --loglevel=info --uid=10001 --gid=10001 -s /app/logs/celerybeat-schedule"
     logging:
       driver: "json-file"
       options:
