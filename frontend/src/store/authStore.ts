@@ -25,6 +25,7 @@ import type { VKOAuthPKCERequest } from '../types/auth';
 import { PD_CONSENT_VERSION } from '../constants/pdConsent';
 import { setAuthToken } from '../utils/authToken';
 import { getStoredPdConsentVersion, setStoredPdConsentVersion } from '../utils/pdConsentStorage';
+import { registerPendingReferral } from '../utils/referralRegistration';
 
 interface AuthState {
   // State
@@ -117,6 +118,7 @@ export const useAuthStore = create<AuthState>()(
             });
             setAuthToken(response.access_token);
             setStoredPdConsentVersion(acceptedVersion);
+            await registerPendingReferral();
           } catch (error: any) {
             const errorMessage =
               error.response?.data?.detail || error.message || 'Не удалось завершить регистрацию';
@@ -153,6 +155,7 @@ export const useAuthStore = create<AuthState>()(
             });
             setAuthToken(response.access_token);
             setStoredPdConsentVersion(acceptedVersion);
+            await registerPendingReferral();
           } catch (error: any) {
             const errorMessage = error.response?.data?.detail || error.message || 'Ошибка входа';
             set({
@@ -188,6 +191,7 @@ export const useAuthStore = create<AuthState>()(
             });
             setAuthToken(response.access_token);
             setStoredPdConsentVersion(acceptedVersion);
+            await registerPendingReferral();
           } catch (error: any) {
             const errorMessage =
               error.response?.data?.detail || error.message || 'Не удалось войти через Google';
@@ -224,6 +228,7 @@ export const useAuthStore = create<AuthState>()(
             });
             setAuthToken(response.access_token);
             setStoredPdConsentVersion(acceptedVersion);
+            await registerPendingReferral();
           } catch (error: any) {
             const errorMessage =
               error.response?.data?.detail || error.message || 'Не удалось войти через VK';
@@ -257,6 +262,7 @@ export const useAuthStore = create<AuthState>()(
               ...computeAccessFlags(response.user),
             });
             setAuthToken(response.access_token);
+            await registerPendingReferral();
           } catch (error: any) {
             const errorMessage =
               error.response?.data?.detail || error.message || 'Не удалось войти через VK';
@@ -298,6 +304,7 @@ export const useAuthStore = create<AuthState>()(
               ...computeAccessFlags(response.user),
             });
             setAuthToken(response.access_token);
+            await registerPendingReferral();
           } catch (error: any) {
             const errorMessage =
               error.response?.data?.detail || error.message || 'Не удалось войти через Telegram';

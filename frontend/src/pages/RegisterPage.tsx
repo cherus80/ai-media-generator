@@ -4,12 +4,13 @@ import { useAuth, useAuthStore } from '../store/authStore';
 import { GoogleSignInButton } from '../components/auth/GoogleSignInButton';
 import { VKSignInButton } from '../components/auth/VKSignInButton';
 import { validateRegisterForm, checkPasswordStrength, getPasswordStrengthLabel, getPasswordStrengthColor } from '../utils/passwordValidation';
-import { registerReferral } from '../api/referral';
+import { getStoredReferralCode, storeReferralCode } from '../utils/referralStorage';
+import { registerPendingReferral } from '../utils/referralRegistration';
 import { PD_CONSENT_VERSION } from '../constants/pdConsent';
 
 export function RegisterPage() {
   const navigate = useNavigate();
-  const { registerWithEmail, isLoading, error, clearError } = useAuth();
+  const { registerWithEmail, isLoading, error, clearError, isAuthenticated } = useAuth();
   const [searchParams] = useSearchParams();
 
   const [formData, setFormData] = useState({
@@ -33,10 +34,25 @@ export function RegisterPage() {
   useEffect(() => {
     const refCode = searchParams.get('ref');
     if (refCode) {
+      storeReferralCode(refCode);
       setReferralCode(refCode);
       console.log('Referral code detected:', refCode);
+      return;
+    }
+
+    const storedCode = getStoredReferralCode();
+    if (storedCode) {
+      setReferralCode(storedCode);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !referralCode) {
+      return;
+    }
+
+    registerPendingReferral();
+  }, [isAuthenticated, referralCode]);
 
   useEffect(() => {
     if (pdConsentVersionAccepted === PD_CONSENT_VERSION) {
@@ -67,17 +83,6 @@ export function RegisterPage() {
         consent_version: PD_CONSENT_VERSION,
       });
 
-      // Если есть реферальный код, зарегистрировать реферала
-      if (referralCode) {
-        try {
-          await registerReferral({ referral_code: referralCode });
-          console.log('Referral registered successfully');
-        } catch (refError) {
-          console.error('Failed to register referral:', refError);
-          // Не блокируем переход даже если реферал не зарегистрировался
-        }
-      }
-
       const nextUser = useAuthStore.getState().user;
       if (
         nextUser?.email &&
@@ -94,15 +99,6 @@ export function RegisterPage() {
   };
 
   const handleGoogleSuccess = async () => {
-    // Если есть реферальный код, зарегистрировать реферала
-    if (referralCode) {
-      try {
-        await registerReferral({ referral_code: referralCode });
-        console.log('Referral registered successfully after Google sign-in');
-      } catch (refError) {
-        console.error('Failed to register referral after Google sign-in:', refError);
-      }
-    }
     const nextUser = useAuthStore.getState().user;
     if (
       nextUser?.email &&
@@ -116,15 +112,6 @@ export function RegisterPage() {
   };
 
   const handleVKSuccess = async () => {
-    // Если есть реферальный код, зарегистрировать реферала
-    if (referralCode) {
-      try {
-        await registerReferral({ referral_code: referralCode });
-        console.log('Referral registered successfully after VK sign-in');
-      } catch (refError) {
-        console.error('Failed to register referral after VK sign-in:', refError);
-      }
-    }
     const nextUser = useAuthStore.getState().user;
     if (
       nextUser?.email &&
