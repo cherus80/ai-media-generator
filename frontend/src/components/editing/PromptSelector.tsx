@@ -19,7 +19,7 @@ export const PromptSelector: React.FC<PromptSelectorProps> = ({
   onSelect,
   isGenerating = false,
 }) => {
-  const MAX_PROMPT_LENGTH = 2000;
+  const MAX_PROMPT_LENGTH = 4000;
   const [selectedPrompt, setSelectedPrompt] = React.useState<string | null>(null);
   const [editingPrompt, setEditingPrompt] = React.useState<string | null>(null);
   const [customPrompt, setCustomPrompt] = React.useState<string>('');

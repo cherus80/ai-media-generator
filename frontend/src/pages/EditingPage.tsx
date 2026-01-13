@@ -53,7 +53,7 @@ export const EditingPage: React.FC = () => {
   const [decisionLoadingTarget, setDecisionLoadingTarget] = React.useState<'original' | 'ai' | null>(null);
   const historyLoadRef = React.useRef<string | null>(null);
   const [prefillMessage, setPrefillMessage] = React.useState('');
-  const MAX_PROMPT_LENGTH = 2000;
+  const MAX_PROMPT_LENGTH = 4000;
   const [balanceWarning, setBalanceWarning] = React.useState<{
     title?: string;
     description: string;

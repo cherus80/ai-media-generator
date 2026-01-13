@@ -62,7 +62,7 @@ class ChatMessageRequest(BaseModel):
         ...,
         description="Текст сообщения пользователя",
         min_length=1,
-        max_length=2000,
+        max_length=4000,
     )
     attachments: Optional[List[ChatAttachment]] = Field(
         default=None,
@@ -114,7 +114,7 @@ class GenerateImageRequest(BaseModel):
         ...,
         description="Промпт для генерации изображения",
         min_length=1,
-        max_length=2000,
+        max_length=4000,
     )
     attachments: Optional[List[ChatAttachment]] = Field(
         default=None,
@@ -129,7 +129,7 @@ class ExampleGenerateRequest(BaseModel):
         ...,
         description="Промпт для генерации изображения",
         min_length=1,
-        max_length=2000,
+        max_length=4000,
     )
     attachments: Optional[List[ChatAttachment]] = Field(
         default=None,

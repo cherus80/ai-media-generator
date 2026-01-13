@@ -9,7 +9,7 @@ import { generateExampleImage, pollEditingStatus } from '../api/editing';
 import { useAuthStore } from './authStore';
 import toast from 'react-hot-toast';
 
-const MAX_PROMPT_LENGTH = 2000;
+const MAX_PROMPT_LENGTH = 4000;
 
 interface ExampleGenerationState {
   isGenerating: boolean;
