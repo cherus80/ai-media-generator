@@ -36,6 +36,51 @@ def _ensure_upload_dir_exists() -> Path:
     return upload_dir
 
 
+def _resolve_upload_owner(upload_dir: Path) -> tuple[int, int]:
+    """
+    Определить UID/GID владельца для файлов в uploads.
+
+    В контейнере backend обычно работает от root, поэтому приводим файлы
+    к UID/GID celery worker, чтобы он мог перезаписывать uploads.
+    """
+    try:
+        uid = upload_dir.stat().st_uid
+        gid = upload_dir.stat().st_gid
+    except OSError:
+        uid, gid = 10001, 10001
+
+    if uid == 0 and gid == 0:
+        try:
+            uid = int(os.environ.get("APP_UID", "10001"))
+        except (TypeError, ValueError):
+            uid = 10001
+        try:
+            gid = int(os.environ.get("APP_GID", "10001"))
+        except (TypeError, ValueError):
+            gid = 10001
+
+    return uid, gid
+
+
+def _apply_upload_permissions(file_path: Path, upload_dir: Path) -> None:
+    """
+    Привести владельца/права файла, чтобы celery мог его изменять.
+    """
+    if os.getuid() != 0:
+        return
+
+    uid, gid = _resolve_upload_owner(upload_dir)
+    try:
+        os.chown(file_path, uid, gid)
+    except OSError:
+        return
+
+    try:
+        file_path.chmod(0o664)
+    except OSError:
+        return
+
+
 def _get_file_path(file_id: UUID, extension: str) -> Path:
     """
     Получить полный путь к файлу.
@@ -97,10 +142,13 @@ async def save_upload_file(
 
         # Получение пути для сохранения (с учётом возможного обновления расширения)
         file_path = _get_file_path(file_id, extension)
+        upload_dir = file_path.parent
 
         # Сохранение файла
         with open(file_path, "wb") as f:
             f.write(content)
+
+        _apply_upload_permissions(file_path, upload_dir)
 
         # Получение размера файла
         file_size = file_path.stat().st_size
@@ -141,9 +189,12 @@ async def save_raw_upload_file(
         content = await file.read()
 
         file_path = _get_file_path(file_id, extension)
+        upload_dir = file_path.parent
 
         with open(file_path, "wb") as f:
             f.write(content)
+
+        _apply_upload_permissions(file_path, upload_dir)
 
         file_size = file_path.stat().st_size
         file_url = f"/uploads/{file_id}.{extension}"
@@ -209,10 +260,13 @@ async def save_upload_file_by_content(
 
         # Получение пути для сохранения
         file_path = _get_file_path(file_id, extension)
+        upload_dir = file_path.parent
 
         # Сохранение файла
         with open(file_path, "wb") as f:
             f.write(content)
+
+        _apply_upload_permissions(file_path, upload_dir)
 
         # Получение размера файла
         file_size = file_path.stat().st_size

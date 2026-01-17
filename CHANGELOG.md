@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Celery worker/beat переведены на запуск от non-root пользователя.
 - Celery beat пишет файл расписания в /app/logs, чтобы non-root имел права на запись.
 - Celery worker/beat используют HOME=/home/appuser, чтобы libpq не пытался читать ключи из /root/.postgresql.
+- Загружаемые файлы приводятся к UID/GID celery worker, чтобы auto-orient мог перезаписывать uploads без PermissionError.
+- Maintenance задачи Celery используют единый event loop, чтобы избежать asyncpg ошибок "Future attached to a different loop".
 - Усилен webhook ЮKassa: подпись обязательна в продакшене, добавлена защита от подмены.
 - URL вложений в редакторе проверяются как локальные /uploads, снижая риск SSRF.
 - Валидация изображений ограничивает максимальное разрешение по пикселям.

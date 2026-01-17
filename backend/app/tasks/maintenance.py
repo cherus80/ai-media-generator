@@ -20,6 +20,19 @@ from app.services.file_storage import delete_old_files
 from app.tasks.celery_app import celery_app
 
 UPLOAD_REF_RE = re.compile(r"/uploads/(?P<file_id>[0-9a-fA-F-]{36})\.[a-zA-Z0-9]+")
+_TASK_LOOP: asyncio.AbstractEventLoop | None = None
+
+
+def _run_async(coro):
+    global _TASK_LOOP
+    if _TASK_LOOP is None or _TASK_LOOP.is_closed():
+        _TASK_LOOP = asyncio.new_event_loop()
+        asyncio.set_event_loop(_TASK_LOOP)
+
+    if _TASK_LOOP.is_running():
+        return asyncio.run_coroutine_threadsafe(coro, _TASK_LOOP).result()
+
+    return _TASK_LOOP.run_until_complete(coro)
 
 
 def _extract_upload_ids(source: str | None) -> set[str]:
@@ -58,7 +71,7 @@ def delete_old_files_task() -> dict:
 
             return protected
 
-        protected_ids = asyncio.run(_collect_protected_ids())
+        protected_ids = _run_async(_collect_protected_ids())
         deleted_count = delete_old_files(
             hours=retention_hours,
             protected_file_ids=protected_ids,
@@ -125,7 +138,7 @@ def reset_freemium_counters_task() -> dict:
                     "error": str(e),
                 }
 
-    return asyncio.run(_reset_counters())
+    return _run_async(_reset_counters())
 
 
 @celery_app.task(name="app.tasks.maintenance.cleanup_old_chat_histories_task")
@@ -175,4 +188,4 @@ def cleanup_old_chat_histories_task() -> dict:
                     "error": str(e),
                 }
 
-    return asyncio.run(_cleanup_histories())
+    return _run_async(_cleanup_histories())
