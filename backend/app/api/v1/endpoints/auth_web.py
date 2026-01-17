@@ -1257,6 +1257,9 @@ async def verify_email(
         HTTPException 400: Если токен невалиден, истёк или уже использован
         HTTPException 404: Если токен не найден
     """
+    logger = logging.getLogger(__name__)
+    token_preview = f"{token[:8]}..." if token else "missing"
+
     # Ищем токен
     result = await db.execute(
         select(EmailVerificationToken).where(
@@ -1266,6 +1269,7 @@ async def verify_email(
     verification_token = result.scalar_one_or_none()
 
     if not verification_token:
+        logger.warning("Email verification token not found: %s", token_preview)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Токен не найден",
@@ -1273,6 +1277,18 @@ async def verify_email(
 
     # Проверяем, не использован ли токен
     if verification_token.is_consumed:
+        result = await db.execute(
+            select(User).where(User.id == verification_token.user_id)
+        )
+        user = result.scalar_one_or_none()
+        if user and user.email_verified:
+            logger.info("Email already verified, token reused: %s", token_preview)
+            return VerifyEmailResponse(
+                message="Email уже подтверждён",
+                user=user_to_profile(user),
+            )
+
+        logger.warning("Email verification token already used: %s", token_preview)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Токен уже использован",
@@ -1280,6 +1296,7 @@ async def verify_email(
 
     # Проверяем, не истёк ли токен
     if verification_token.is_expired:
+        logger.warning("Email verification token expired: %s", token_preview)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Срок действия токена истёк. Запросите новое письмо",
@@ -1292,6 +1309,7 @@ async def verify_email(
     user = result.scalar_one_or_none()
 
     if not user:
+        logger.error("Email verification user not found for token: %s", token_preview)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Пользователь не найден",

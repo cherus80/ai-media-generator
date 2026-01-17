@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - В редакторе фото результат больше не повторяет весь промпт — чат не загромождается.
+- Повторное открытие ссылки подтверждения email теперь возвращает успех, если адрес уже подтверждён.
+- Добавлено логирование причин отказа в email-верификации (не найден/истёк/использован токен).
 - Celery worker/beat переведены на запуск от non-root пользователя.
 - Celery beat пишет файл расписания в /app/logs, чтобы non-root имел права на запись.
 - Celery worker/beat используют HOME=/home/appuser, чтобы libpq не пытался читать ключи из /root/.postgresql.
