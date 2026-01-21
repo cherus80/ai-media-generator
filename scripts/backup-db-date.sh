@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DATE_STAMP="$(date +%Y-%m-%d)"
+BACKUP_TZ="${BACKUP_TZ:-Europe/Moscow}"
+DATE_STAMP="$(TZ="${BACKUP_TZ}" date +%Y-%m-%d)"
 BACKUP_DIR="$(pwd)"
 BACKUP_FILE="${BACKUP_DIR}/${DATE_STAMP}.sql"
 

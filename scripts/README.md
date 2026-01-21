@@ -64,6 +64,45 @@ cd backup
 - Берёт `POSTGRES_USER` и `POSTGRES_DB` из `.env` в корне проекта (можно переопределить через `ENV_FILE`)
 - Использует `docker-compose.prod.yml` в корне проекта (можно переопределить через `COMPOSE_FILE`)
 - Для docker compose использует `COMPOSE_PROJECT_NAME` (или имя корня проекта)
+- Часовой пояс можно переопределить через `BACKUP_TZ` (по умолчанию `Europe/Moscow`)
+
+### backup-db-gdrive.sh
+
+Backup БД с загрузкой в Google Drive через rclone.
+
+**Требования:**
+- Установить rclone на VPS
+- Настроить remote (по умолчанию имя `gdrive`):
+  ```bash
+  rclone config
+  ```
+
+**Использование:**
+```bash
+# Запуск из корня проекта
+./scripts/backup-db-gdrive.sh
+```
+
+**Переменные окружения:**
+- `GDRIVE_REMOTE` (default: `gdrive`)
+- `GDRIVE_DIR` (default: `ai-media-generator/backup`)
+- `BACKUP_TZ` (default: `Europe/Moscow`)
+- `RCLONE_BIN`, `RCLONE_CONFIG`, `RCLONE_FLAGS` (опционально)
+
+### install-backup-cron.sh
+
+Установка cron-задачи для ежедневного backup в 06:00 по МСК.
+
+**Использование (на VPS):**
+```bash
+./scripts/install-backup-cron.sh
+```
+
+**Опциональные переменные:**
+- `CRON_TZ` (default: `Europe/Moscow`)
+- `SCHEDULE` (default: `0 6 * * *`)
+- `LOG_FILE` (default: `/var/log/ai-bot-backup.log`)
+- `GDRIVE_REMOTE`, `GDRIVE_DIR`, `RCLONE_*`, `BACKUP_TZ`
 
 ### restore-database.sh
 
