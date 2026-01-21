@@ -47,6 +47,21 @@ backups/
 - `KEEP_WEEKS=4` - хранить еженедельные backup'ы 4 недели
 - `KEEP_MONTHS=3` - хранить ежемесячные backup'ы 3 месяца
 
+### backup-db-date.sh
+
+Простой backup БД в текущую директорию с именем файла по дате.
+
+**Использование:**
+```bash
+# Запускать из директории, где должен появиться backup (например, корень репозитория)
+./scripts/backup-db-date.sh
+```
+
+**Что делает:**
+- Сохраняет файл `YYYY-MM-DD.sql` в текущей директории
+- Берёт `POSTGRES_USER` и `POSTGRES_DB` из `.env`, если файл существует
+- Использует `docker-compose.prod.yml` (можно переопределить через `COMPOSE_FILE`)
+
 ### restore-database.sh
 
 Восстановление базы данных из backup.
