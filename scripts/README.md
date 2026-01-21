@@ -53,14 +53,15 @@ backups/
 
 **Использование:**
 ```bash
-# Запускать из директории, где должен появиться backup (например, корень репозитория)
-./scripts/backup-db-date.sh
+# Запуск из поддиректории backup (файл сохранится здесь же)
+cd backup
+../scripts/backup-db-date.sh
 ```
 
 **Что делает:**
 - Сохраняет файл `YYYY-MM-DD.sql` в текущей директории
-- Берёт `POSTGRES_USER` и `POSTGRES_DB` из `.env`, если файл существует
-- Использует `docker-compose.prod.yml` (можно переопределить через `COMPOSE_FILE`)
+- Берёт `POSTGRES_USER` и `POSTGRES_DB` из `.env` в корне проекта (можно переопределить через `ENV_FILE`)
+- Использует `docker-compose.prod.yml` в корне проекта (можно переопределить через `COMPOSE_FILE`)
 
 ### restore-database.sh
 

@@ -4,11 +4,19 @@ set -euo pipefail
 DATE_STAMP="$(date +%Y-%m-%d)"
 BACKUP_DIR="$(pwd)"
 BACKUP_FILE="${BACKUP_DIR}/${DATE_STAMP}.sql"
-COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
 
-if [ -f ".env" ]; then
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+COMPOSE_FILE="${COMPOSE_FILE:-${PROJECT_DIR}/docker-compose.prod.yml}"
+if [[ "${COMPOSE_FILE}" != /* ]]; then
+  COMPOSE_FILE="${PROJECT_DIR}/${COMPOSE_FILE}"
+fi
+
+ENV_FILE="${ENV_FILE:-${PROJECT_DIR}/.env}"
+if [ -f "${ENV_FILE}" ]; then
   set -a
-  . ./.env
+  . "${ENV_FILE}"
   set +a
 fi
 

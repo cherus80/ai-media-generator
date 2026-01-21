@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Добавлен скрипт `scripts/backup-db-date.sh` для создания бэкапа БД с именем файла по дате в текущей директории.
+- Добавлен скрипт `scripts/backup-db-date.sh` для создания бэкапа БД с именем файла по дате в текущей директории (в т.ч. при запуске из `backup`).
 
 ### Fixed
 - В редакторе фото результат больше не повторяет весь промпт — чат не загромождается.
