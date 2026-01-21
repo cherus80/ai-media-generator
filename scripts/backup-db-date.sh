@@ -22,10 +22,10 @@ fi
 
 POSTGRES_USER="${POSTGRES_USER:-postgres}"
 POSTGRES_DB="${POSTGRES_DB:-ai_image_bot}"
+PROJECT_NAME="${COMPOSE_PROJECT_NAME:-$(basename "${PROJECT_DIR}")}"
 
 if [ -e "${BACKUP_FILE}" ]; then
-  echo "Backup file already exists: ${BACKUP_FILE}" >&2
-  exit 1
+  echo "Backup file exists, overwriting: ${BACKUP_FILE}"
 fi
 
 if command -v docker-compose >/dev/null 2>&1; then
@@ -34,7 +34,7 @@ else
   COMPOSE_CMD=(docker compose)
 fi
 
-"${COMPOSE_CMD[@]}" -f "${COMPOSE_FILE}" exec -T postgres \
+"${COMPOSE_CMD[@]}" -p "${PROJECT_NAME}" -f "${COMPOSE_FILE}" exec -T postgres \
   pg_dump -U "${POSTGRES_USER}" "${POSTGRES_DB}" > "${BACKUP_FILE}"
 
 echo "Backup saved: ${BACKUP_FILE}"

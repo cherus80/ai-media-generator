@@ -60,8 +60,10 @@ cd backup
 
 **Что делает:**
 - Сохраняет файл `YYYY-MM-DD.sql` в текущей директории
+- Если файл за эту дату уже есть, он перезаписывается
 - Берёт `POSTGRES_USER` и `POSTGRES_DB` из `.env` в корне проекта (можно переопределить через `ENV_FILE`)
 - Использует `docker-compose.prod.yml` в корне проекта (можно переопределить через `COMPOSE_FILE`)
+- Для docker compose использует `COMPOSE_PROJECT_NAME` (или имя корня проекта)
 
 ### restore-database.sh
 
