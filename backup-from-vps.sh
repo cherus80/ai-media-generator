@@ -2,14 +2,14 @@
 set -euo pipefail
 
 # Настройки подключения
-VPS_USER="CHANGE_ME_USER"
-VPS_HOST="CHANGE_ME_HOST"
+VPS_USER="root"
+VPS_HOST="ai-bot-vps"
 VPS_PORT="22"
 SSH_KEY=""          # Например: ~/.ssh/id_rsa (оставьте пустым, если не нужно)
 SSH_OPTS=""         # Доп. опции ssh, например: "-o StrictHostKeyChecking=no"
 
 # Настройки проекта на VPS
-VPS_PROJECT_DIR="/path/to/repo"
+VPS_PROJECT_DIR="/root/ai-image-bot"
 POSTGRES_CONTAINER="ai_image_generator_postgres_prod"
 REMOTE_DOCKER_CMD="docker" # Если нужен sudo: "sudo docker"
 

@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Добавлено игнорирование `backup/*.sql` в `.gitignore`.
 - Добавлены скрипты `scripts/backup-db-gdrive.sh` и `scripts/install-backup-cron.sh` для ежедневных бэкапов на Google Drive (06:00 MSK).
 - Добавлен локальный скрипт `backup-from-vps.sh` для бэкапа БД с VPS на компьютер.
+- В `backup-from-vps.sh` предзаполнены параметры VPS из deploy-скриптов.
 
 ### Fixed
 - В редакторе фото результат больше не повторяет весь промпт — чат не загромождается.
