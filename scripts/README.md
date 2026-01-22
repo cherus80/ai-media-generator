@@ -25,3 +25,29 @@
 - `VERIFY_KEEP_DB` (default: `0`) — оставить тестовую БД
 - `POSTGRES_RESTORE_USER` (default: `postgres`) — пользователь для тестового восстановления
 - Во время проверки файл временно загружается на VPS в `/tmp`, затем удаляется.
+
+### restore-vps-db.sh (локальный)
+
+Скрипт для восстановления БД на VPS из локального бэкапа.
+
+**Использование:**
+1) Убедитесь, что `VPS_USER`, `VPS_HOST`, `VPS_PROJECT_DIR` заполнены.
+2) Запустите с явным файлом:
+```bash
+./scripts/restore-vps-db.sh ./scripts/backup/2025-01-01.sql.gz
+```
+или без аргумента (возьмет самый свежий бэкап из `scripts/backup`):
+```bash
+./scripts/restore-vps-db.sh
+```
+
+**Проверка корректности:**
+- После восстановления скрипт проверяет, что в `public` есть таблицы и колонки.
+- При включенном `CREATE_REMOTE_SAFETY_BACKUP=1` создается резервный дамп текущей БД на VPS перед восстановлением.
+
+**Параметры:**
+- `POSTGRES_RESTORE_USER` (default: `postgres`) — пользователь для drop/create и восстановления
+- `TARGET_DB_OVERRIDE` (default: пусто) — восстановление в указанную БД вместо `POSTGRES_DB`
+- `CREATE_REMOTE_SAFETY_BACKUP` (default: `1`) — создать резервную копию текущей БД на VPS
+- `KEEP_REMOTE_SAFETY_BACKUP` (default: `1`) — оставить резервный дамп на VPS
+- `KEEP_REMOTE_DUMP` (default: `0`) — оставить загруженный дамп на VPS
