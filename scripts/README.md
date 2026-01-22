@@ -66,6 +66,20 @@ cd backup
 - Для docker compose использует `COMPOSE_PROJECT_NAME` (или имя корня проекта)
 - Часовой пояс можно переопределить через `BACKUP_TZ` (по умолчанию `Europe/Moscow`)
 
+### backup-from-vps.sh (локальный)
+
+Простой локальный скрипт для создания бэкапа БД на VPS и сохранения на вашем компьютере.
+
+**Использование:**
+1) Откройте `backup-from-vps.sh` в корне проекта и заполните параметры `VPS_USER`, `VPS_HOST`, `VPS_PROJECT_DIR`.
+2) Запустите:
+```bash
+./backup-from-vps.sh
+```
+
+**Результат:**
+- Файл сохраняется в `backup/YYYY-MM-DD.sql.gz` на локальной машине.
+
 ### backup-db-gdrive.sh
 
 Backup БД с загрузкой в Google Drive через rclone.
