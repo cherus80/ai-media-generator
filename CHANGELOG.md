@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - `backup-from-vps.sh` теперь безопасно читает `.env` на VPS без ошибок из-за строк без `KEY=VALUE`.
+- Тестовое восстановление в `backup-from-vps.sh` использует quiet-режим psql, меньше шума в выводе.
+- Тестовое восстановление в `backup-from-vps.sh` использует временную загрузку файла на VPS для надежности.
 
 ### Fixed
 - В редакторе фото результат больше не повторяет весь промпт — чат не загромождается.
