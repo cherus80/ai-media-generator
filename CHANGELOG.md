@@ -10,16 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Добавлен скрипт `scripts/backup-db-date.sh` для бэкапа БД с именем по дате при запуске из `backup`, с перезаписью в тот же день.
-- Добавлено игнорирование `backup/*.sql` в `.gitignore`.
-- Добавлены скрипты `scripts/backup-db-gdrive.sh` и `scripts/install-backup-cron.sh` для ежедневных бэкапов на Google Drive (06:00 MSK).
-- Добавлен локальный скрипт `backup-from-vps.sh` для бэкапа БД с VPS на компьютер.
-- В `backup-from-vps.sh` предзаполнены параметры VPS из deploy-скриптов.
+- Добавлен скрипт `scripts/backup-from-vps.sh` для бэкапа БД с VPS на компьютер.
+
+### Changed
+- Удалены устаревшие backup-скрипты из `scripts`, оставлен только `scripts/backup-from-vps.sh`.
 
 ### Fixed
-- `backup-from-vps.sh` теперь безопасно читает `.env` на VPS без ошибок из-за строк без `KEY=VALUE`.
-- Тестовое восстановление в `backup-from-vps.sh` использует quiet-режим psql, меньше шума в выводе.
-- Тестовое восстановление в `backup-from-vps.sh` использует временную загрузку файла на VPS для надежности.
+- `scripts/backup-from-vps.sh` безопасно читает `.env` на VPS без ошибок из-за строк без `KEY=VALUE`.
+- Тестовое восстановление в `scripts/backup-from-vps.sh` использует quiet-режим psql и временную загрузку файла на VPS.
 
 ### Fixed
 - В редакторе фото результат больше не повторяет весь промпт — чат не загромождается.
