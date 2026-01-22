@@ -38,13 +38,35 @@ if [[ -n "${SSH_OPTS}" ]]; then
   SSH_CMD+=( "${EXTRA_OPTS[@]}" )
 fi
 
-REMOTE_CMD="cd \"${VPS_PROJECT_DIR}\" && "
-REMOTE_CMD+="if [ -f .env ]; then set -a; . ./.env; set +a; fi; "
-REMOTE_CMD+="POSTGRES_USER=\"\${POSTGRES_USER:-postgres}\"; "
-REMOTE_CMD+="POSTGRES_DB=\"\${POSTGRES_DB:-ai_image_bot}\"; "
-REMOTE_CMD+="${REMOTE_DOCKER_CMD} exec -i \"${POSTGRES_CONTAINER}\" pg_dump -U \"\${POSTGRES_USER}\" \"\${POSTGRES_DB}\" | gzip -c"
+REMOTE_CMD=$(printf '%s\n' \
+"set -euo pipefail" \
+"cd \"${VPS_PROJECT_DIR}\"" \
+"if [ -f .env ]; then" \
+"  while IFS= read -r line || [ -n \"\$line\" ]; do" \
+"    case \"\$line\" in" \
+"      ''|\\#*) continue ;;" \
+"    esac" \
+"    if [[ \"\$line\" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]; then" \
+"      key=\"\${line%%=*}\"" \
+"      val=\"\${line#*=}\"" \
+"      if [[ \"\$val\" == \"\\\"*\" && \"\$val\" == *\"\\\"\" ]]; then" \
+"        val=\"\${val#\\\"}\"" \
+"        val=\"\${val%\\\"}\"" \
+"      fi" \
+"      if [[ \"\$val\" == \\'*\\' && \"\$val\" == *\\' ]]; then" \
+"        val=\"\${val#\\'}\"" \
+"        val=\"\${val%\\'}\"" \
+"      fi" \
+"      export \"\${key}=\${val}\"" \
+"    fi" \
+"  done < .env" \
+"fi" \
+"POSTGRES_USER=\"\${POSTGRES_USER:-postgres}\"" \
+"POSTGRES_DB=\"\${POSTGRES_DB:-ai_image_bot}\"" \
+"${REMOTE_DOCKER_CMD} exec -i \"${POSTGRES_CONTAINER}\" pg_dump -U \"\${POSTGRES_USER}\" \"\${POSTGRES_DB}\" | gzip -c" \
+)
 
-"${SSH_CMD[@]}" "${VPS_USER}@${VPS_HOST}" "${REMOTE_CMD}" > "${BACKUP_FILE}"
+"${SSH_CMD[@]}" "${VPS_USER}@${VPS_HOST}" "bash -lc $(printf %q "${REMOTE_CMD}")" > "${BACKUP_FILE}"
 
 if [[ ! -s "${BACKUP_FILE}" ]]; then
   echo "Ошибка: файл бэкапа пустой: ${BACKUP_FILE}" >&2
