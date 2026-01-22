@@ -43,6 +43,7 @@
 
 **Проверка корректности:**
 - После восстановления скрипт проверяет, что в `public` есть таблицы и колонки.
+- Дополнительно проверяются обязательные таблицы и alembic revision (если определен).
 - При включенном `CREATE_REMOTE_SAFETY_BACKUP=1` создается резервный дамп текущей БД на VPS перед восстановлением.
 
 **Параметры:**
@@ -51,3 +52,5 @@
 - `CREATE_REMOTE_SAFETY_BACKUP` (default: `1`) — создать резервную копию текущей БД на VPS
 - `KEEP_REMOTE_SAFETY_BACKUP` (default: `1`) — оставить резервный дамп на VPS
 - `KEEP_REMOTE_DUMP` (default: `0`) — оставить загруженный дамп на VPS
+- `REQUIRED_TABLES` (default: `alembic_version,users`) — обязательные таблицы для проверки восстановления
+- `EXPECTED_ALEMBIC_VERSION` (default: авто) — ожидаемая версия alembic; если пусто, определяется по последней миграции в `backend/alembic/versions`

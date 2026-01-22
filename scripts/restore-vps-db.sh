@@ -20,6 +20,8 @@ CREATE_REMOTE_SAFETY_BACKUP="1" # 1 = dump current DB before restore
 KEEP_REMOTE_SAFETY_BACKUP="1"   # 1 = keep safety dump on VPS
 KEEP_REMOTE_DUMP="0"            # 1 = keep uploaded dump on VPS
 BACKUP_TZ="Europe/Moscow"
+REQUIRED_TABLES="alembic_version,users"
+EXPECTED_ALEMBIC_VERSION=""    # Auto-detect from local alembic versions if empty
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEFAULT_BACKUP_DIR="${SCRIPT_DIR}/backup"
@@ -36,6 +38,20 @@ if [[ -z "${BACKUP_FILE}" ]]; then
     exit 1
   fi
   BACKUP_FILE="$(ls -t "${DEFAULT_BACKUP_DIR}"/*.sql.gz | head -n 1)"
+fi
+
+if [[ -z "${EXPECTED_ALEMBIC_VERSION}" ]]; then
+  ALEMBIC_VERSIONS_DIR="${SCRIPT_DIR}/../backend/alembic/versions"
+  if [[ -d "${ALEMBIC_VERSIONS_DIR}" ]]; then
+    LATEST_MIGRATION_FILE="$(ls -1 "${ALEMBIC_VERSIONS_DIR}"/*.py 2>/dev/null | sort | tail -n 1)"
+    if [[ -n "${LATEST_MIGRATION_FILE}" ]]; then
+      EXPECTED_ALEMBIC_VERSION="$(grep -m1 -E '^revision' "${LATEST_MIGRATION_FILE}" | sed -E 's/^revision[^=]*=[[:space:]]*["'\'']([^"'\'']+)["'\''].*/\1/')"
+    fi
+  fi
+fi
+
+if [[ -z "${EXPECTED_ALEMBIC_VERSION}" ]]; then
+  echo "Предупреждение: не удалось автоматически определить alembic revision. Проверка версии будет пропущена." >&2
 fi
 
 if [[ ! -f "${BACKUP_FILE}" ]]; then
@@ -121,6 +137,8 @@ REMOTE_RESTORE_CMD=$(printf '%s\n' \
 "TARGET_DB=\"\${POSTGRES_DB}\"" \
 "if [ -n \"\${TARGET_DB_OVERRIDE}\" ]; then TARGET_DB=\"\${TARGET_DB_OVERRIDE}\"; fi" \
 "RESTORE_USER=\"${POSTGRES_RESTORE_USER}\"" \
+"REQUIRED_TABLES=\"${REQUIRED_TABLES}\"" \
+"EXPECTED_ALEMBIC_VERSION=\"${EXPECTED_ALEMBIC_VERSION}\"" \
 "REMOTE_TMP=\"${REMOTE_TMP}\"" \
 "REMOTE_SAFETY=\"${REMOTE_SAFETY}\"" \
 "CREATE_REMOTE_SAFETY_BACKUP=\"${CREATE_REMOTE_SAFETY_BACKUP}\"" \
@@ -147,6 +165,27 @@ REMOTE_RESTORE_CMD=$(printf '%s\n' \
 "if [ \"\$tables_count\" -lt 1 ] || [ \"\$columns_count\" -lt 1 ]; then" \
 "  echo \"Ошибка: восстановление завершено, но структура БД пуста\" >&2" \
 "  exit 1" \
+"fi" \
+"if [[ -n \"\${REQUIRED_TABLES}\" ]]; then" \
+"  IFS=',' read -r -a REQUIRED_TABLE_LIST <<< \"\${REQUIRED_TABLES}\"" \
+"  for raw_table in \"\${REQUIRED_TABLE_LIST[@]}\"; do" \
+"    table_name=\"\${raw_table//[[:space:]]/}\"" \
+"    if [[ -z \"\${table_name}\" ]]; then" \
+"      continue" \
+"    fi" \
+"    table_exists=\$(${REMOTE_DOCKER_CMD} exec -i \"${POSTGRES_CONTAINER}\" psql -q -X -U \"\${RESTORE_USER}\" -d \"\${TARGET_DB}\" -tAc \"SELECT to_regclass('public.\${table_name}') IS NOT NULL;\")" \
+"    if [[ \"\${table_exists}\" != \"t\" ]]; then" \
+"      echo \"Ошибка: обязательная таблица не найдена: \${table_name}\" >&2" \
+"      exit 1" \
+"    fi" \
+"  done" \
+"fi" \
+"if [[ -n \"\${EXPECTED_ALEMBIC_VERSION}\" ]]; then" \
+"  alembic_match=\$(${REMOTE_DOCKER_CMD} exec -i \"${POSTGRES_CONTAINER}\" psql -q -X -U \"\${RESTORE_USER}\" -d \"\${TARGET_DB}\" -tAc \"SELECT 1 FROM alembic_version WHERE version_num='\${EXPECTED_ALEMBIC_VERSION}' LIMIT 1;\")" \
+"  if [[ \"\${alembic_match}\" != \"1\" ]]; then" \
+"    echo \"Ошибка: alembic version не совпадает с ожидаемой: \${EXPECTED_ALEMBIC_VERSION}\" >&2" \
+"    exit 1" \
+"  fi" \
 "fi" \
 "echo \"Восстановление завершено. Таблиц: \$tables_count, колонок: \$columns_count\"" \
 "if [[ \"\${CREATE_REMOTE_SAFETY_BACKUP}\" == \"1\" ]]; then" \
