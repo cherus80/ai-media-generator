@@ -73,6 +73,44 @@ export const HomePage: React.FC = () => {
         }
       >
         <div className="max-w-6xl mx-auto px-4 py-12">
+          {/* Quick Start */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="mb-10"
+          >
+            <Card variant="glass" padding="lg" className="border border-white/60">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                <div className="space-y-2">
+                  <Badge variant="info" size="sm">
+                    Быстрый старт
+                  </Badge>
+                  <h2 className="text-2xl md:text-3xl font-bold gradient-text">
+                    Две главные функции приложения
+                  </h2>
+                  <p className="text-dark-600 text-sm md:text-base">
+                    Сразу выберите, что хотите сделать: примерить одежду или отредактировать фото.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full lg:w-auto">
+                  <button
+                    onClick={() => navigate('/fitting')}
+                    className="w-full px-5 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold text-sm md:text-base shadow-lg hover:shadow-xl transition"
+                  >
+                    👕 Виртуальная примерка
+                  </button>
+                  <button
+                    onClick={() => navigate('/editing')}
+                    className="w-full px-5 py-3 rounded-xl bg-gradient-to-r from-pink-500 to-orange-500 text-white font-semibold text-sm md:text-base shadow-lg hover:shadow-xl transition"
+                  >
+                    🎨 Редактирование фото
+                  </button>
+                </div>
+              </div>
+            </Card>
+          </motion.div>
+
           {/* Top Examples */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -139,9 +177,12 @@ export const HomePage: React.FC = () => {
             <div className="mt-6 text-center">
               <button
                 onClick={() => navigate('/app/examples')}
-                className="px-6 py-3 rounded-full bg-white border border-slate-200 text-slate-700 text-sm font-semibold hover:bg-slate-50"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full bg-gradient-to-r from-primary-500 to-secondary-500 text-white text-sm sm:text-base font-semibold shadow-lg hover:shadow-xl transition"
               >
                 Смотреть больше примеров
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </button>
             </div>
           </motion.div>
