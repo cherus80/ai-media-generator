@@ -90,6 +90,7 @@ async def init_db() -> None:
         generation_example,
         email_verification,
         password_reset,
+        notification,
     )  # noqa
 
     async with engine.begin() as conn:

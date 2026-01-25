@@ -182,6 +182,22 @@ export interface DeleteConsentsResponse {
 }
 
 // ============================================================================
+// Админ-уведомления
+// ============================================================================
+
+export interface AdminNotificationCreateRequest {
+  title?: string | null;
+  message: string;
+  user_ids?: number[];
+  send_to_all?: boolean;
+}
+
+export interface AdminNotificationCreateResponse {
+  created_count: number;
+  skipped_count: number;
+}
+
+// ============================================================================
 // Локальные типы для UI
 // ============================================================================
 

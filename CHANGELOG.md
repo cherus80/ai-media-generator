@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Добавлен скрипт `scripts/backup-from-vps.sh` для бэкапа БД с VPS на компьютер.
 - Добавлен скрипт `scripts/restore-vps-db.sh` для восстановления БД на VPS из локального дампа с проверкой.
+- Добавлены уведомления: админ-рассылка пользователям, страница "Оповещения", колокольчик с числом непрочитанных и одноразовая подсказка в шапке.
 
 ### Changed
 - Удалены устаревшие backup-скрипты из `scripts`, оставлен только `scripts/backup-from-vps.sh`.

@@ -20,6 +20,7 @@ import { FallbackSettings } from '../components/admin/FallbackSettings';
 import { Consents } from '../components/admin/Consents';
 import { InstructionsManager } from '../components/admin/InstructionsManager';
 import { ExamplesManager } from '../components/admin/ExamplesManager';
+import { NotificationsManager } from '../components/admin/NotificationsManager';
 import { Layout } from '../components/common/Layout';
 
 interface User {
@@ -36,7 +37,7 @@ interface User {
 
 export const AdminPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<
-    'dashboard' | 'users' | 'prompts' | 'fallback' | 'consents' | 'instructions' | 'examples'
+    'dashboard' | 'users' | 'prompts' | 'fallback' | 'consents' | 'instructions' | 'examples' | 'notifications'
   >('dashboard');
 
   // Модальные окна
@@ -166,6 +167,18 @@ export const AdminPage: React.FC = () => {
               >
                 🖼️ Примеры
               </button>
+              <button
+                onClick={() => setActiveTab('notifications')}
+                className={`
+                  py-4 px-1 border-b-2 font-medium text-sm transition-colors
+                  ${activeTab === 'notifications'
+                    ? 'border-primary-500 text-primary-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }
+                `}
+              >
+                🔔 Оповещения
+              </button>
             </nav>
           </div>
         </div>
@@ -186,6 +199,7 @@ export const AdminPage: React.FC = () => {
           {activeTab === 'consents' && <Consents />}
           {activeTab === 'instructions' && <InstructionsManager />}
           {activeTab === 'examples' && <ExamplesManager />}
+          {activeTab === 'notifications' && <NotificationsManager />}
         </div>
 
         {/* Модальные окна */}

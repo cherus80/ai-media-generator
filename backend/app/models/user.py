@@ -284,6 +284,13 @@ class User(Base, TimestampMixin):
         cascade="all, delete-orphan",
     )
 
+    notifications: Mapped[list["Notification"]] = relationship(
+        "Notification",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        foreign_keys="Notification.user_id",
+    )
+
     # Рефералы (где пользователь — реферер)
     referrals_given: Mapped[list["Referral"]] = relationship(
         "Referral",

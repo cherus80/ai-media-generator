@@ -11,6 +11,7 @@ import { Badge } from '../ui/Badge';
 import { MobileMenu } from './MobileMenu';
 import { EmailVerificationBanner } from './EmailVerificationBanner';
 import { useAuthStore } from '../../store/authStore';
+import { useNotificationsStore } from '../../store/notificationsStore';
 import toast from 'react-hot-toast';
 
 interface LayoutProps {
@@ -39,7 +40,9 @@ export const Layout: React.FC<LayoutProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const { user, refreshProfile } = useAuthStore();
+  const { unreadCount, loadUnreadCount } = useNotificationsStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showNotificationsHint, setShowNotificationsHint] = useState(false);
   const isTrialUser =
     !!user &&
     !user.subscription_type &&
@@ -61,6 +64,32 @@ export const Layout: React.FC<LayoutProps> = ({
       sessionStorage.removeItem('emailVerifiedMessage');
     }
   }, [location.pathname]);
+
+  React.useEffect(() => {
+    if (!user?.id) {
+      return;
+    }
+    loadUnreadCount().catch(() => undefined);
+  }, [user?.id, location.pathname, loadUnreadCount]);
+
+  React.useEffect(() => {
+    if (!user?.id) {
+      setShowNotificationsHint(false);
+      return;
+    }
+
+    if (unreadCount > 0) {
+      const shownKey = 'notificationsHintShown';
+      if (!sessionStorage.getItem(shownKey)) {
+        setShowNotificationsHint(true);
+        sessionStorage.setItem(shownKey, '1');
+        const timer = window.setTimeout(() => setShowNotificationsHint(false), 5000);
+        return () => window.clearTimeout(timer);
+      }
+    } else {
+      setShowNotificationsHint(false);
+    }
+  }, [unreadCount, user?.id]);
 
   const handleBack = () => {
     if (onBack) {
@@ -126,6 +155,32 @@ export const Layout: React.FC<LayoutProps> = ({
 
             {/* Right side: Balance + Hamburger menu */}
             <div className="flex flex-wrap items-center gap-3 ml-0 sm:ml-3 w-full sm:w-auto justify-end">
+              <div className="relative">
+                <button
+                  onClick={() => navigate('/notifications')}
+                  className="relative flex-shrink-0 w-10 h-10 rounded-xl bg-white/80 hover:bg-white flex items-center justify-center text-dark-700 hover:text-primary-600 transition-all shadow-sm hover:shadow-md"
+                  aria-label="Открыть уведомления"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0h6z"
+                    />
+                  </svg>
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] leading-[18px] font-semibold text-center shadow">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </button>
+                {showNotificationsHint && (
+                  <div className="absolute right-0 top-full mt-2 w-64 rounded-xl bg-white border border-red-100 shadow-lg px-3 py-2 text-xs text-gray-700">
+                    У вас есть непрочитанные сообщения
+                  </div>
+                )}
+              </div>
               <a
                 href="https://t.me/+Fj-R8QqIEEg5OTE6"
                 target="_blank"

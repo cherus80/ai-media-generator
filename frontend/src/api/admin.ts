@@ -26,6 +26,8 @@ import type {
   ConsentExportResponse,
   ConsentExportRequest,
   DeleteConsentsResponse,
+  AdminNotificationCreateRequest,
+  AdminNotificationCreateResponse,
 } from '../types/admin';
 import type {
   InstructionAdminListResponse,
@@ -95,6 +97,17 @@ export const getAdminUsers = async (params?: AdminUsersRequest): Promise<AdminUs
  */
 export const getUserDetails = async (userId: number): Promise<UserDetailsResponse> => {
   const response = await apiClient.get<UserDetailsResponse>(`/api/v1/admin/users/${userId}`);
+  return response.data;
+};
+
+// ============================================================================
+// Notifications API
+// ============================================================================
+
+export const sendAdminNotification = async (
+  payload: AdminNotificationCreateRequest
+): Promise<AdminNotificationCreateResponse> => {
+  const response = await apiClient.post<AdminNotificationCreateResponse>('/api/v1/admin/notifications', payload);
   return response.data;
 };
 

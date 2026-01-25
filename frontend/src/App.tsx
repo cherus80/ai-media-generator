@@ -25,6 +25,7 @@ import { PaymentReturnPage } from './pages/PaymentReturnPage';
 import { InstructionsPage } from './pages/InstructionsPage';
 import { ExamplesPage } from './pages/ExamplesPage';
 import { ExampleGenerationPage } from './pages/ExampleGenerationPage';
+import { NotificationsPage } from './pages/NotificationsPage';
 import { Toaster } from 'react-hot-toast';
 
 function App() {
@@ -66,6 +67,7 @@ function App() {
           {/* Профиль пользователя */}
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/history" element={<HistoryPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
 
           {/* Админ панель */}
           <Route path="/admin" element={<AdminPage />} />
