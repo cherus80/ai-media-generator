@@ -26,6 +26,7 @@ import { InstructionsPage } from './pages/InstructionsPage';
 import { ExamplesPage } from './pages/ExamplesPage';
 import { ExampleGenerationPage } from './pages/ExampleGenerationPage';
 import { NotificationsPage } from './pages/NotificationsPage';
+import { AboutPage } from './pages/AboutPage';
 import { Toaster } from 'react-hot-toast';
 
 function App() {
@@ -57,6 +58,7 @@ function App() {
           <Route path="/app/instructions" element={<InstructionsPage />} />
           <Route path="/app/examples" element={<ExamplesPage />} />
           <Route path="/app/examples/generate" element={<ExampleGenerationPage />} />
+          <Route path="/app/about" element={<AboutPage />} />
 
           {/* Функция 1: Примерка одежды */}
           <Route path="/fitting" element={<FittingPage />} />

@@ -129,9 +129,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
       ),
       label: 'О приложении',
       onClick: () => {
-        // TODO: Открыть модальное окно "О приложении"
-        alert('Информация о приложении будет добавлена');
-        onClose();
+        handleNavigate('/app/about');
       },
     },
   ];
