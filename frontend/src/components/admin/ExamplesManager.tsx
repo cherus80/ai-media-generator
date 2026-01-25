@@ -25,6 +25,94 @@ interface DraftExample extends GenerationExampleAdminItem {
   draftPublished: boolean;
 }
 
+interface TagMultiSelectProps {
+  label: string;
+  options: string[];
+  selected: string[];
+  onChange: (next: string[]) => void;
+}
+
+const TagMultiSelect: React.FC<TagMultiSelectProps> = ({ label, options, selected, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [query, setQuery] = useState('');
+
+  const filteredOptions = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    if (!normalized) {
+      return options;
+    }
+    return options.filter((tag) => tag.includes(normalized));
+  }, [options, query]);
+
+  const toggleTag = (tag: string) => {
+    if (selected.includes(tag)) {
+      onChange(selected.filter((item) => item !== tag));
+      return;
+    }
+    onChange([...selected, tag]);
+  };
+
+  return (
+    <div className="space-y-2">
+      <label className="text-xs font-semibold text-gray-600">{label}</label>
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setIsOpen((prev) => !prev)}
+          className="w-full border rounded-lg px-3 py-2 text-sm flex items-center justify-between bg-white"
+        >
+          <span className="text-gray-700">
+            {selected.length > 0 ? `Выбрано: ${selected.length}` : 'Выберите метки'}
+          </span>
+          <span className="text-gray-400">{isOpen ? '▲' : '▼'}</span>
+        </button>
+
+        {isOpen && (
+          <div className="absolute z-20 mt-2 w-full rounded-lg border bg-white shadow-lg p-3">
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Поиск меток..."
+              className="w-full border rounded-md px-2 py-1 text-xs"
+            />
+            <div className="mt-2 max-h-48 overflow-y-auto space-y-2">
+              {filteredOptions.length === 0 && (
+                <div className="text-xs text-gray-400">Ничего не найдено</div>
+              )}
+              {filteredOptions.map((tag) => (
+                <label key={tag} className="flex items-center gap-2 text-xs text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={selected.includes(tag)}
+                    onChange={() => toggleTag(tag)}
+                  />
+                  <span>{tag}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {selected.map((tag) => (
+            <button
+              key={`selected-${tag}`}
+              type="button"
+              onClick={() => toggleTag(tag)}
+              className="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200"
+              title="Удалить метку"
+            >
+              {tag} ✕
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const ExamplesManager: React.FC = () => {
   const [items, setItems] = useState<DraftExample[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,9 +125,7 @@ export const ExamplesManager: React.FC = () => {
   const [newTags, setNewTags] = useState('');
   const [newPublished, setNewPublished] = useState(true);
   const [existingTags, setExistingTags] = useState<string[]>([]);
-  const [selectedExistingTag, setSelectedExistingTag] = useState('');
   const [selectedExistingTags, setSelectedExistingTags] = useState<string[]>([]);
-  const [selectedExistingTagById, setSelectedExistingTagById] = useState<Record<number, string>>({});
 
   const load = async () => {
     setLoading(true);
@@ -220,34 +306,7 @@ export const ExamplesManager: React.FC = () => {
     return Array.from(unique);
   };
 
-  const mergeTagList = (list: string[], tag: string) => {
-    return normalizeTagList([...list, tag]);
-  };
-
-  const handleAddExistingTag = () => {
-    if (!selectedExistingTag) {
-      return;
-    }
-    setSelectedExistingTags((prev) => mergeTagList(prev, selectedExistingTag));
-    setSelectedExistingTag('');
-  };
-
-  const handleRemoveExistingTag = (tag: string) => {
-    setSelectedExistingTags((prev) => prev.filter((item) => item !== tag));
-  };
-
-  const handleAddExistingTagToItem = (itemId: number) => {
-    const tag = selectedExistingTagById[itemId];
-    if (!tag) {
-      return;
-    }
-    setItems((prev) =>
-      prev.map((row) =>
-        row.id === itemId ? { ...row, draftTags: mergeTagList(row.draftTags, tag) } : row
-      )
-    );
-    setSelectedExistingTagById((prev) => ({ ...prev, [itemId]: '' }));
-  };
+  const normalizeSelectedTags = (tags: string[]) => normalizeTagList(tags);
 
   const topExamples = useMemo(
     () =>
@@ -288,52 +347,15 @@ export const ExamplesManager: React.FC = () => {
           </label>
         </div>
         <div className="space-y-3">
-          <div>
-            <label className="text-xs font-semibold text-gray-600">Метки (выбор из списка)</label>
-            <div className="mt-1 flex flex-wrap gap-2">
-              <select
-                value={selectedExistingTag}
-                onChange={(e) => setSelectedExistingTag(e.target.value)}
-                className="border rounded-lg px-3 py-2 text-sm min-w-[200px]"
-              >
-                <option value="">Выберите метку</option>
-                {existingTags.map((tag) => (
-                  <option key={tag} value={tag}>
-                    {tag}
-                  </option>
-                ))}
-              </select>
-              <button
-                onClick={handleAddExistingTag}
-                disabled={!selectedExistingTag}
-                className={`px-3 py-2 rounded-lg text-xs font-semibold ${
-                  selectedExistingTag
-                    ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                    : 'bg-slate-50 text-slate-400 cursor-not-allowed'
-                }`}
-              >
-                Добавить
-              </button>
-            </div>
-            {selectedExistingTags.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-2">
-                {selectedExistingTags.map((tag) => (
-                  <button
-                    key={`selected-${tag}`}
-                    type="button"
-                    onClick={() => handleRemoveExistingTag(tag)}
-                    className="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200"
-                    title="Удалить метку"
-                  >
-                    {tag} ✕
-                  </button>
-                ))}
-              </div>
-            )}
-            {existingTags.length === 0 && (
-              <p className="mt-1 text-xs text-gray-400">Пока нет сохраненных меток</p>
-            )}
-          </div>
+          <TagMultiSelect
+            label="Метки (выбор из списка)"
+            options={existingTags}
+            selected={selectedExistingTags}
+            onChange={(next) => setSelectedExistingTags(normalizeSelectedTags(next))}
+          />
+          {existingTags.length === 0 && (
+            <p className="text-xs text-gray-400">Пока нет сохраненных меток</p>
+          )}
           <div>
             <label className="text-xs font-semibold text-gray-600">Новые метки (через запятую)</label>
             <input
@@ -450,63 +472,49 @@ export const ExamplesManager: React.FC = () => {
                       Опубликовано
                     </label>
                   </div>
-                  <div>
-                    <label className="text-xs font-semibold text-gray-600">Метки</label>
-                    <input
-                      value={item.draftTags.join(', ')}
-                      onChange={(e) =>
+                  <div className="space-y-3">
+                    <TagMultiSelect
+                      label="Метки"
+                      options={existingTags}
+                      selected={item.draftTags}
+                      onChange={(next) =>
                         setItems((prev) =>
                           prev.map((row) =>
                             row.id === item.id
-                              ? { ...row, draftTags: parseTags(e.target.value) }
+                              ? { ...row, draftTags: normalizeSelectedTags(next) }
                               : row
                           )
                         )
                       }
-                      className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                     />
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      <select
-                        value={selectedExistingTagById[item.id] || ''}
+                    <div>
+                      <label className="text-xs font-semibold text-gray-600">Метки (ручной ввод)</label>
+                      <input
+                        value={item.draftTags.join(', ')}
                         onChange={(e) =>
-                          setSelectedExistingTagById((prev) => ({
-                            ...prev,
-                            [item.id]: e.target.value,
-                          }))
+                          setItems((prev) =>
+                            prev.map((row) =>
+                              row.id === item.id
+                                ? { ...row, draftTags: parseTags(e.target.value) }
+                                : row
+                            )
+                          )
                         }
-                        className="border rounded-lg px-3 py-2 text-xs min-w-[180px]"
-                      >
-                        <option value="">Выберите метку</option>
-                        {existingTags.map((tag) => (
-                          <option key={`${item.id}-${tag}`} value={tag}>
-                            {tag}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        onClick={() => handleAddExistingTagToItem(item.id)}
-                        disabled={!selectedExistingTagById[item.id]}
-                        className={`px-3 py-2 rounded-lg text-xs font-semibold ${
-                          selectedExistingTagById[item.id]
-                            ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                            : 'bg-slate-50 text-slate-400 cursor-not-allowed'
-                        }`}
-                      >
-                        Добавить
-                      </button>
+                        className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
+                      />
+                      {item.draftTags.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {item.draftTags.map((tag) => (
+                            <span
+                              key={`${item.id}-${tag}`}
+                              className="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-700"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    {item.draftTags.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {item.draftTags.map((tag) => (
-                          <span
-                            key={`${item.id}-${tag}`}
-                            className="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-700"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
                   </div>
                   <div>
                     <label className="text-xs font-semibold text-gray-600">Промпт</label>
