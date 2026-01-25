@@ -7,6 +7,7 @@ import {
   deleteExample,
   uploadExampleImage,
 } from '../../api/admin';
+import { getExampleTags } from '../../api/content';
 import { FileUpload } from '../common/FileUpload';
 import type { GenerationExampleAdminItem } from '../../types/content';
 import { getUploadErrorMessage } from '../../utils/uploadErrors';
@@ -35,6 +36,10 @@ export const ExamplesManager: React.FC = () => {
   const [newImageUrl, setNewImageUrl] = useState('');
   const [newTags, setNewTags] = useState('');
   const [newPublished, setNewPublished] = useState(true);
+  const [existingTags, setExistingTags] = useState<string[]>([]);
+  const [selectedExistingTag, setSelectedExistingTag] = useState('');
+  const [selectedExistingTags, setSelectedExistingTags] = useState<string[]>([]);
+  const [selectedExistingTagById, setSelectedExistingTagById] = useState<Record<number, string>>({});
 
   const load = async () => {
     setLoading(true);
@@ -59,6 +64,20 @@ export const ExamplesManager: React.FC = () => {
 
   useEffect(() => {
     load();
+  }, []);
+
+  const loadTags = async () => {
+    try {
+      const response = await getExampleTags();
+      const tags = response.items.map((item) => item.tag);
+      setExistingTags(tags);
+    } catch {
+      // Не блокируем UI если метки не загрузились
+    }
+  };
+
+  useEffect(() => {
+    loadTags();
   }, []);
 
   const handleUpload = async (file: File, target: number | 'new') => {
@@ -95,7 +114,7 @@ export const ExamplesManager: React.FC = () => {
       return;
     }
     try {
-      const parsedTags = parseTags(newTags);
+      const parsedTags = normalizeTagList([...selectedExistingTags, ...parseTags(newTags)]);
       const created = await createExample({
         title: newTitle.trim() || null,
         prompt: newPrompt.trim(),
@@ -103,6 +122,7 @@ export const ExamplesManager: React.FC = () => {
         tags: parsedTags,
         is_published: newPublished,
       });
+      await loadTags();
       setItems((prev) => [
         {
           ...created,
@@ -118,6 +138,8 @@ export const ExamplesManager: React.FC = () => {
       setNewPrompt('');
       setNewImageUrl('');
       setNewTags('');
+      setSelectedExistingTag('');
+      setSelectedExistingTags([]);
       setNewPublished(true);
       toast.success('Пример добавлен');
     } catch (err: any) {
@@ -135,6 +157,7 @@ export const ExamplesManager: React.FC = () => {
         tags: item.draftTags,
         is_published: item.draftPublished,
       });
+      await loadTags();
       setItems((prev) =>
         prev.map((row) =>
           row.id === item.id
@@ -186,6 +209,46 @@ export const ExamplesManager: React.FC = () => {
       .map((tag) => tag.trim().toLowerCase())
       .filter((tag) => tag.length > 0);
 
+  const normalizeTagList = (tags: string[]) => {
+    const unique = new Set<string>();
+    tags.forEach((tag) => {
+      const cleaned = tag.trim().toLowerCase();
+      if (cleaned) {
+        unique.add(cleaned);
+      }
+    });
+    return Array.from(unique);
+  };
+
+  const mergeTagList = (list: string[], tag: string) => {
+    return normalizeTagList([...list, tag]);
+  };
+
+  const handleAddExistingTag = () => {
+    if (!selectedExistingTag) {
+      return;
+    }
+    setSelectedExistingTags((prev) => mergeTagList(prev, selectedExistingTag));
+    setSelectedExistingTag('');
+  };
+
+  const handleRemoveExistingTag = (tag: string) => {
+    setSelectedExistingTags((prev) => prev.filter((item) => item !== tag));
+  };
+
+  const handleAddExistingTagToItem = (itemId: number) => {
+    const tag = selectedExistingTagById[itemId];
+    if (!tag) {
+      return;
+    }
+    setItems((prev) =>
+      prev.map((row) =>
+        row.id === itemId ? { ...row, draftTags: mergeTagList(row.draftTags, tag) } : row
+      )
+    );
+    setSelectedExistingTagById((prev) => ({ ...prev, [itemId]: '' }));
+  };
+
   const topExamples = useMemo(
     () =>
       [...items]
@@ -224,14 +287,71 @@ export const ExamplesManager: React.FC = () => {
             Публиковать сразу
           </label>
         </div>
-        <div>
-          <label className="text-xs font-semibold text-gray-600">Метки (через запятую)</label>
-          <input
-            value={newTags}
-            onChange={(e) => setNewTags(e.target.value)}
-            className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-            placeholder="street, вечерний стиль, casual"
-          />
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs font-semibold text-gray-600">Метки (выбор из списка)</label>
+            <div className="mt-1 flex flex-wrap gap-2">
+              <select
+                value={selectedExistingTag}
+                onChange={(e) => setSelectedExistingTag(e.target.value)}
+                className="border rounded-lg px-3 py-2 text-sm min-w-[200px]"
+              >
+                <option value="">Выберите метку</option>
+                {existingTags.map((tag) => (
+                  <option key={tag} value={tag}>
+                    {tag}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={handleAddExistingTag}
+                disabled={!selectedExistingTag}
+                className={`px-3 py-2 rounded-lg text-xs font-semibold ${
+                  selectedExistingTag
+                    ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    : 'bg-slate-50 text-slate-400 cursor-not-allowed'
+                }`}
+              >
+                Добавить
+              </button>
+            </div>
+            {selectedExistingTags.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {selectedExistingTags.map((tag) => (
+                  <button
+                    key={`selected-${tag}`}
+                    type="button"
+                    onClick={() => handleRemoveExistingTag(tag)}
+                    className="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    title="Удалить метку"
+                  >
+                    {tag} ✕
+                  </button>
+                ))}
+              </div>
+            )}
+            {existingTags.length === 0 && (
+              <p className="mt-1 text-xs text-gray-400">Пока нет сохраненных меток</p>
+            )}
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-600">Новые метки (через запятую)</label>
+            <input
+              value={newTags}
+              onChange={(e) => setNewTags(e.target.value)}
+              className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
+              placeholder="street, вечерний стиль, casual"
+            />
+            {parseTags(newTags).length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {parseTags(newTags).map((tag) => (
+                  <span key={`new-${tag}`} className="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-700">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
         <div>
           <label className="text-xs font-semibold text-gray-600">Промпт</label>
@@ -345,6 +465,36 @@ export const ExamplesManager: React.FC = () => {
                       }
                       className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
                     />
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <select
+                        value={selectedExistingTagById[item.id] || ''}
+                        onChange={(e) =>
+                          setSelectedExistingTagById((prev) => ({
+                            ...prev,
+                            [item.id]: e.target.value,
+                          }))
+                        }
+                        className="border rounded-lg px-3 py-2 text-xs min-w-[180px]"
+                      >
+                        <option value="">Выберите метку</option>
+                        {existingTags.map((tag) => (
+                          <option key={`${item.id}-${tag}`} value={tag}>
+                            {tag}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => handleAddExistingTagToItem(item.id)}
+                        disabled={!selectedExistingTagById[item.id]}
+                        className={`px-3 py-2 rounded-lg text-xs font-semibold ${
+                          selectedExistingTagById[item.id]
+                            ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                            : 'bg-slate-50 text-slate-400 cursor-not-allowed'
+                        }`}
+                      >
+                        Добавить
+                      </button>
+                    </div>
                     {item.draftTags.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-2">
                         {item.draftTags.map((tag) => (
