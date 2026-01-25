@@ -56,6 +56,11 @@ export const NotificationsManager: React.FC = () => {
   };
 
   const handleSend = async () => {
+    if (!title.trim()) {
+      toast.error('Введите заголовок сообщения');
+      return;
+    }
+
     if (!message.trim()) {
       toast.error('Введите текст сообщения');
       return;
@@ -69,7 +74,7 @@ export const NotificationsManager: React.FC = () => {
     setIsSending(true);
     try {
       const response = await sendAdminNotification({
-        title: title.trim() ? title.trim() : undefined,
+        title: title.trim(),
         message: message.trim(),
         user_ids: sendToAll ? undefined : selectedIds,
         send_to_all: sendToAll,
@@ -107,12 +112,13 @@ export const NotificationsManager: React.FC = () => {
       <div className="bg-white p-4 rounded-lg shadow space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Заголовок (необязательно)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Заголовок *</label>
             <input
               type="text"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
               placeholder="Например: Важное обновление"
+              required
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
@@ -157,6 +163,9 @@ export const NotificationsManager: React.FC = () => {
             />
             Отправить всем пользователям
           </label>
+          {sendToAll && (
+            <span className="text-xs text-gray-500">Включая неактивных и заблокированных</span>
+          )}
           {!sendToAll && (
             <span className="text-sm text-gray-500">Выбрано: {selectedIds.length}</span>
           )}

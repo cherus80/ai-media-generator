@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { AuthGuard } from '../components/auth/AuthGuard';
 import { Layout } from '../components/common/Layout';
 import { Card } from '../components/ui/Card';
@@ -17,10 +17,21 @@ export const NotificationsPage = () => {
     markAsRead,
     markAllRead,
   } = useNotificationsStore();
+  const autoMarkedRef = useRef(false);
 
   useEffect(() => {
     loadNotifications();
   }, [loadNotifications]);
+
+  useEffect(() => {
+    if (autoMarkedRef.current) {
+      return;
+    }
+    if (unreadCount > 0 && items.length > 0) {
+      autoMarkedRef.current = true;
+      markAllRead().catch(() => undefined);
+    }
+  }, [unreadCount, items.length, markAllRead]);
 
   const unreadItems = items.filter((item) => !item.is_read);
   const readItems = items.filter((item) => item.is_read);

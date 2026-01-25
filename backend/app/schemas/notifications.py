@@ -57,7 +57,7 @@ class MarkNotificationsReadResponse(BaseModel):
 class AdminNotificationCreateRequest(BaseModel):
     """Запрос на отправку уведомлений из админки."""
 
-    title: Optional[str] = Field(None, max_length=200)
+    title: str = Field(..., min_length=1, max_length=200)
     message: str = Field(..., min_length=1)
     user_ids: Optional[list[int]] = None
     send_to_all: bool = False

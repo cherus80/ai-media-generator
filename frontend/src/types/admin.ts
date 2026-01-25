@@ -186,7 +186,7 @@ export interface DeleteConsentsResponse {
 // ============================================================================
 
 export interface AdminNotificationCreateRequest {
-  title?: string | null;
+  title: string;
   message: string;
   user_ids?: number[];
   send_to_all?: boolean;
