@@ -224,7 +224,6 @@ export const ExamplesManager: React.FC = () => {
       setNewPrompt('');
       setNewImageUrl('');
       setNewTags('');
-      setSelectedExistingTag('');
       setSelectedExistingTags([]);
       setNewPublished(true);
       toast.success('Пример добавлен');
