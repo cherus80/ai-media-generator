@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Удалены устаревшие backup-скрипты из `scripts`, оставлен только `scripts/backup-from-vps.sh`.
+- Sitemap теперь содержит только главную страницу.
 
 ### Fixed
 - `scripts/backup-from-vps.sh` безопасно читает `.env` на VPS без ошибок из-за строк без `KEY=VALUE`.
