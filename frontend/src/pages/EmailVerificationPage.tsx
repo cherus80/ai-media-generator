@@ -8,7 +8,7 @@ type VerificationState = 'loading' | 'success' | 'error' | 'invalid';
 export function EmailVerificationPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { setUser } = useAuth();
+  const { setUser, setToken } = useAuth();
 
   const [state, setState] = useState<VerificationState>('loading');
   const [message, setMessage] = useState('');
@@ -25,8 +25,11 @@ export function EmailVerificationPage() {
       try {
         const response = await verifyEmail(token);
 
-        // Обновляем пользователя в store (если авторизован)
+        // Обновляем пользователя и токен (если вернули access_token)
         setUser(response.user);
+        if (response.access_token) {
+          setToken(response.access_token);
+        }
 
         setState('success');
         setMessage(response.message);
@@ -37,9 +40,9 @@ export function EmailVerificationPage() {
           response.message || 'Email подтверждён! Теперь можно пользоваться приложением.'
         );
 
-        // Редирект на главную через 2 секунды
+        // Редирект в приложение через 2 секунды
         setTimeout(() => {
-          navigate('/', { replace: true });
+          navigate('/app', { replace: true });
         }, 2000);
       } catch (error: any) {
         setState('error');
@@ -122,7 +125,7 @@ export function EmailVerificationPage() {
           {/* Success redirect message */}
           {state === 'success' && (
             <p className="text-sm text-gray-500 mb-6">
-              Перенаправление на главную страницу через 3 секунды...
+              Перенаправление в приложение через 2 секунды...
             </p>
           )}
 
@@ -130,10 +133,10 @@ export function EmailVerificationPage() {
           <div className="space-y-3">
             {state === 'success' && (
               <Link
-                to="/"
+                to="/app"
                 className="inline-block w-full px-6 py-3 text-base font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
               >
-                Перейти на главную
+                Перейти в приложение
               </Link>
             )}
 

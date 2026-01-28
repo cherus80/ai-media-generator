@@ -403,6 +403,16 @@ class VerifyEmailResponse(BaseModel):
         description="Updated user profile"
     )
 
+    access_token: Optional[str] = Field(
+        default=None,
+        description="JWT access token (present on first-time successful verification)"
+    )
+
+    token_type: Optional[str] = Field(
+        default=None,
+        description="Token type (always 'bearer' when access_token is present)"
+    )
+
 
 # ============================================================================
 # Password Reset (будущее расширение)

@@ -199,6 +199,8 @@ export interface VerifyEmailRequest {
 export interface VerifyEmailResponse {
   message: string;
   user: UserProfile;
+  access_token?: string;
+  token_type?: string;
 }
 
 // ============================================================================

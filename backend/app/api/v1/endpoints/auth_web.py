@@ -1325,7 +1325,15 @@ async def verify_email(
     await db.commit()
     await db.refresh(user)
 
+    access_token = create_user_access_token(
+        user_id=user.id,
+        telegram_id=user.telegram_id,
+        email=user.email,
+    )
+
     return VerifyEmailResponse(
         message="Email успешно подтверждён",
         user=user_to_profile(user),
+        access_token=access_token,
+        token_type="bearer",
     )
