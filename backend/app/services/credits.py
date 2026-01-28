@@ -266,10 +266,10 @@ def calculate_credits_for_tariff(tariff: str) -> int:
         int: Количество кредитов
     """
     tariffs = {
-        "basic": 80,
-        "standard": 130,
-        "pro": 130,
-        "premium": 250,
+        "basic": 30,
+        "standard": 60,
+        "pro": 60,
+        "premium": 120,
         "credits_20": 20,
         "credits_50": 50,
         "credits_100": 100,
@@ -290,14 +290,14 @@ def calculate_price_for_tariff(tariff: str) -> Decimal:
         Decimal: Цена в рублях
     """
     prices = {
-        "basic": Decimal("369.00"),
-        "standard": Decimal("599.00"),
-        "pro": Decimal("599.00"),
-        "premium": Decimal("1099.00"),
-        "credits_20": Decimal("100.00"),
-        "credits_50": Decimal("230.00"),
-        "credits_100": Decimal("400.00"),
-        "credits_250": Decimal("900.00"),
+        "basic": Decimal("399.00"),
+        "standard": Decimal("699.00"),
+        "pro": Decimal("699.00"),
+        "premium": Decimal("1290.00"),
+        "credits_20": Decimal("199.00"),
+        "credits_50": Decimal("449.00"),
+        "credits_100": Decimal("799.00"),
+        "credits_250": Decimal("1690.00"),
     }
 
     return prices.get(tariff, Decimal("0.00"))

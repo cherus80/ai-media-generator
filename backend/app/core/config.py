@@ -137,25 +137,25 @@ class Settings(BaseSettings):
         description="Лимит бесплатных операций в месяц для freemium",
     )
     BILLING_FREE_TRIAL_CREDITS: int = Field(
-        default=10,
+        default=6,
         description="⭐️Звезды, выдаваемые при регистрации",
     )
     BILLING_SUBSCRIPTION_TIERS: dict = Field(
         default_factory=lambda: {
-            "basic": {"price": 369, "ops_limit": 80, "period_days": 30},
-            "standard": {"price": 599, "ops_limit": 130, "period_days": 30},
+            "basic": {"price": 399, "ops_limit": 30, "period_days": 30},
+            "standard": {"price": 699, "ops_limit": 60, "period_days": 30},
             # legacy alias для старого значения
-            "pro": {"price": 599, "ops_limit": 130, "period_days": 30},
-            "premium": {"price": 1099, "ops_limit": 250, "period_days": 30},
+            "pro": {"price": 699, "ops_limit": 60, "period_days": 30},
+            "premium": {"price": 1290, "ops_limit": 120, "period_days": 30},
         },
         description="Тарифы подписок: цена в рублях и лимит операций",
     )
     BILLING_CREDIT_PACKAGES: dict = Field(
         default_factory=lambda: {
-            "small": {"price": 100, "credits": 20},
-            "medium": {"price": 230, "credits": 50},
-            "large": {"price": 400, "credits": 100},
-            "pro": {"price": 900, "credits": 250},
+            "small": {"price": 199, "credits": 20},
+            "medium": {"price": 449, "credits": 50},
+            "large": {"price": 799, "credits": 100},
+            "pro": {"price": 1690, "credits": 250},
         },
         description="Пакеты разовой покупки ⭐️звезд",
     )

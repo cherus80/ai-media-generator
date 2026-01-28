@@ -57,7 +57,7 @@ class OpenRouterClient:
     CHAT_ENDPOINT = "/chat/completions"
 
     # Модель Nano Banana для генерации изображений
-    NANO_BANANA_MODEL = "google/gemini-2.5-flash-image-preview"
+    NANO_BANANA_MODEL = "google/gemini-3-pro-image-preview"
     PROMPT_ASSISTANT_MODEL_DEFAULT = "openai/gpt-4.1-mini"
 
     # Системный промпт для генерации вариантов промптов (русский)

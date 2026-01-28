@@ -13,7 +13,7 @@ const featureCards = [
   { title: 'Редактирование фото в чате', desc: 'Опишите правки, прикрепите референсы и получите улучшенный промпт от AI.', icon: 'fa-solid fa-comments', iconWrapperClass: 'bg-purple-500 text-white' },
   { title: 'Мастер из 3 шагов', desc: 'Загрузка → выбор генерации → результат за несколько секунд.', icon: 'fa-solid fa-shoe-prints', iconWrapperClass: 'bg-slate-800 text-white' },
   { title: 'Гибкая система оплаты', desc: 'Используйте генерации по подписке или ⭐️звезды без ограничений.', icon: 'fa-solid fa-wallet', iconWrapperClass: 'bg-orange-100 text-orange-500' },
-  { title: 'Бесплатный старт', desc: '10 ⭐️звезд бесплатно сразу после регистрации.', icon: 'fa-solid fa-bolt', iconWrapperClass: 'bg-green-100 text-green-500' },
+  { title: 'Бесплатный старт', desc: '6 ⭐️звезд бесплатно сразу после регистрации.', icon: 'fa-solid fa-bolt', iconWrapperClass: 'bg-green-100 text-green-500' },
   { title: 'Безопасность данных', desc: 'Фото хранятся временно и автоматически удаляются.', icon: 'fa-solid fa-shield-halved', iconWrapperClass: 'bg-slate-200 text-slate-600' },
 ];
 
@@ -32,35 +32,35 @@ const stepHoverClasses: Record<string, string> = {
 const subscriptionPlans = [
   {
     name: 'Basic',
-    price: '369 ₽',
+    price: '399 ₽',
     per: '/ месяц',
-    actions: '80',
+    actions: '30',
     badge: { label: 'Basic', tone: 'bg-slate-100 text-slate-400' },
     highlight: false,
   },
   {
     name: 'Standard',
-    price: '599 ₽',
+    price: '699 ₽',
     per: '/ месяц',
-    actions: '130',
+    actions: '60',
     badge: { label: 'Standard', tone: 'bg-blue-50 text-primary-500' },
     highlight: true,
   },
   {
     name: 'Premium',
-    price: '1099 ₽',
+    price: '1290 ₽',
     per: '/ месяц',
-    actions: '250',
+    actions: '120',
     badge: { label: 'Premium', tone: 'bg-slate-100 text-slate-400' },
     highlight: false,
   },
 ];
 
 const creditPackages = [
-  { name: 'Small', credits: 20, price: '100 ₽', highlight: false },
-  { name: 'Medium', credits: 50, price: '230 ₽', highlight: false },
-  { name: 'Large', credits: 100, price: '400 ₽', highlight: true },
-  { name: 'Pro', credits: 250, price: '900 ₽', highlight: false },
+  { name: 'Small', credits: 20, price: '199 ₽', highlight: false },
+  { name: 'Medium', credits: 50, price: '449 ₽', highlight: false },
+  { name: 'Large', credits: 100, price: '799 ₽', highlight: true },
+  { name: 'Pro', credits: 250, price: '1690 ₽', highlight: false },
 ];
 
 const faqs = [
@@ -70,7 +70,7 @@ const faqs = [
   { question: 'Сколько стоит одна генерация?', answer: '1 генерация по подписке или 2 ⭐️звезды без подписки.' },
   { question: 'Сколько стоит AI-ассистент?', answer: '1 ⭐️звезда за одно обращение.' },
   { question: 'Как работает редактирование фото?', answer: 'Загрузите фото, опишите правки в чате и при необходимости прикрепите референсы. Можно отправить промпт сразу или улучшить через AI — затем запустить генерацию.' },
-  { question: 'Что выдаётся бесплатно?', answer: '10 ⭐️звезд при регистрации.' },
+  { question: 'Что выдаётся бесплатно?', answer: '6 ⭐️звезд при регистрации.' },
 ];
 
 const testimonials = [
@@ -210,7 +210,7 @@ export const LandingPage: React.FC = () => {
                   <div>
                     <p className="font-bold text-slate-800">Специальный оффер</p>
                     <p className="text-slate-500">
-                      Каждому новому пользователю — <span className="text-purple-600 font-bold">10 бесплатных ⭐️звезд</span> сразу после регистрации.
+                      Каждому новому пользователю — <span className="text-purple-600 font-bold">6 бесплатных ⭐️звезд</span> сразу после регистрации.
                     </p>
                   </div>
                 </div>
@@ -654,7 +654,7 @@ export const LandingPage: React.FC = () => {
         <section className="py-16 bg-gradient-to-r from-sky-400 to-purple-600">
           <div className="max-w-6xl mx-auto px-4 text-center text-white space-y-4">
             <h2 className="text-3xl font-extrabold">Готовы примерить и отредактировать?</h2>
-            <p className="text-white/80 text-lg">Зарегистрируйтесь, получите 10 ⭐️звезд и начните прямо сейчас.</p>
+            <p className="text-white/80 text-lg">Зарегистрируйтесь, получите 6 ⭐️звезд и начните прямо сейчас.</p>
             <div className="flex justify-center gap-3 flex-wrap">
               <Link to="/register" className="px-6 py-3 bg-white text-sky-600 font-semibold rounded-xl shadow-lg hover:shadow-xl transition">Попробовать бесплатно</Link>
               <Link to="/login" className="px-6 py-3 border border-white/70 text-white font-semibold rounded-xl hover:bg-white/10 transition">У меня уже есть аккаунт</Link>

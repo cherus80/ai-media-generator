@@ -50,7 +50,7 @@ class TestBillingStateEndpoint:
         assert data["billing_v5_enabled"] is True
         assert data["balance_credits"] >= 0
         assert data["subscription_type"] == "basic"
-        assert data["subscription_ops_limit"] == 80
+        assert data["subscription_ops_limit"] == 30
         assert data["subscription_ops_used"] >= 0
         assert data["subscription_ops_remaining"] >= 0
         assert data["freemium_ops_limit"] == 5

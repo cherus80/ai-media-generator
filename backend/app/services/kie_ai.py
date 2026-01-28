@@ -51,7 +51,7 @@ class KieAIClient:
     BASE_URL = "https://api.kie.ai"  # root, without /api/v1
     SUBMIT_ENDPOINT = "/api/v1/jobs/createTask"
     STATUS_ENDPOINT = "/api/v1/jobs/recordInfo"
-    MODEL_NAME = "google/nano-banana-edit"  # согласно актуальной документации
+    MODEL_NAME = "nano-banana-pro"  # согласно актуальной документации
 
     DEFAULT_POLL_INTERVAL = 5
     DEFAULT_MAX_POLLS = 36  # ~180s с интервалом 5 секунд

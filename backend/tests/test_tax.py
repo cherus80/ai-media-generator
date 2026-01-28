@@ -87,11 +87,11 @@ class TestCalculateTotalDeductions:
         assert result == Decimal("68.00")
 
     def test_total_deductions_subscription_package(self):
-        """Расчёт общих вычетов для подписки 369₽"""
-        result = calculate_total_deductions(369)
+        """Расчёт общих вычетов для подписки 399₽"""
+        result = calculate_total_deductions(399)
 
-        # НПД: 14.76, ЮKassa: 10.33, Итого: 25.09
-        expected = Decimal("14.76") + Decimal("10.33")
+        # НПД: 15.96, ЮKassa: 11.17, Итого: 27.13
+        expected = Decimal("15.96") + Decimal("11.17")
         assert result == expected
 
     def test_total_deductions_credits_package(self):
@@ -113,14 +113,14 @@ class TestCalculateNetAmount:
         # 1000 - (40 + 28) = 932
         assert result == Decimal("932.00")
 
-    def test_net_amount_subscription_369(self):
-        """Расчёт чистой суммы для подписки 369₽"""
-        result = calculate_net_amount(369)
+    def test_net_amount_subscription_399(self):
+        """Расчёт чистой суммы для подписки 399₽"""
+        result = calculate_net_amount(399)
 
-        # 369 - (14.76 + 10.33) = 343.91
-        npd = Decimal("14.76")
-        commission = Decimal("10.33")
-        expected = Decimal("369") - npd - commission
+        # 399 - (15.96 + 11.17) = 371.87
+        npd = Decimal("15.96")
+        commission = Decimal("11.17")
+        expected = Decimal("399") - npd - commission
         assert result == expected
 
     def test_net_amount_zero(self):
@@ -199,41 +199,41 @@ class TestFormatTaxBreakdown:
 class TestRealWorldScenarios:
     """Тесты реальных сценариев с тарифами проекта"""
 
-    def test_subscription_basic_369(self):
-        """Тариф: Базовая подписка 369₽"""
-        gross = Decimal("369.00")
+    def test_subscription_basic_399(self):
+        """Тариф: Базовая подписка 399₽"""
+        gross = Decimal("399.00")
 
         npd = calculate_npd_tax(gross)
         commission = calculate_yukassa_commission(gross)
         net = calculate_net_amount(gross)
 
-        assert npd == Decimal("14.76")
-        assert commission == Decimal("10.33")
-        assert net == Decimal("343.91")
+        assert npd == Decimal("15.96")
+        assert commission == Decimal("11.17")
+        assert net == Decimal("371.87")
 
-    def test_subscription_standard_599(self):
-        """Тариф: Стандартная подписка 599₽"""
-        gross = Decimal("599.00")
-
-        npd = calculate_npd_tax(gross)
-        commission = calculate_yukassa_commission(gross)
-        net = calculate_net_amount(gross)
-
-        assert npd == Decimal("23.96")
-        assert commission == Decimal("16.77")
-        assert net == Decimal("558.27")
-
-    def test_subscription_premium_1099(self):
-        """Тариф: Премиум подписка 1099₽"""
-        gross = Decimal("1099.00")
+    def test_subscription_standard_699(self):
+        """Тариф: Стандартная подписка 699₽"""
+        gross = Decimal("699.00")
 
         npd = calculate_npd_tax(gross)
         commission = calculate_yukassa_commission(gross)
         net = calculate_net_amount(gross)
 
-        assert npd == Decimal("43.96")
-        assert commission == Decimal("30.77")
-        assert net == Decimal("1024.27")
+        assert npd == Decimal("27.96")
+        assert commission == Decimal("19.57")
+        assert net == Decimal("651.47")
+
+    def test_subscription_premium_1290(self):
+        """Тариф: Премиум подписка 1290₽"""
+        gross = Decimal("1290.00")
+
+        npd = calculate_npd_tax(gross)
+        commission = calculate_yukassa_commission(gross)
+        net = calculate_net_amount(gross)
+
+        assert npd == Decimal("51.60")
+        assert commission == Decimal("36.12")
+        assert net == Decimal("1202.28")
 
     def test_credits_package_199(self):
         """Пакет кредитов: 100 кредитов за 199₽"""
@@ -248,11 +248,11 @@ class TestRealWorldScenarios:
 
     def test_profit_margin_basic_subscription(self):
         """Проверка чистой прибыли для базовой подписки"""
-        gross = Decimal("369.00")
+        gross = Decimal("399.00")
         net = calculate_net_amount(gross)
 
-        # Чистая прибыль: 343.91₽
-        # Процент чистой прибыли: (343.91 / 369) * 100 ≈ 93.2%
+        # Чистая прибыль: 371.87₽
+        # Процент чистой прибыли: (371.87 / 399) * 100 ≈ 93.2%
         profit_percentage = (net / gross) * 100
 
         assert profit_percentage > Decimal("93")

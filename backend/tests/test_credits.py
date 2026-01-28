@@ -254,7 +254,7 @@ class TestAwardSubscription:
 
         assert result["status"] == "success"
         assert user.subscription_type == "premium"
-        assert user.subscription_ops_limit == 250
+        assert user.subscription_ops_limit == 120
         assert user.subscription_ops_used == 0
         assert user.subscription_end is not None
         db_mock.commit.assert_called_once()
@@ -264,7 +264,7 @@ class TestAwardSubscription:
         user = Mock(spec=User)
         user.id = 123
         user.subscription_type = SubscriptionType.BASIC
-        user.subscription_ops_limit = 80
+        user.subscription_ops_limit = 30
         user.subscription_ops_used = 10
         user.subscription_end = datetime.utcnow() + timedelta(days=10)
 
@@ -281,6 +281,6 @@ class TestAwardSubscription:
 
         assert result["status"] == "success"
         assert user.subscription_type == "premium"
-        assert user.subscription_ops_limit == 250
+        assert user.subscription_ops_limit == 120
         assert user.subscription_ops_used == 0
         db_mock.commit.assert_called_once()

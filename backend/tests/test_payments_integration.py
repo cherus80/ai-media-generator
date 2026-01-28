@@ -26,9 +26,9 @@ class TestSubscriptionPurchase:
     """Integration тесты покупки подписок"""
 
     @pytest.mark.parametrize("subscription_type,expected_price,expected_actions", [
-        ("basic", 369.0, 80),
-        ("standard", 599.0, 130),
-        ("premium", 1099.0, 250),
+        ("basic", 399.0, 30),
+        ("standard", 699.0, 60),
+        ("premium", 1290.0, 120),
     ])
     async def test_create_subscription_payment(
         self,
@@ -106,7 +106,7 @@ class TestSubscriptionPurchase:
             payment_id=payment_id,
             payment_type="subscription",
             subscription_type="premium",
-            amount=1099.0,
+            amount=1290.0,
             currency="RUB",
             status="pending",
             idempotency_key=idempotency_key,
@@ -129,7 +129,7 @@ class TestSubscriptionPurchase:
                         "id": payment_id,
                         "status": "succeeded",
                         "amount": {
-                            "value": "1099.00",
+                            "value": "1290.00",
                             "currency": "RUB"
                         },
                         "metadata": {
@@ -157,7 +157,7 @@ class TestSubscriptionPurchase:
             # Verify subscription activated for user
             await test_db.refresh(test_user_with_credits)
             assert test_user_with_credits.subscription_type == SubscriptionType.PREMIUM
-            assert test_user_with_credits.subscription_ops_limit == 250
+            assert test_user_with_credits.subscription_ops_limit == 120
             assert test_user_with_credits.subscription_ops_used == 0
             assert test_user_with_credits.subscription_end is not None
             # Subscription should be valid for 30 days
@@ -181,7 +181,7 @@ class TestSubscriptionPurchase:
             payment_id=payment_id,
             payment_type="subscription",
             subscription_type="basic",
-            amount=369.0,
+            amount=399.0,
             currency="RUB",
             status="pending",
             idempotency_key=idempotency_key,
@@ -198,7 +198,7 @@ class TestSubscriptionPurchase:
             "object": {
                 "id": payment_id,
                 "status": "succeeded",
-                "amount": {"value": "369.00", "currency": "RUB"},
+                "amount": {"value": "399.00", "currency": "RUB"},
                 "metadata": {
                     "user_id": str(test_user_with_credits.id),
                     "subscription_type": "basic"
@@ -285,7 +285,7 @@ class TestCreditsPurchase:
             assert payment is not None
             assert payment.payment_type == "credits"
             assert payment.credits_amount == 100
-            assert payment.amount == 199.0  # Price for 100 credits
+            assert payment.amount == 799.0  # Price for 100 credits
 
     async def test_credits_webhook_success(
         self,
@@ -304,7 +304,7 @@ class TestCreditsPurchase:
             payment_id=payment_id,
             payment_type="credits",
             credits_amount=100,
-            amount=199.0,
+            amount=799.0,
             currency="RUB",
             status="pending",
             idempotency_key=idempotency_key,
@@ -323,7 +323,7 @@ class TestCreditsPurchase:
             "object": {
                 "id": payment_id,
                 "status": "succeeded",
-                "amount": {"value": "199.00", "currency": "RUB"},
+                "amount": {"value": "799.00", "currency": "RUB"},
                 "metadata": {
                     "user_id": str(test_user_with_credits.id),
                     "credits_amount": "100"
@@ -386,7 +386,7 @@ class TestPaymentHistory:
                 payment_type="credits" if i % 2 == 0 else "subscription",
                 credits_amount=100 if i % 2 == 0 else None,
                 subscription_type=None if i % 2 == 0 else "basic",
-                amount=199.0 if i % 2 == 0 else 369.0,
+                amount=799.0 if i % 2 == 0 else 399.0,
                 currency="RUB",
                 status="succeeded",
                 idempotency_key=f"idem-{i}",
@@ -444,7 +444,7 @@ class TestPaymentHistory:
             payment_id="other-payment-123",
             payment_type="credits",
             credits_amount=100,
-            amount=199.0,
+            amount=799.0,
             currency="RUB",
             status="succeeded",
             idempotency_key="other-idem",
@@ -486,7 +486,7 @@ class TestWebhookSecurity:
             payment_id=payment_id,
             payment_type="credits",
             credits_amount=100,
-            amount=199.0,
+            amount=799.0,
             currency="RUB",
             status="pending",
             idempotency_key=f"idem-{uuid.uuid4()}",
@@ -502,7 +502,7 @@ class TestWebhookSecurity:
             "object": {
                 "id": payment_id,
                 "status": "succeeded",
-                "amount": {"value": "199.00", "currency": "RUB"},
+                "amount": {"value": "799.00", "currency": "RUB"},
                 "metadata": {
                     "user_id": str(test_user_with_credits.id),
                     "credits_amount": "100"
@@ -576,7 +576,7 @@ class TestSubscriptionExpiration:
             last_name="Sub",
             balance_credits=0,
             subscription_type=SubscriptionType.PREMIUM,
-            subscription_ops_limit=100,
+            subscription_ops_limit=120,
             subscription_ops_used=0,
             subscription_end=datetime.now(timezone.utc) - timedelta(days=1),  # Expired
         )
@@ -633,7 +633,7 @@ class TestPaymentCancellation:
             payment_id=payment_id,
             payment_type="subscription",
             subscription_type="premium",
-            amount=1099.0,
+            amount=1290.0,
             currency="RUB",
             status="pending",
             idempotency_key=f"idem-{uuid.uuid4()}",
@@ -650,7 +650,7 @@ class TestPaymentCancellation:
             "object": {
                 "id": payment_id,
                 "status": "canceled",
-                "amount": {"value": "1099.00", "currency": "RUB"},
+                "amount": {"value": "1290.00", "currency": "RUB"},
                 "metadata": {
                     "user_id": str(test_user_with_credits.id),
                     "subscription_type": "premium"

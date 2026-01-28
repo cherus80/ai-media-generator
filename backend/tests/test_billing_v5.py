@@ -74,7 +74,7 @@ class TestBillingV5ChargeGeneration:
         user = create_mock_user(
             subscription_type=SubscriptionType.BASIC,
             subscription_end=datetime.now(timezone.utc) + timedelta(days=15),
-            subscription_ops_limit=80,
+            subscription_ops_limit=30,
             subscription_ops_used=10,
             freemium_actions_used=0,
             balance_credits=100,
@@ -204,7 +204,7 @@ class TestBillingV5ChargeGeneration:
         user = create_mock_user(
             subscription_type=SubscriptionType.BASIC,
             subscription_end=datetime.now(timezone.utc) - timedelta(days=1),  # Expired
-            subscription_ops_limit=80,
+            subscription_ops_limit=30,
             subscription_ops_used=10,
             freemium_actions_used=2,
             balance_credits=10,
@@ -227,8 +227,8 @@ class TestBillingV5ChargeGeneration:
         user = create_mock_user(
             subscription_type=SubscriptionType.BASIC,
             subscription_end=datetime.now(timezone.utc) + timedelta(days=15),
-            subscription_ops_limit=80,
-            subscription_ops_used=80,  # Исчерпан
+            subscription_ops_limit=30,
+            subscription_ops_used=30,  # Исчерпан
             freemium_actions_used=1,
             balance_credits=10,
         )
@@ -256,7 +256,7 @@ class TestBillingV5ChargeAssistant:
         user = create_mock_user(
             subscription_type=SubscriptionType.PREMIUM,
             subscription_end=datetime.now(timezone.utc) + timedelta(days=30),
-            subscription_ops_limit=250,
+            subscription_ops_limit=120,
             subscription_ops_used=10,
             freemium_actions_used=0,
             balance_credits=20,
@@ -444,8 +444,8 @@ class TestBillingV5ResetLimits:
         user = create_mock_user(
             subscription_type=SubscriptionType.BASIC,
             subscription_end=datetime.now(timezone.utc) + timedelta(days=30),
-            subscription_ops_limit=80,
-            subscription_ops_used=70,
+            subscription_ops_limit=30,
+            subscription_ops_used=20,
             subscription_ops_reset_at=old_reset_date,
             freemium_actions_used=0,
             balance_credits=0,
@@ -459,7 +459,7 @@ class TestBillingV5ResetLimits:
         await service.charge_generation(user.id)
 
         # Assert
-        assert user.subscription_ops_used == 71
+        assert user.subscription_ops_used == 21
         assert user.subscription_ops_reset_at == old_reset_date
 
     async def test_no_reset_before_30_days(self, mock_db_session):
@@ -530,8 +530,8 @@ class TestBillingV5SubscriptionLimitNormalization:
         # Act
         await service.charge_generation(user.id)
 
-        # Assert: лимит должен обновиться до 130 (standard)
-        assert user.subscription_ops_limit == 130
+        # Assert: лимит должен обновиться до 60 (standard)
+        assert user.subscription_ops_limit == 60
 
     async def test_update_subscription_limit_from_config(self, mock_db_session):
         """Обновление лимита подписки из конфига"""
@@ -552,8 +552,8 @@ class TestBillingV5SubscriptionLimitNormalization:
         # Act
         await service.charge_generation(user.id)
 
-        # Assert: лимит обновлен до 250 (из конфига)
-        assert user.subscription_ops_limit == 250
+        # Assert: лимит обновлен до 120 (из конфига)
+        assert user.subscription_ops_limit == 120
 
 
 @pytest.mark.asyncio
@@ -696,8 +696,8 @@ class TestBillingV5EdgeCases:
         user = create_mock_user(
             subscription_type=SubscriptionType.BASIC,
             subscription_end=datetime.now(timezone.utc) + timedelta(days=30),
-            subscription_ops_limit=80,
-            subscription_ops_used=79,  # Осталась 1
+            subscription_ops_limit=30,
+            subscription_ops_used=29,  # Осталась 1
             balance_credits=10,
         )
 
@@ -710,7 +710,7 @@ class TestBillingV5EdgeCases:
 
         # Assert
         assert result["payment_source"] == "action"
-        assert user.subscription_ops_used == 80
+        assert user.subscription_ops_used == 30
         assert user.balance_credits == 10  # Не потрачены
 
     async def test_freemium_at_limit(self, mock_db_session):
