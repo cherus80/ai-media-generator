@@ -1,5 +1,5 @@
 """
-kie.ai Nano Banana API client (URL-based).
+kie.ai Nano Banana Pro API client (URL-based).
 
 Implements createTask/status polling endpoints:
 - POST /api/v1/jobs/createTask
@@ -42,7 +42,7 @@ class KieAITaskFailedError(KieAIError):
 
 class KieAIClient:
     """
-    Async client for kie.ai Nano Banana API (google/nano-banana).
+    Async client for kie.ai Nano Banana Pro API (google/nano-banana).
 
     - URL-based inputs (image_urls)
     - Polling via record-info endpoint (successFlag/progress)

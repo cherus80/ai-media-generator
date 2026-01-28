@@ -1,8 +1,8 @@
 """
-OpenRouter API Client для генерации промптов (GPT/Claude) и вызова Nano Banana.
+OpenRouter API Client для генерации промптов (GPT/Claude) и вызова Nano Banana Pro.
 
 Клиент для работы с OpenRouter API: улучшение промптов через GPT (по умолчанию gpt-4.1-mini)
-и обращение к Nano Banana для генерации/редактирования изображений.
+и обращение к Nano Banana Pro для генерации/редактирования изображений.
 
 Документация: https://openrouter.ai/docs
 """
@@ -56,7 +56,7 @@ class OpenRouterClient:
     BASE_URL = "https://openrouter.ai/api/v1"
     CHAT_ENDPOINT = "/chat/completions"
 
-    # Модель Nano Banana для генерации изображений
+    # Модель Nano Banana Pro для генерации изображений
     NANO_BANANA_MODEL = "google/gemini-3-pro-image-preview"
     PROMPT_ASSISTANT_MODEL_DEFAULT = "openai/gpt-4.1-mini"
 
@@ -272,7 +272,7 @@ class OpenRouterClient:
         aspect_ratio: str = "1:1",
     ) -> str:
         """
-        Генерация виртуальной примерки через Gemini 2.5 Flash Image (Nano Banana).
+        Генерация виртуальной примерки через Nano Banana Pro.
 
         Args:
             user_photo_data: Base64-encoded данные фото пользователя (data:image/jpeg;base64,...)
@@ -376,7 +376,7 @@ class OpenRouterClient:
 
             if not images:
                 raise OpenRouterError(
-                    f"No image returned from Nano Banana. Message keys: {list(message.keys())}"
+                    f"No image returned from Nano Banana Pro. Message keys: {list(message.keys())}"
                 )
 
             # Возвращаем первое изображение (data:image/png;base64,...)
@@ -408,7 +408,7 @@ class OpenRouterClient:
                 image_url = first_image
 
             if not image_url:
-                raise OpenRouterError(f"Empty image URL returned from Nano Banana. First image type: {type(first_image)}, keys: {first_image.keys() if isinstance(first_image, dict) else 'N/A'}")
+                raise OpenRouterError(f"Empty image URL returned from Nano Banana Pro. First image type: {type(first_image)}, keys: {first_image.keys() if isinstance(first_image, dict) else 'N/A'}")
 
             logger.info(f"Virtual try-on image generated successfully, URL length: {len(image_url)}")
 

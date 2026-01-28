@@ -201,7 +201,7 @@ export const LandingPage: React.FC = () => {
                   <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-500">AI-редактирование</span>
                 </h1>
                 <p className="text-xl text-slate-500 mb-6 leading-relaxed">
-                  Загружайте фото, визуализируйте одежду, улучшайте изображения — AI подбирает посадку и образ, но оттенки и детали могут отличаться от реального товара.
+                  Загружайте фото, визуализируйте одежду, улучшайте изображения — AI подбирает посадку и образ, но оттенки и детали могут отличаться от реального товара. Генерации выполняются на модели Nano Banana Pro.
                 </p>
                 <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-soft mb-8 flex items-start gap-4">
                   <div className="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center shrink-0">

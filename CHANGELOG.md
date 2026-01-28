@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Подтверждение email теперь логинит пользователя и переводит в приложение.
 - Пересчитаны тарифы и пакеты ⭐️ под Nano Banana Pro, free trial снижен до 6 ⭐️.
 - Модели генерации обновлены на Nano Banana Pro (Kie.ai и OpenRouter).
+- В интерфейсе и маркетинговых текстах обновлено название модели на Nano Banana Pro.
 
 ### Fixed
 - `scripts/backup-from-vps.sh` безопасно читает `.env` на VPS без ошибок из-за строк без `KEY=VALUE`.
