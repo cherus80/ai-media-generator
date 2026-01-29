@@ -91,7 +91,7 @@ def generate_fitting_task(
         dict: Результат генерации
     """
 
-    async def _run_generation():
+    async def _run_generation(requested_aspect_ratio: str | None = aspect_ratio):
         """Async функция для выполнения генерации"""
         async with async_session() as session:
             try:
@@ -149,12 +149,12 @@ def generate_fitting_task(
                 )
 
                 # Определение aspect_ratio: если выбрано auto, берём пропорции user photo
-                aspect_ratio = (aspect_ratio or "auto").lower()
-                if aspect_ratio == "auto":
-                    aspect_ratio = determine_image_size_for_fitting(user_photo_path)
-                    logger.info("Determined aspect ratio for fitting: %s", aspect_ratio)
+                resolved_aspect_ratio = (requested_aspect_ratio or "auto").lower()
+                if resolved_aspect_ratio == "auto":
+                    resolved_aspect_ratio = determine_image_size_for_fitting(user_photo_path)
+                    logger.info("Determined aspect ratio for fitting: %s", resolved_aspect_ratio)
                 else:
-                    logger.info("Using requested aspect ratio for fitting: %s", aspect_ratio)
+                    logger.info("Using requested aspect ratio for fitting: %s", resolved_aspect_ratio)
 
                 # Паддинг item-фото под геометрию user-фото (без искажений)
                 try:
@@ -228,7 +228,7 @@ def generate_fitting_task(
                                 generated_image_url = await grs_client.generate_image(
                                     prompt=prompt,
                                     urls=[public_user_photo_url, public_item_photo_url],
-                                    aspect_ratio=aspect_ratio,
+                                    aspect_ratio=resolved_aspect_ratio,
                                     image_size=settings.GRS_AI_IMAGE_SIZE,
                                     progress_callback=progress_callback,
                                 )
@@ -273,7 +273,7 @@ def generate_fitting_task(
                                     user_photo_url=public_user_photo_url,
                                     item_photo_url=public_item_photo_url,
                                     prompt=prompt,
-                                    image_size=aspect_ratio,
+                                    image_size=resolved_aspect_ratio,
                                     progress_callback=progress_callback,
                                 )
 
@@ -305,7 +305,7 @@ def generate_fitting_task(
                                     user_photo_data=user_photo_base64,
                                     item_photo_data=item_photo_base64,
                                     prompt=prompt,
-                                    aspect_ratio=aspect_ratio,
+                                    aspect_ratio=resolved_aspect_ratio,
                                 )
                             service_used = "openrouter"
                             logger.info("OpenRouter virtual try-on successful")
@@ -393,7 +393,7 @@ def generate_fitting_task(
 
                 logger.info(
                     f"Fitting generation completed: generation_id={generation_id}, "
-                    f"service={service_used}, aspect_ratio={aspect_ratio}"
+                    f"service={service_used}, aspect_ratio={resolved_aspect_ratio}"
                 )
 
                 if not settings.BILLING_V5_ENABLED:

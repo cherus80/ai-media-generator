@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Сообщения статуса генерации переведены на русский язык.
+- Исправлена ошибка `UnboundLocalError` при генерации с выбором соотношения сторон.
 - `scripts/backup-from-vps.sh` безопасно читает `.env` на VPS без ошибок из-за строк без `KEY=VALUE`.
 - Тестовое восстановление в `scripts/backup-from-vps.sh` использует quiet-режим psql и временную загрузку файла на VPS.
 - `scripts/restore-vps-db.sh` дополнительно проверяет обязательные таблицы и alembic revision после восстановления.
