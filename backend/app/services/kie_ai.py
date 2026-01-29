@@ -44,7 +44,7 @@ class KieAIClient:
     """
     Async client for kie.ai Nano Banana Pro API (google/nano-banana).
 
-    - URL-based inputs (image_urls)
+    - URL-based inputs (image_input)
     - Polling via record-info endpoint (successFlag/progress)
     """
 
@@ -139,10 +139,10 @@ class KieAIClient:
             prompt[:50],
         )
         input_payload = {
-            # dok: image_urls (array of URLs)
-            "image_urls": [user_photo_url, item_photo_url],
+            # dok: image_input (array of URLs)
+            "image_input": [user_photo_url, item_photo_url],
             "output_format": output_format.lower(),
-            "image_size": image_size,
+            "aspect_ratio": image_size,
         }
         task_id, status_id = await self._submit_task(prompt=prompt, input_payload=input_payload)
         task_data = await self._poll_task_until_complete(status_id, progress_callback)
@@ -169,9 +169,9 @@ class KieAIClient:
             image_urls.extend(attachments_urls)
 
         input_payload = {
-            "image_urls": image_urls,
+            "image_input": image_urls,
             "output_format": output_format.lower(),
-            "image_size": image_size,
+            "aspect_ratio": image_size,
         }
         # mask_url не документирован в новой схеме, поэтому не отправляем
 
