@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useExampleGenerationStore } from '../../store/exampleGenerationStore';
 import toast from 'react-hot-toast';
-import { downloadImage, resolveAbsoluteUrl } from '../../utils/download';
+import { buildImageFilename, downloadImage, resolveAbsoluteUrl } from '../../utils/download';
 
 interface ExampleGenerationResultProps {
   onBackToExamples: () => void;
@@ -29,7 +29,10 @@ export const ExampleGenerationResult: React.FC<ExampleGenerationResultProps> = (
   const handleDownload = async () => {
     if (!result.image_url) return;
     try {
-      await downloadImage(result.image_url, `example-${result.task_id}.png`);
+      await downloadImage(
+        result.image_url,
+        buildImageFilename(result.image_url, `example-${result.task_id}`)
+      );
       toast.success('Изображение скачано!');
     } catch (error) {
       console.error('Не удалось скачать изображение:', error);

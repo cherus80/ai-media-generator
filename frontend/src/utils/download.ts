@@ -15,6 +15,25 @@ export const resolveAbsoluteUrl = (url: string): string => {
   return `${PUBLIC_BASE_URL}${normalized}`;
 };
 
+const extractImageExtension = (url: string): string | null => {
+  if (!url) return null;
+  const clean = url.split('?')[0].split('#')[0];
+  const ext = clean.split('.').pop()?.toLowerCase() || '';
+  if (['png', 'jpg', 'jpeg', 'webp'].includes(ext)) {
+    return ext;
+  }
+  return null;
+};
+
+export const buildImageFilename = (
+  url: string,
+  baseName: string,
+  fallbackExt: string = 'png'
+): string => {
+  const ext = extractImageExtension(url) || fallbackExt;
+  return `${baseName}.${ext}`;
+};
+
 export const downloadImage = async (url: string, filename: string): Promise<void> => {
   const targetUrl = resolveAbsoluteUrl(url);
   if (!targetUrl) {

@@ -8,12 +8,14 @@ import { ExampleGenerationResult } from '../components/examples/ExampleGeneratio
 import { useExampleGenerationStore } from '../store/exampleGenerationStore';
 import toast from 'react-hot-toast';
 import type { ChatAttachment } from '../types/editing';
+import type { OutputFormat } from '../types/generation';
 
 export const ExampleGenerationPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const rawPrompt = searchParams.get('prompt') || '';
   const prompt = useMemo(() => rawPrompt.trim(), [rawPrompt]);
+  const [outputFormat, setOutputFormat] = React.useState<OutputFormat>('png');
 
   const {
     isGenerating,
@@ -31,7 +33,7 @@ export const ExampleGenerationPage: React.FC = () => {
 
   const handleSend = async (message: string, attachments?: ChatAttachment[]) => {
     try {
-      await startGeneration(message, attachments || []);
+      await startGeneration(message, attachments || [], outputFormat);
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || err?.message || 'Ошибка генерации');
     }
@@ -74,6 +76,9 @@ export const ExampleGenerationPage: React.FC = () => {
                 requireAttachments
                 attachmentsHint=""
                 attachmentTooltip="Нужно обязательно прикрепить фото (можно несколько)"
+                outputFormat={outputFormat}
+                onOutputFormatChange={setOutputFormat}
+                showOutputFormatSelect
               />
             </div>
           )}

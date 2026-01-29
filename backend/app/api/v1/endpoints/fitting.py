@@ -117,12 +117,12 @@ async def generate_fitting(
         if not user_photo_path:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="User photo not found or expired. Please upload it again."
+                detail="Фото пользователя не найдено или устарело. Пожалуйста, загрузите его снова."
             )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User photo not found: {str(e)}"
+            detail=f"Фото пользователя не найдено: {str(e)}"
         )
 
     try:
@@ -130,12 +130,12 @@ async def generate_fitting(
         if not item_photo_path:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Item photo not found or expired. Please upload it again."
+                detail="Фото вещи/аксессуара не найдено или устарело. Пожалуйста, загрузите его снова."
             )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Item photo not found: {str(e)}"
+            detail=f"Фото вещи/аксессуара не найдено: {str(e)}"
         )
 
     if billing_v5_enabled:
@@ -161,7 +161,7 @@ async def generate_fitting(
         if not can_perform:
             raise HTTPException(
                 status_code=status.HTTP_402_PAYMENT_REQUIRED,
-                detail="Insufficient stars"
+                detail="Недостаточно ⭐️звёзд"
             )
 
     # Создание записи Generation в БД
@@ -194,6 +194,7 @@ async def generate_fitting(
             "user_photo_url": generation.user_photo_url,
             "item_photo_url": generation.item_photo_url,
             "accessory_zone": request.accessory_zone,
+            "output_format": request.output_format,
             "credits_cost": credits_cost,  # Передаём стоимость в задачу
             "primary_provider": primary_provider,
             "fallback_provider": fallback_provider,
@@ -208,7 +209,7 @@ async def generate_fitting(
     return FittingResponse(
         task_id=task.id,
         status="pending",
-        message="Fitting generation started. Use task_id to track progress.",
+        message="Генерация запущена. Используйте task_id для отслеживания прогресса.",
     )
 
 
@@ -237,7 +238,7 @@ async def get_fitting_status(
     if not generation:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Generation task not found"
+            detail="Задача генерации не найдена"
         )
 
     # Получение прогресса из БД (если есть) или дефолтные значения
@@ -249,13 +250,13 @@ async def get_fitting_status(
     }.get(generation.status, 0)
 
     message_map = {
-        "pending": "Task is waiting in queue",
-        "processing": "Generating your fitting...",
-        "completed": "Fitting generation completed!",
-        "failed": "Generation failed. Please try again.",
+        "pending": "Задача ожидает в очереди",
+        "processing": "Генерируем ваш образ...",
+        "completed": "Генерация завершена!",
+        "failed": "Генерация не удалась. Попробуйте ещё раз.",
     }
 
-    message = message_map.get(generation.status, "Unknown status")
+    message = message_map.get(generation.status, "Неизвестный статус")
 
     return FittingStatusResponse(
         task_id=task_id,
@@ -290,14 +291,14 @@ async def get_fitting_result(
     if not generation:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Generation task not found"
+            detail="Задача генерации не найдена"
         )
 
     # Проверка статуса
     if generation.status == "pending" or generation.status == "processing":
         raise HTTPException(
             status_code=status.HTTP_202_ACCEPTED,
-            detail="Generation is still in progress. Please wait."
+            detail="Генерация ещё выполняется. Пожалуйста, подождите."
         )
 
     if generation.status == "failed":
@@ -306,7 +307,7 @@ async def get_fitting_result(
             status="failed",
             image_url=None,
             has_watermark=False,
-            error_message=generation.error_message or "Generation failed. Please try again.",
+            error_message=generation.error_message or "Генерация не удалась. Попробуйте ещё раз.",
             credits_spent=generation.credits_spent,
             created_at=generation.created_at.isoformat(),
         )

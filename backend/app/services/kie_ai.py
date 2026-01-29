@@ -54,7 +54,7 @@ class KieAIClient:
     MODEL_NAME = "nano-banana-pro"  # согласно актуальной документации
 
     DEFAULT_POLL_INTERVAL = 5
-    DEFAULT_MAX_POLLS = 36  # ~180s с интервалом 5 секунд
+    DEFAULT_MAX_POLLS = 60  # ~300s с интервалом 5 секунд
 
     SUPPORTED_ASPECT_RATIOS = [
         "1:1",
@@ -132,6 +132,11 @@ class KieAIClient:
         output_format: str = "png",
         progress_callback: Optional[callable] = None,
     ) -> str:
+        output_format = output_format.lower()
+        if output_format not in self.SUPPORTED_OUTPUT_FORMATS:
+            logger.warning("Unsupported output format '%s', using 'png'", output_format)
+            output_format = "png"
+
         logger.info(
             "Starting virtual try-on: user=%s, item=%s, prompt=%s...",
             user_photo_url,
@@ -141,7 +146,7 @@ class KieAIClient:
         input_payload = {
             # dok: image_input (array of URLs)
             "image_input": [user_photo_url, item_photo_url],
-            "output_format": output_format.lower(),
+            "output_format": output_format,
             "aspect_ratio": image_size,
         }
         task_id, status_id = await self._submit_task(prompt=prompt, input_payload=input_payload)
@@ -164,13 +169,18 @@ class KieAIClient:
             logger.warning("Aspect ratio '%s' unsupported, using 'auto'", image_size)
             image_size = "auto"
 
+        output_format = output_format.lower()
+        if output_format not in self.SUPPORTED_OUTPUT_FORMATS:
+            logger.warning("Unsupported output format '%s', using 'png'", output_format)
+            output_format = "png"
+
         image_urls: List[str] = [base_image_url]
         if attachments_urls:
             image_urls.extend(attachments_urls)
 
         input_payload = {
             "image_input": image_urls,
-            "output_format": output_format.lower(),
+            "output_format": output_format,
             "aspect_ratio": image_size,
         }
         # mask_url не документирован в новой схеме, поэтому не отправляем

@@ -6,7 +6,7 @@
 import React from 'react';
 import toast from 'react-hot-toast';
 import type { ChatMessage } from '../../types/editing';
-import { downloadImage, resolveAbsoluteUrl } from '../../utils/download';
+import { buildImageFilename, downloadImage, resolveAbsoluteUrl } from '../../utils/download';
 
 interface ImageMessageProps {
   message: ChatMessage;
@@ -23,7 +23,10 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({ message }) => {
 
   const handleDownload = async () => {
     try {
-      await downloadImage(message.image_url!, `edited-image-${Date.now()}.png`);
+      await downloadImage(
+        message.image_url!,
+        buildImageFilename(message.image_url!, `edited-image-${Date.now()}`)
+      );
       toast.success('Изображение скачивается');
     } catch (error) {
       console.error('Не удалось скачать изображение:', error);

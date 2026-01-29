@@ -3,6 +3,8 @@
  * Соответствуют backend схемам из app/schemas/fitting.py
  */
 
+import type { OutputFormat } from './generation';
+
 // Зоны для аксессуаров
 export type AccessoryZone = 'head' | 'face' | 'neck' | 'hands' | 'legs' | 'body' | null;
 
@@ -22,6 +24,7 @@ export interface FittingRequest {
   user_photo_id: string; // UUID
   item_photo_id: string; // UUID
   accessory_zone?: AccessoryZone;
+  output_format?: OutputFormat;
 }
 
 // Ответ при запуске генерации

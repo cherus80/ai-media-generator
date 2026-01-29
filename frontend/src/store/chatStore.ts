@@ -25,11 +25,15 @@ import { useAuthStore } from './authStore';
 import toast from 'react-hot-toast';
 import { getAuthToken } from '../utils/authToken';
 import { getUploadErrorMessage } from '../utils/uploadErrors';
+import { compressImageFile } from '../utils/imageCompression';
+import type { OutputFormat } from '../types/generation';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000')
   .replace(/\/$/, '')
   .replace(/\/api$/, '');
 const MAX_PROMPT_LENGTH = 4000;
+const CLIENT_MAX_FILE_SIZE = 10 * 1024 * 1024;
+const TARGET_UPLOAD_SIZE = 5 * 1024 * 1024;
 
 interface ChatState {
   // State: сессия чата
@@ -49,6 +53,7 @@ interface ChatState {
   isGenerating: boolean;
   taskId: string | null;
   generationProgress: number; // 0-100
+  outputFormat: OutputFormat;
 
   // State: ошибки
   error: string | null;
@@ -70,6 +75,7 @@ interface ChatState {
   resetSession: () => Promise<void>;
   clearError: () => void;
   clearUploadError: () => void;
+  setOutputFormat: (format: OutputFormat) => void;
 
   // Actions: внутренние
   updateGenerationProgress: (status: FittingStatusResponse) => void;
@@ -96,6 +102,7 @@ export const useChatStore = create<ChatState>()(
   generationProgress: 0,
   error: null,
   uploadError: null,
+  outputFormat: 'png',
 
   // Загрузка базового изображения и создание сессии
   uploadAndCreateSession: async (file: File) => {
@@ -113,17 +120,32 @@ export const useChatStore = create<ChatState>()(
         );
       }
 
-      if (file.size > 10 * 1024 * 1024) {
+      if (file.size > CLIENT_MAX_FILE_SIZE) {
         throw new Error(
           'Файл слишком большой. Максимальный размер: 10MB. Сожмите изображение или выберите файл меньшего размера.'
         );
       }
 
+      const compression = await compressImageFile(file, {
+        maxSizeBytes: TARGET_UPLOAD_SIZE,
+      });
+
+      if (!compression.meetsLimit) {
+        const isIphoneFormat = /heic|heif|mpo/i.test(file.type) || /\.(heic|heif|mpo)$/i.test(file.name);
+        throw new Error(
+          isIphoneFormat
+            ? 'Формат HEIC/HEIF/MPO нельзя сжать в браузере. Сохраните файл в JPEG/PNG или выберите фото меньшего размера.'
+            : 'Не удалось сжать изображение до 5MB. Попробуйте другое фото или уменьшите размер.'
+        );
+      }
+
+      const uploadFile = compression.file;
+
       // Создаём preview
-      const preview = await createPreview(file);
+      const preview = await createPreview(uploadFile);
 
       // Загружаем на сервер
-      const uploadResponse = await uploadBaseImage(file);
+      const uploadResponse = await uploadBaseImage(uploadFile);
 
       // Создаём сессию чата
       const sessionResponse = await createChatSession({
@@ -131,7 +153,7 @@ export const useChatStore = create<ChatState>()(
       });
 
       const resolvedUrl = resolveUploadUrl(uploadResponse.base_image_url);
-      const finalPreview = shouldUseServerPreview(file) ? resolvedUrl : preview;
+      const finalPreview = shouldUseServerPreview(uploadFile) ? resolvedUrl : preview;
 
       // Сохраняем в state
       set({
@@ -139,7 +161,7 @@ export const useChatStore = create<ChatState>()(
           file_id: 'base-image',
           url: resolvedUrl,
           preview: finalPreview,
-          file,
+          file: uploadFile,
         },
         sessionId: sessionResponse.session_id,
         isSessionActive: true,
@@ -150,7 +172,7 @@ export const useChatStore = create<ChatState>()(
     } catch (error: any) {
       const errorMessage = getUploadErrorMessage(error, {
         kind: 'image',
-        maxSizeMb: 10,
+        maxSizeMb: 5,
         allowedTypesLabel: 'JPEG, PNG, WebP, HEIC/HEIF, MPO',
         fallback: 'Не удалось загрузить изображение. Попробуйте еще раз.',
       });
@@ -315,6 +337,7 @@ export const useChatStore = create<ChatState>()(
         session_id: sessionId,
         prompt,
         attachments,
+        output_format: get().outputFormat,
       });
 
       console.log('[chatStore] API response:', response);
@@ -333,7 +356,7 @@ export const useChatStore = create<ChatState>()(
           slowWarningMs: 60000,
           onSlowWarning: () =>
             toast(
-              'Генерация может занять до 3 минут из-за нагрузки на сервис. Приложение продолжает ждать ответ.',
+              'Генерация может занять до 5 минут из-за нагрузки на сервис. Приложение продолжает ждать ответ.',
               { icon: '⏳' }
             ),
         }
@@ -419,6 +442,7 @@ export const useChatStore = create<ChatState>()(
       generationProgress: 0,
       error: null,
       uploadError: null,
+      outputFormat: 'png',
     });
   },
 
@@ -449,6 +473,9 @@ export const useChatStore = create<ChatState>()(
   },
   clearUploadError: () => {
     set({ uploadError: null });
+  },
+  setOutputFormat: (format: OutputFormat) => {
+    set({ outputFormat: format });
   },
     }),
     {

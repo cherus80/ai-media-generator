@@ -26,6 +26,10 @@ class FittingRequest(BaseModel):
         None,
         description="Зона для аксессуара: head, face, neck, hands, legs, body"
     )
+    output_format: Optional[str] = Field(
+        None,
+        description="Формат вывода изображения: png, jpg/jpeg или webp"
+    )
 
     @field_validator("accessory_zone")
     @classmethod
@@ -37,10 +41,23 @@ class FittingRequest(BaseModel):
         valid_zones = {"head", "face", "neck", "hands", "legs", "body"}
         if v.lower() not in valid_zones:
             raise ValueError(
-                f"Invalid accessory_zone. Must be one of: {', '.join(valid_zones)}"
+                f"Недопустимая зона аксессуара. Доступные значения: {', '.join(valid_zones)}"
             )
 
         return v.lower()
+
+    @field_validator("output_format")
+    @classmethod
+    def validate_output_format(cls, v: Optional[str]) -> Optional[str]:
+        """Валидация формата вывода"""
+        if v is None:
+            return None
+        normalized = v.lower()
+        if normalized == "jpg":
+            normalized = "jpeg"
+        if normalized not in {"png", "jpeg", "webp"}:
+            raise ValueError("Недопустимый формат вывода. Используйте png, jpg/jpeg или webp.")
+        return normalized
 
 
 class FittingResponse(BaseModel):
@@ -49,7 +66,7 @@ class FittingResponse(BaseModel):
     task_id: str = Field(..., description="ID задачи Celery")
     status: str = Field(default="pending", description="Статус задачи")
     message: str = Field(
-        default="Fitting generation started",
+        default="Генерация запущена",
         description="Сообщение о статусе"
     )
 

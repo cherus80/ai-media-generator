@@ -7,7 +7,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useFittingStore } from '../../store/fittingStore';
 import toast from 'react-hot-toast';
-import { downloadImage, resolveAbsoluteUrl } from '../../utils/download';
+import { buildImageFilename, downloadImage, resolveAbsoluteUrl } from '../../utils/download';
 
 interface FittingResultProps {
   onNewFitting: () => void;
@@ -27,7 +27,10 @@ export const FittingResult: React.FC<FittingResultProps> = ({ onNewFitting }) =>
     if (!result.image_url) return;
 
     try {
-      await downloadImage(result.image_url, `fitting-${result.task_id}.png`);
+      await downloadImage(
+        result.image_url,
+        buildImageFilename(result.image_url, `fitting-${result.task_id}`)
+      );
       toast.success('Изображение скачано!');
     } catch (error) {
       console.error('Не удалось скачать изображение:', error);

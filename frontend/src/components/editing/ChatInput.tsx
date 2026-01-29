@@ -12,6 +12,8 @@ import { Badge } from '../ui/Badge';
 import type { ChatAttachment } from '../../types/editing';
 import toast from 'react-hot-toast';
 import { getUploadErrorMessage } from '../../utils/uploadErrors';
+import { compressImageFile } from '../../utils/imageCompression';
+import type { OutputFormat } from '../../types/generation';
 
 interface ChatInputProps {
   onSend: (message: string, attachments?: ChatAttachment[]) => void;
@@ -21,6 +23,9 @@ interface ChatInputProps {
   requireAttachments?: boolean;
   attachmentsHint?: string;
   attachmentTooltip?: string;
+  outputFormat?: OutputFormat;
+  onOutputFormatChange?: (format: OutputFormat) => void;
+  showOutputFormatSelect?: boolean;
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({
@@ -31,6 +36,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   requireAttachments = false,
   attachmentsHint,
   attachmentTooltip,
+  outputFormat,
+  onOutputFormatChange,
+  showOutputFormatSelect = false,
 }) => {
   const [message, setMessage] = React.useState('');
   const [attachments, setAttachments] = React.useState<ChatAttachment[]>([]);
@@ -45,6 +53,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const trimmedMessage = message.trim();
   const promptLength = trimmedMessage.length;
   const isPromptTooLong = promptLength > MAX_PROMPT_LENGTH;
+  const CLIENT_MAX_FILE_SIZE = 10 * 1024 * 1024;
+  const TARGET_UPLOAD_SIZE = 5 * 1024 * 1024;
 
   const hasActiveSubscription = !!(
     user?.subscription_type &&
@@ -135,7 +145,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
+    if (file.size > CLIENT_MAX_FILE_SIZE) {
       toast.error(
         'Файл слишком большой. Максимальный размер: 10MB. Сожмите изображение или выберите файл меньшего размера.'
       );
@@ -145,18 +155,33 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
     setIsUploadingAttachment(true);
     try {
-      const uploaded: ChatAttachment = await uploadAttachment(file);
+      const compression = await compressImageFile(file, {
+        maxSizeBytes: TARGET_UPLOAD_SIZE,
+      });
+
+      if (!compression.meetsLimit) {
+        const isIphoneFormat = /heic|heif|mpo/i.test(file.type) || /\.(heic|heif|mpo)$/i.test(file.name);
+        toast.error(
+          isIphoneFormat
+            ? 'Формат HEIC/HEIF/MPO нельзя сжать в браузере. Сохраните файл в JPEG/PNG или выберите фото меньшего размера.'
+            : 'Не удалось сжать изображение до 5MB. Попробуйте другое фото или уменьшите размер.'
+        );
+        return;
+      }
+
+      const uploadFile = compression.file;
+      const uploaded: ChatAttachment = await uploadAttachment(uploadFile);
       setAttachments((prev) => [...prev, uploaded]);
       setPreviews((prev) => ({
         ...prev,
-        [uploaded.id]: URL.createObjectURL(file),
+        [uploaded.id]: URL.createObjectURL(uploadFile),
       }));
       toast.success('Файл прикреплён');
     } catch (err: any) {
       toast.error(
         getUploadErrorMessage(err, {
           kind: 'image',
-          maxSizeMb: 10,
+          maxSizeMb: 5,
           allowedTypesLabel: 'JPEG, PNG, WebP, HEIC/HEIF, MPO',
           fallback: 'Не удалось загрузить файл. Попробуйте еще раз.',
         })
@@ -201,6 +226,22 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             </span>
           )}
         </div>
+        {showOutputFormatSelect && outputFormat && onOutputFormatChange && (
+          <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-dark-600">
+            <span className="font-medium text-dark-700">Формат вывода:</span>
+            <select
+              value={outputFormat}
+              onChange={(e) => onOutputFormatChange(e.target.value as OutputFormat)}
+              disabled={disabled || isUploadingAttachment}
+              className="rounded-lg border border-primary-200 bg-white px-2 py-1 text-xs font-medium text-dark-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
+            >
+              <option value="png">PNG</option>
+              <option value="jpeg">JPG</option>
+              <option value="webp">WebP</option>
+            </select>
+            <span className="text-dark-500">Можно выбрать до запуска генерации.</span>
+          </div>
+        )}
         <div className="flex flex-wrap items-end gap-2 sm:gap-3">
           {/* Attach button слева */}
           <motion.div

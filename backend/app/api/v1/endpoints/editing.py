@@ -210,7 +210,7 @@ async def create_session(
         logger.error(f"Failed to create chat session: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create chat session: {str(e)}"
+            detail=f"Не удалось создать сессию чата: {str(e)}"
         )
 
 
@@ -252,15 +252,15 @@ async def send_message(
         if not can_perform:
             raise HTTPException(
                 status_code=status.HTTP_402_PAYMENT_REQUIRED,
-                detail=reason or "Insufficient stars"
+                detail=reason or "Недостаточно ⭐️звёзд"
             )
     else:
         # Для Billing v5 проверяем наличие кредитов
         if not getattr(current_user, "is_admin", False) and current_user.balance_credits < assistant_cost:
             raise HTTPException(
                 status_code=status.HTTP_402_PAYMENT_REQUIRED,
-                detail="Insufficient stars for AI assistant"
-            )
+            detail="Недостаточно ⭐️звёзд для AI-помощника"
+        )
 
     try:
         # Проверка существования сессии
@@ -369,18 +369,18 @@ async def send_message(
     except ChatSessionNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Chat session {request.session_id} not found"
+            detail=f"Сессия чата {request.session_id} не найдена"
         )
     except ChatSessionInactiveError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Chat session {request.session_id} is inactive"
+            detail=f"Сессия чата {request.session_id} неактивна"
         )
     except Exception as e:
         logger.error(f"Error in send_message: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to process message: {str(e)}"
+            detail=f"Не удалось обработать сообщение: {str(e)}"
         )
 
 
@@ -424,7 +424,7 @@ async def generate_image(
         if not can_perform:
             raise HTTPException(
                 status_code=status.HTTP_402_PAYMENT_REQUIRED,
-                detail=reason or "Insufficient stars"
+                detail=reason or "Недостаточно ⭐️звёзд"
             )
     else:
         billing = BillingV5Service(db)
@@ -497,6 +497,7 @@ async def generate_image(
                 "primary_provider": primary_provider,
                 "fallback_provider": fallback_provider,
                 "disable_fallback": disable_fallback,
+                "output_format": request.output_format,
             },
             task_id=str(generation.id),
         )
@@ -512,24 +513,24 @@ async def generate_image(
         return GenerateImageResponse(
             task_id=task.id,
             status="pending",
-            message="Image generation started",
+            message="Генерация запущена",
         )
 
     except ChatSessionNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Chat session {request.session_id} not found"
+            detail=f"Сессия чата {request.session_id} не найдена"
         )
     except ChatSessionInactiveError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Chat session {request.session_id} is inactive"
+            detail=f"Сессия чата {request.session_id} неактивна"
         )
     except Exception as e:
         logger.error(f"Error in generate_image: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to start generation: {str(e)}"
+            detail=f"Не удалось запустить генерацию: {str(e)}"
         )
 
 
@@ -597,7 +598,7 @@ async def generate_image_from_example(
         if not can_perform:
             raise HTTPException(
                 status_code=status.HTTP_402_PAYMENT_REQUIRED,
-                detail=reason or "Insufficient stars"
+                detail=reason or "Недостаточно ⭐️звёзд"
             )
     else:
         billing = BillingV5Service(db)
@@ -638,6 +639,7 @@ async def generate_image_from_example(
                 "primary_provider": primary_provider,
                 "fallback_provider": fallback_provider,
                 "disable_fallback": disable_fallback,
+                "output_format": request.output_format,
             },
             task_id=str(generation.id),
         )
@@ -654,14 +656,14 @@ async def generate_image_from_example(
         return GenerateImageResponse(
             task_id=task.id,
             status="pending",
-            message="Image generation started",
+            message="Генерация запущена",
         )
 
     except Exception as e:
         logger.error("Error in generate_image_from_example: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to start generation: {str(e)}"
+            detail=f"Не удалось запустить генерацию: {str(e)}"
         )
 
 
@@ -705,13 +707,13 @@ async def get_history(
     except ChatSessionNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Chat session {session_id} not found"
+            detail=f"Сессия чата {session_id} не найдена"
         )
     except Exception as e:
         logger.error(f"Error in get_history: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get history: {str(e)}"
+            detail=f"Не удалось получить историю: {str(e)}"
         )
 
 
@@ -744,17 +746,17 @@ async def delete_session(
 
         return ResetSessionResponse(
             session_id=session_id,
-            message="Chat session reset successfully",
+            message="Сессия чата успешно сброшена",
         )
 
     except ChatSessionNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Chat session {session_id} not found"
+            detail=f"Сессия чата {session_id} не найдена"
         )
     except Exception as e:
         logger.error(f"Error in delete_session: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to reset session: {str(e)}"
+            detail=f"Не удалось сбросить сессию: {str(e)}"
         )

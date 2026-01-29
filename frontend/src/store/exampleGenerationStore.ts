@@ -5,6 +5,7 @@
 import { create } from 'zustand';
 import type { ChatAttachment } from '../types/editing';
 import type { FittingStatusResponse, FittingResult, GenerationStatus } from '../types/fitting';
+import type { OutputFormat } from '../types/generation';
 import { generateExampleImage, pollEditingStatus } from '../api/editing';
 import { useAuthStore } from './authStore';
 import toast from 'react-hot-toast';
@@ -20,7 +21,7 @@ interface ExampleGenerationState {
   result: FittingResult | null;
   error: string | null;
 
-  startGeneration: (prompt: string, attachments: ChatAttachment[]) => Promise<FittingResult>;
+  startGeneration: (prompt: string, attachments: ChatAttachment[], outputFormat?: OutputFormat) => Promise<FittingResult>;
   reset: () => void;
   updateProgress: (status: FittingStatusResponse) => void;
 }
@@ -34,7 +35,7 @@ export const useExampleGenerationStore = create<ExampleGenerationState>((set, ge
   result: null,
   error: null,
 
-  startGeneration: async (prompt: string, attachments: ChatAttachment[]) => {
+  startGeneration: async (prompt: string, attachments: ChatAttachment[], outputFormat?: OutputFormat) => {
     const trimmedPrompt = prompt.trim();
     if (!trimmedPrompt) {
       throw new Error('Промпт не может быть пустым');
@@ -58,6 +59,7 @@ export const useExampleGenerationStore = create<ExampleGenerationState>((set, ge
       const response = await generateExampleImage({
         prompt: trimmedPrompt,
         attachments,
+        output_format: outputFormat,
       });
 
       if (!response.task_id) {
@@ -79,7 +81,7 @@ export const useExampleGenerationStore = create<ExampleGenerationState>((set, ge
           slowWarningMs: 60000,
           onSlowWarning: () =>
             toast(
-              'Генерация может занять до 3 минут из-за нагрузки на сервис. Приложение продолжает ждать ответ.',
+              'Генерация может занять до 5 минут из-за нагрузки на сервис. Приложение продолжает ждать ответ.',
               { icon: '⏳' }
             ),
         }

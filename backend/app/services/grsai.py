@@ -51,7 +51,7 @@ class GrsAIClient:
     RESULT_ENDPOINT = "/v1/draw/result"
 
     DEFAULT_POLL_INTERVAL = 5
-    DEFAULT_MAX_POLLS = 36  # ~180s with 5s interval
+    DEFAULT_MAX_POLLS = 60  # ~300s with 5s interval
 
     def __init__(
         self,

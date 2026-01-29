@@ -11,6 +11,17 @@ from uuid import UUID
 from pydantic import BaseModel, Field, field_validator
 
 
+def _normalize_output_format(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    normalized = value.lower()
+    if normalized == "jpg":
+        normalized = "jpeg"
+    if normalized not in {"png", "jpeg", "webp"}:
+        raise ValueError("Недопустимый формат вывода. Используйте png, jpg/jpeg или webp.")
+    return normalized
+
+
 class ChatAttachment(BaseModel):
     """Вложение (изображение), прикреплённое к сообщению"""
 
@@ -120,6 +131,15 @@ class GenerateImageRequest(BaseModel):
         default=None,
         description="Вложения (дополнительные изображения-референсы)",
     )
+    output_format: Optional[str] = Field(
+        None,
+        description="Формат вывода изображения: png, jpg/jpeg или webp",
+    )
+
+    @field_validator("output_format")
+    @classmethod
+    def validate_output_format(cls, v: Optional[str]) -> Optional[str]:
+        return _normalize_output_format(v)
 
 
 class ExampleGenerateRequest(BaseModel):
@@ -135,6 +155,15 @@ class ExampleGenerateRequest(BaseModel):
         default=None,
         description="Вложения (фото участников, используются вместе в одной генерации)",
     )
+    output_format: Optional[str] = Field(
+        None,
+        description="Формат вывода изображения: png, jpg/jpeg или webp",
+    )
+
+    @field_validator("output_format")
+    @classmethod
+    def validate_output_format(cls, v: Optional[str]) -> Optional[str]:
+        return _normalize_output_format(v)
 
 
 class GenerateImageResponse(BaseModel):
@@ -149,7 +178,7 @@ class GenerateImageResponse(BaseModel):
         description="Статус задачи (pending)",
     )
     message: str = Field(
-        default="Image generation started",
+        default="Генерация запущена",
         description="Сообщение о статусе",
     )
 
@@ -218,7 +247,7 @@ class ResetSessionResponse(BaseModel):
         description="UUID сессии чата",
     )
     message: str = Field(
-        default="Chat session reset successfully",
+        default="Сессия чата успешно сброшена",
         description="Сообщение о результате",
     )
 

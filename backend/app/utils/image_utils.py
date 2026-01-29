@@ -111,7 +111,11 @@ async def download_image_bytes(url: str, timeout: float = 30.0) -> tuple[bytes, 
     return response.content, ext, content_type
 
 
-def normalize_image_bytes(image_bytes: bytes, fallback_ext: Optional[str] = None) -> tuple[bytes, str]:
+def normalize_image_bytes(
+    image_bytes: bytes,
+    fallback_ext: Optional[str] = None,
+    target_format: Optional[str] = None,
+) -> tuple[bytes, str]:
     """
     Применяет EXIF-поворот и возвращает обновлённые байты + расширение.
     """
@@ -123,15 +127,32 @@ def normalize_image_bytes(image_bytes: bytes, fallback_ext: Optional[str] = None
                 logger.warning("Failed to apply EXIF orientation: %s", err)
                 oriented = im
 
-            fmt = (im.format or fallback_ext or "PNG").upper()
-            if fmt in {"HEIC", "HEIF", "MPO"}:
-                fmt = "JPEG"
+            fmt = None
+            if target_format:
+                normalized = normalize_output_format(target_format)
+                if normalized == "jpeg":
+                    fmt = "JPEG"
+                elif normalized == "png":
+                    fmt = "PNG"
+                elif normalized == "webp":
+                    fmt = "WEBP"
+            if not fmt:
+                fmt = (im.format or fallback_ext or "PNG").upper()
+                if fmt in {"HEIC", "HEIF", "MPO"}:
+                    fmt = "JPEG"
 
             if fmt == "JPEG" and oriented.mode not in ("RGB", "L"):
                 oriented = oriented.convert("RGB")
+            if fmt == "WEBP" and oriented.mode not in ("RGB", "RGBA"):
+                oriented = oriented.convert("RGBA")
 
             buf = BytesIO()
             save_kwargs = {"format": fmt}
+            if fmt == "JPEG":
+                save_kwargs["quality"] = 92
+            if fmt == "WEBP":
+                save_kwargs["quality"] = 85
+                save_kwargs["method"] = 6
             try:
                 oriented.save(buf, exif=b"", **save_kwargs)
             except TypeError:

@@ -19,6 +19,11 @@ import {
 import { useAuthStore } from './authStore';
 import toast from 'react-hot-toast';
 import { getUploadErrorMessage } from '../utils/uploadErrors';
+import { compressImageFile } from '../utils/imageCompression';
+import type { OutputFormat } from '../types/generation';
+
+const CLIENT_MAX_FILE_SIZE = 10 * 1024 * 1024;
+const TARGET_UPLOAD_SIZE = 5 * 1024 * 1024;
 
 interface FittingState {
   // State: загруженные файлы
@@ -34,6 +39,7 @@ interface FittingState {
   generationStatus: GenerationStatus | null;
   progress: number; // 0-100
   statusMessage: string | null;
+  outputFormat: OutputFormat;
 
   // State: результат
   result: FittingResult | null;
@@ -48,6 +54,7 @@ interface FittingState {
 
   // Actions: выбор зоны
   setAccessoryZone: (zone: AccessoryZone) => void;
+  setOutputFormat: (format: OutputFormat) => void;
 
   // Actions: генерация
   startGeneration: () => Promise<FittingResult>;
@@ -73,6 +80,7 @@ export const useFittingStore = create<FittingState>((set, get) => ({
   result: null,
   error: null,
   uploadError: null,
+  outputFormat: 'png',
 
   // Загрузка фото пользователя
   uploadUserPhoto: async (file: File) => {
@@ -86,19 +94,34 @@ export const useFittingStore = create<FittingState>((set, get) => ({
         );
       }
 
-      if (file.size > 10 * 1024 * 1024) {
+      if (file.size > CLIENT_MAX_FILE_SIZE) {
         throw new Error(
           'Файл слишком большой. Максимальный размер: 10MB. Сожмите изображение или выберите файл меньшего размера.'
         );
       }
 
+      const compression = await compressImageFile(file, {
+        maxSizeBytes: TARGET_UPLOAD_SIZE,
+      });
+
+      if (!compression.meetsLimit) {
+        const isIphoneFormat = /heic|heif|mpo/i.test(file.type) || /\.(heic|heif|mpo)$/i.test(file.name);
+        throw new Error(
+          isIphoneFormat
+            ? 'Формат HEIC/HEIF/MPO нельзя сжать в браузере. Сохраните файл в JPEG/PNG или выберите фото меньшего размера.'
+            : 'Не удалось сжать изображение до 5MB. Попробуйте другое фото или уменьшите размер.'
+        );
+      }
+
+      const uploadFile = compression.file;
+
       // Создаём preview
-      const preview = await createPreview(file);
+      const preview = await createPreview(uploadFile);
 
       // Загружаем на сервер
-      const uploadResponse = await uploadPhoto(file);
+      const uploadResponse = await uploadPhoto(uploadFile);
       const resolvedUrl = resolveUploadUrl(uploadResponse.file_url);
-      const finalPreview = shouldUseServerPreview(file) ? resolvedUrl : preview;
+      const finalPreview = shouldUseServerPreview(uploadFile) ? resolvedUrl : preview;
 
       // Сохраняем в state
       set({
@@ -106,7 +129,7 @@ export const useFittingStore = create<FittingState>((set, get) => ({
           file_id: uploadResponse.file_id,
           url: uploadResponse.file_url, // Исправлено: file_url вместо url
           preview: finalPreview,
-          file,
+          file: uploadFile,
           size: uploadResponse.file_size, // Исправлено: file_size вместо size
           mime_type: uploadResponse.mime_type,
         },
@@ -115,7 +138,7 @@ export const useFittingStore = create<FittingState>((set, get) => ({
     } catch (error: any) {
       const errorMessage = getUploadErrorMessage(error, {
         kind: 'image',
-        maxSizeMb: 10,
+        maxSizeMb: 5,
         allowedTypesLabel: 'JPEG, PNG, WebP, HEIC/HEIF, MPO',
         fallback: 'Не удалось загрузить фото. Попробуйте еще раз.',
       });
@@ -136,19 +159,34 @@ export const useFittingStore = create<FittingState>((set, get) => ({
         );
       }
 
-      if (file.size > 10 * 1024 * 1024) {
+      if (file.size > CLIENT_MAX_FILE_SIZE) {
         throw new Error(
           'Файл слишком большой. Максимальный размер: 10MB. Сожмите изображение или выберите файл меньшего размера.'
         );
       }
 
+      const compression = await compressImageFile(file, {
+        maxSizeBytes: TARGET_UPLOAD_SIZE,
+      });
+
+      if (!compression.meetsLimit) {
+        const isIphoneFormat = /heic|heif|mpo/i.test(file.type) || /\.(heic|heif|mpo)$/i.test(file.name);
+        throw new Error(
+          isIphoneFormat
+            ? 'Формат HEIC/HEIF/MPO нельзя сжать в браузере. Сохраните файл в JPEG/PNG или выберите фото меньшего размера.'
+            : 'Не удалось сжать изображение до 5MB. Попробуйте другое фото или уменьшите размер.'
+        );
+      }
+
+      const uploadFile = compression.file;
+
       // Создаём preview
-      const preview = await createPreview(file);
+      const preview = await createPreview(uploadFile);
 
       // Загружаем на сервер
-      const uploadResponse = await uploadPhoto(file);
+      const uploadResponse = await uploadPhoto(uploadFile);
       const resolvedUrl = resolveUploadUrl(uploadResponse.file_url);
-      const finalPreview = shouldUseServerPreview(file) ? resolvedUrl : preview;
+      const finalPreview = shouldUseServerPreview(uploadFile) ? resolvedUrl : preview;
 
       // Сохраняем в state
       set({
@@ -156,7 +194,7 @@ export const useFittingStore = create<FittingState>((set, get) => ({
           file_id: uploadResponse.file_id,
           url: uploadResponse.file_url, // Исправлено: file_url вместо url
           preview: finalPreview,
-          file,
+          file: uploadFile,
           size: uploadResponse.file_size, // Исправлено: file_size вместо size
           mime_type: uploadResponse.mime_type,
         },
@@ -165,7 +203,7 @@ export const useFittingStore = create<FittingState>((set, get) => ({
     } catch (error: any) {
       const errorMessage = getUploadErrorMessage(error, {
         kind: 'image',
-        maxSizeMb: 10,
+        maxSizeMb: 5,
         allowedTypesLabel: 'JPEG, PNG, WebP, HEIC/HEIF, MPO',
         fallback: 'Не удалось загрузить фото. Попробуйте еще раз.',
       });
@@ -178,10 +216,13 @@ export const useFittingStore = create<FittingState>((set, get) => ({
   setAccessoryZone: (zone: AccessoryZone) => {
     set({ accessoryZone: zone });
   },
+  setOutputFormat: (format: OutputFormat) => {
+    set({ outputFormat: format });
+  },
 
   // Запуск генерации
   startGeneration: async () => {
-    const { userPhoto, itemPhoto, accessoryZone } = get();
+    const { userPhoto, itemPhoto, accessoryZone, outputFormat } = get();
 
     if (!userPhoto || !itemPhoto) {
       throw new Error('Необходимо загрузить оба фото');
@@ -201,6 +242,7 @@ export const useFittingStore = create<FittingState>((set, get) => ({
         user_photo_id: userPhoto.file_id,
         item_photo_id: itemPhoto.file_id,
         accessory_zone: accessoryZone || undefined,
+        output_format: outputFormat,
       });
 
       set({
@@ -219,7 +261,7 @@ export const useFittingStore = create<FittingState>((set, get) => ({
           slowWarningMs: 60000,
           onSlowWarning: () =>
             toast(
-              'Генерация может занять до 3 минут из-за нагрузки на сервис. Приложение продолжает ждать ответ.',
+              'Генерация может занять до 5 минут из-за нагрузки на сервис. Приложение продолжает ждать ответ.',
               { icon: '⏳' }
             ),
         }
@@ -275,6 +317,7 @@ export const useFittingStore = create<FittingState>((set, get) => ({
       result: null,
       error: null,
       uploadError: null,
+      outputFormat: 'png',
     });
   },
 

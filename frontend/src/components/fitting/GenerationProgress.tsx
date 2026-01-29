@@ -99,7 +99,7 @@ export const GenerationProgress: React.FC = () => {
         {/* Info */}
         <div className="mt-12 p-4 bg-blue-50 border border-blue-200 rounded-lg text-left">
           <p className="text-sm text-blue-800">
-            <span className="font-semibold">Это займёт 20-60 секунд.</span>
+            <span className="font-semibold">Обычно 20-60 секунд, иногда до 5 минут.</span>
             <br />
             Пожалуйста, не закрывайте приложение во время генерации.
           </p>

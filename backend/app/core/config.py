@@ -87,7 +87,7 @@ class Settings(BaseSettings):
     GRS_AI_API_KEY: Optional[str] = Field(default=None, description="API key for GrsAI (optional)")
     GRS_AI_BASE_URL: str = Field(default="https://grsaiapi.com")
     GRS_AI_TIMEOUT: int = Field(
-        default=180,
+        default=300,
         description="Timeout для GrsAI запросов в секундах",
     )
     GRS_AI_POLL_INTERVAL: int = Field(
@@ -95,7 +95,7 @@ class Settings(BaseSettings):
         description="Интервал polling статуса задачи в секундах",
     )
     GRS_AI_MAX_POLLS: int = Field(
-        default=36,
+        default=60,
         description="Максимальное число polling-итераций для GrsAI",
     )
     GRS_AI_MODEL: str = Field(
@@ -123,7 +123,7 @@ class Settings(BaseSettings):
     KIE_AI_API_KEY: Optional[str] = Field(default=None, description="API key for kie.ai (optional)")
     KIE_AI_BASE_URL: str = Field(default="https://api.kie.ai/v1")
     KIE_AI_TIMEOUT: int = Field(
-        default=180,
+        default=300,
         description="Timeout для kie.ai запросов в секундах (среднее время обработки ~150s)",
     )
     KIE_AI_POLL_INTERVAL: int = Field(
