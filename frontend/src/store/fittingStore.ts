@@ -20,7 +20,7 @@ import { useAuthStore } from './authStore';
 import toast from 'react-hot-toast';
 import { getUploadErrorMessage } from '../utils/uploadErrors';
 import { compressImageFile } from '../utils/imageCompression';
-import type { OutputFormat } from '../types/generation';
+import type { AspectRatio } from '../types/generation';
 
 const CLIENT_MAX_FILE_SIZE = 10 * 1024 * 1024;
 const TARGET_UPLOAD_SIZE = 5 * 1024 * 1024;
@@ -39,7 +39,7 @@ interface FittingState {
   generationStatus: GenerationStatus | null;
   progress: number; // 0-100
   statusMessage: string | null;
-  outputFormat: OutputFormat;
+  aspectRatio: AspectRatio;
 
   // State: результат
   result: FittingResult | null;
@@ -54,7 +54,7 @@ interface FittingState {
 
   // Actions: выбор зоны
   setAccessoryZone: (zone: AccessoryZone) => void;
-  setOutputFormat: (format: OutputFormat) => void;
+  setAspectRatio: (ratio: AspectRatio) => void;
 
   // Actions: генерация
   startGeneration: () => Promise<FittingResult>;
@@ -80,7 +80,7 @@ export const useFittingStore = create<FittingState>((set, get) => ({
   result: null,
   error: null,
   uploadError: null,
-  outputFormat: 'png',
+  aspectRatio: 'auto',
 
   // Загрузка фото пользователя
   uploadUserPhoto: async (file: File) => {
@@ -216,13 +216,13 @@ export const useFittingStore = create<FittingState>((set, get) => ({
   setAccessoryZone: (zone: AccessoryZone) => {
     set({ accessoryZone: zone });
   },
-  setOutputFormat: (format: OutputFormat) => {
-    set({ outputFormat: format });
+  setAspectRatio: (ratio: AspectRatio) => {
+    set({ aspectRatio: ratio });
   },
 
   // Запуск генерации
   startGeneration: async () => {
-    const { userPhoto, itemPhoto, accessoryZone, outputFormat } = get();
+    const { userPhoto, itemPhoto, accessoryZone, aspectRatio } = get();
 
     if (!userPhoto || !itemPhoto) {
       throw new Error('Необходимо загрузить оба фото');
@@ -242,7 +242,7 @@ export const useFittingStore = create<FittingState>((set, get) => ({
         user_photo_id: userPhoto.file_id,
         item_photo_id: itemPhoto.file_id,
         accessory_zone: accessoryZone || undefined,
-        output_format: outputFormat,
+        aspect_ratio: aspectRatio,
       });
 
       set({
@@ -317,7 +317,7 @@ export const useFittingStore = create<FittingState>((set, get) => ({
       result: null,
       error: null,
       uploadError: null,
-      outputFormat: 'png',
+      aspectRatio: 'auto',
     });
   },
 

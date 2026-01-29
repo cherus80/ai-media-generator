@@ -194,7 +194,7 @@ async def generate_fitting(
             "user_photo_url": generation.user_photo_url,
             "item_photo_url": generation.item_photo_url,
             "accessory_zone": request.accessory_zone,
-            "output_format": request.output_format,
+            "aspect_ratio": request.aspect_ratio,
             "credits_cost": credits_cost,  # Передаём стоимость в задачу
             "primary_provider": primary_provider,
             "fallback_provider": fallback_provider,

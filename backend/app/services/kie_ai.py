@@ -69,8 +69,7 @@ class KieAIClient:
         "21:9",
         "auto",
     ]
-
-    SUPPORTED_OUTPUT_FORMATS = ["png", "jpeg", "jpg"]
+    DEFAULT_OUTPUT_FORMAT = "png"
 
     def __init__(
         self,
@@ -129,14 +128,8 @@ class KieAIClient:
         item_photo_url: str,
         prompt: str,
         image_size: str = "auto",
-        output_format: str = "png",
         progress_callback: Optional[callable] = None,
     ) -> str:
-        output_format = output_format.lower()
-        if output_format not in self.SUPPORTED_OUTPUT_FORMATS:
-            logger.warning("Unsupported output format '%s', using 'png'", output_format)
-            output_format = "png"
-
         logger.info(
             "Starting virtual try-on: user=%s, item=%s, prompt=%s...",
             user_photo_url,
@@ -146,8 +139,8 @@ class KieAIClient:
         input_payload = {
             # dok: image_input (array of URLs)
             "image_input": [user_photo_url, item_photo_url],
-            "output_format": output_format,
             "aspect_ratio": image_size,
+            "output_format": self.DEFAULT_OUTPUT_FORMAT,
         }
         task_id, status_id = await self._submit_task(prompt=prompt, input_payload=input_payload)
         task_data = await self._poll_task_until_complete(status_id, progress_callback)
@@ -158,7 +151,6 @@ class KieAIClient:
         base_image_url: str,
         prompt: str,
         image_size: str = "auto",
-        output_format: str = "png",
         mask_url: Optional[str] = None,
         progress_callback: Optional[callable] = None,
         attachments_urls: Optional[List[str]] = None,
@@ -169,19 +161,14 @@ class KieAIClient:
             logger.warning("Aspect ratio '%s' unsupported, using 'auto'", image_size)
             image_size = "auto"
 
-        output_format = output_format.lower()
-        if output_format not in self.SUPPORTED_OUTPUT_FORMATS:
-            logger.warning("Unsupported output format '%s', using 'png'", output_format)
-            output_format = "png"
-
         image_urls: List[str] = [base_image_url]
         if attachments_urls:
             image_urls.extend(attachments_urls)
 
         input_payload = {
             "image_input": image_urls,
-            "output_format": output_format,
             "aspect_ratio": image_size,
+            "output_format": self.DEFAULT_OUTPUT_FORMAT,
         }
         # mask_url не документирован в новой схеме, поэтому не отправляем
 

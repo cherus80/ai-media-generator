@@ -8,6 +8,17 @@ from uuid import UUID
 from pydantic import BaseModel, Field, field_validator
 
 
+def _normalize_aspect_ratio(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    normalized = value.strip().lower().replace("x", ":")
+    if normalized == "auto":
+        return "auto"
+    if normalized in {"1:1", "16:9", "9:16"}:
+        return normalized
+    raise ValueError("Недопустимое соотношение сторон. Используйте auto, 1:1, 16:9 или 9:16.")
+
+
 class FittingUploadResponse(BaseModel):
     """Ответ при успешной загрузке фото"""
 
@@ -26,9 +37,9 @@ class FittingRequest(BaseModel):
         None,
         description="Зона для аксессуара: head, face, neck, hands, legs, body"
     )
-    output_format: Optional[str] = Field(
+    aspect_ratio: Optional[str] = Field(
         None,
-        description="Формат вывода изображения: png, jpg/jpeg или webp"
+        description="Соотношение сторон: auto, 1:1, 16:9 или 9:16"
     )
 
     @field_validator("accessory_zone")
@@ -46,18 +57,11 @@ class FittingRequest(BaseModel):
 
         return v.lower()
 
-    @field_validator("output_format")
+    @field_validator("aspect_ratio")
     @classmethod
-    def validate_output_format(cls, v: Optional[str]) -> Optional[str]:
-        """Валидация формата вывода"""
-        if v is None:
-            return None
-        normalized = v.lower()
-        if normalized == "jpg":
-            normalized = "jpeg"
-        if normalized not in {"png", "jpeg", "webp"}:
-            raise ValueError("Недопустимый формат вывода. Используйте png, jpg/jpeg или webp.")
-        return normalized
+    def validate_aspect_ratio(cls, v: Optional[str]) -> Optional[str]:
+        """Валидация соотношения сторон"""
+        return _normalize_aspect_ratio(v)
 
 
 class FittingResponse(BaseModel):

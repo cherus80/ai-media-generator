@@ -33,7 +33,6 @@ from app.utils.image_utils import (
     pad_image_to_match_reference,
     download_image_bytes,
     normalize_image_bytes,
-    normalize_output_format,
 )
 from app.utils.runtime_config import get_generation_providers_for_worker
 from app.services.fitting_prompts import get_prompt_for_zone
@@ -75,7 +74,7 @@ def generate_fitting_task(
     primary_provider: str | None = None,
     fallback_provider: str | None = None,
     disable_fallback: bool | None = None,
-    output_format: str | None = None,
+    aspect_ratio: str | None = None,
 ) -> dict:
     """
     Celery задача для генерации примерки.
@@ -94,7 +93,6 @@ def generate_fitting_task(
 
     async def _run_generation():
         """Async функция для выполнения генерации"""
-        target_output_format = normalize_output_format(output_format) if output_format else None
         async with async_session() as session:
             try:
                 # Обновление статуса: processing
@@ -150,9 +148,13 @@ def generate_fitting_task(
                     progress=50
                 )
 
-                # Определение aspect_ratio из user photo
-                aspect_ratio = determine_image_size_for_fitting(user_photo_path)
-                logger.info(f"Determined aspect ratio for fitting: {aspect_ratio}")
+                # Определение aspect_ratio: если выбрано auto, берём пропорции user photo
+                aspect_ratio = (aspect_ratio or "auto").lower()
+                if aspect_ratio == "auto":
+                    aspect_ratio = determine_image_size_for_fitting(user_photo_path)
+                    logger.info("Determined aspect ratio for fitting: %s", aspect_ratio)
+                else:
+                    logger.info("Using requested aspect ratio for fitting: %s", aspect_ratio)
 
                 # Паддинг item-фото под геометрию user-фото (без искажений)
                 try:
@@ -267,18 +269,11 @@ def generate_fitting_task(
                             async with KieAIClient() as kie_ai_client:
                                 await update_generation_status(session, generation_id, "processing", progress=55)
 
-                                kie_output_format = (
-                                    target_output_format
-                                    if target_output_format in {"png", "jpeg", "jpg"}
-                                    else "png"
-                                )
-
                                 generated_image_url = await kie_ai_client.generate_virtual_tryon(
                                     user_photo_url=public_user_photo_url,
                                     item_photo_url=public_item_photo_url,
                                     prompt=prompt,
                                     image_size=aspect_ratio,
-                                    output_format=kie_output_format,
                                     progress_callback=progress_callback,
                                 )
 
@@ -351,7 +346,6 @@ def generate_fitting_task(
                         normalized_bytes, normalized_ext = normalize_image_bytes(
                             raw_bytes,
                             image_format,
-                            target_format=target_output_format,
                         )
                         normalized_content_type = (
                             "image/jpeg" if normalized_ext in {"jpg", "jpeg"} else f"image/{normalized_ext}"
@@ -368,7 +362,6 @@ def generate_fitting_task(
                         normalized_bytes, normalized_ext = normalize_image_bytes(
                             raw_bytes,
                             ext,
-                            target_format=target_output_format,
                         )
                         normalized_content_type = content_type or (
                             "image/jpeg" if normalized_ext in {"jpg", "jpeg"} else f"image/{normalized_ext}"

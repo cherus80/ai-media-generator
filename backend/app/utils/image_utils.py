@@ -114,7 +114,6 @@ async def download_image_bytes(url: str, timeout: float = 30.0) -> tuple[bytes, 
 def normalize_image_bytes(
     image_bytes: bytes,
     fallback_ext: Optional[str] = None,
-    target_format: Optional[str] = None,
 ) -> tuple[bytes, str]:
     """
     Применяет EXIF-поворот и возвращает обновлённые байты + расширение.
@@ -127,19 +126,11 @@ def normalize_image_bytes(
                 logger.warning("Failed to apply EXIF orientation: %s", err)
                 oriented = im
 
-            fmt = None
-            if target_format:
-                normalized = normalize_output_format(target_format)
-                if normalized == "jpeg":
-                    fmt = "JPEG"
-                elif normalized == "png":
-                    fmt = "PNG"
-                elif normalized == "webp":
-                    fmt = "WEBP"
-            if not fmt:
-                fmt = (im.format or fallback_ext or "PNG").upper()
-                if fmt in {"HEIC", "HEIF", "MPO"}:
-                    fmt = "JPEG"
+            fmt = (im.format or fallback_ext or "PNG").upper()
+            if fmt in {"HEIC", "HEIF", "MPO", "JPG"}:
+                fmt = "JPEG"
+            if fmt not in {"JPEG", "PNG", "WEBP"}:
+                fmt = "PNG"
 
             if fmt == "JPEG" and oriented.mode not in ("RGB", "L"):
                 oriented = oriented.convert("RGB")
@@ -461,68 +452,6 @@ def get_image_format(file_path: str | Path) -> str:
     except Exception as e:
         logger.error(f"Failed to determine image format for {file_path}: {e}")
         raise ValueError(f"Cannot read image: {e}") from e
-
-
-def normalize_output_format(format_str: str) -> str:
-    """
-    Normalize image format string for API compatibility.
-
-    Args:
-        format_str: Format string (e.g., "JPEG", "JPG", "PNG")
-
-    Returns:
-        Normalized format ("png" or "jpeg")
-
-    Examples:
-        >>> normalize_output_format("JPEG")
-        'jpeg'
-        >>> normalize_output_format("PNG")
-        'png'
-        >>> normalize_output_format("jpg")
-        'jpeg'
-    """
-    format_lower = format_str.lower()
-
-    if format_lower in ["jpg", "jpeg"]:
-        return "jpeg"
-    elif format_lower == "png":
-        return "png"
-    elif format_lower == "webp":
-        # WEBP images can be converted to PNG for compatibility
-        return "png"
-    else:
-        logger.warning(
-            f"Unknown format '{format_str}', defaulting to 'png'"
-        )
-        return "png"
-
-
-def get_output_format_for_file(file_path: str | Path, default: str = "png") -> str:
-    """
-    Determine appropriate output format based on input file.
-
-    Args:
-        file_path: Path to input image file
-        default: Default format if detection fails (default: "png")
-
-    Returns:
-        Output format string ("png" or "jpeg")
-
-    Examples:
-        >>> get_output_format_for_file("photo.jpg")
-        'jpeg'
-        >>> get_output_format_for_file("screenshot.png")
-        'png'
-    """
-    try:
-        format_str = get_image_format(file_path)
-        return normalize_output_format(format_str)
-    except Exception as e:
-        logger.warning(
-            f"Failed to detect format for {file_path}: {e}. "
-            f"Using default: {default}"
-        )
-        return default
 
 
 def convert_iphone_format_to_png(file_path: str | Path) -> Path:

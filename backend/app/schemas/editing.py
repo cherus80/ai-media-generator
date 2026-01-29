@@ -11,15 +11,15 @@ from uuid import UUID
 from pydantic import BaseModel, Field, field_validator
 
 
-def _normalize_output_format(value: Optional[str]) -> Optional[str]:
+def _normalize_aspect_ratio(value: Optional[str]) -> Optional[str]:
     if value is None:
         return None
-    normalized = value.lower()
-    if normalized == "jpg":
-        normalized = "jpeg"
-    if normalized not in {"png", "jpeg", "webp"}:
-        raise ValueError("Недопустимый формат вывода. Используйте png, jpg/jpeg или webp.")
-    return normalized
+    normalized = value.strip().lower().replace("x", ":")
+    if normalized == "auto":
+        return "auto"
+    if normalized in {"1:1", "16:9", "9:16"}:
+        return normalized
+    raise ValueError("Недопустимое соотношение сторон. Используйте auto, 1:1, 16:9 или 9:16.")
 
 
 class ChatAttachment(BaseModel):
@@ -131,15 +131,15 @@ class GenerateImageRequest(BaseModel):
         default=None,
         description="Вложения (дополнительные изображения-референсы)",
     )
-    output_format: Optional[str] = Field(
+    aspect_ratio: Optional[str] = Field(
         None,
-        description="Формат вывода изображения: png, jpg/jpeg или webp",
+        description="Соотношение сторон: auto, 1:1, 16:9 или 9:16",
     )
 
-    @field_validator("output_format")
+    @field_validator("aspect_ratio")
     @classmethod
-    def validate_output_format(cls, v: Optional[str]) -> Optional[str]:
-        return _normalize_output_format(v)
+    def validate_aspect_ratio(cls, v: Optional[str]) -> Optional[str]:
+        return _normalize_aspect_ratio(v)
 
 
 class ExampleGenerateRequest(BaseModel):
@@ -155,15 +155,15 @@ class ExampleGenerateRequest(BaseModel):
         default=None,
         description="Вложения (фото участников, используются вместе в одной генерации)",
     )
-    output_format: Optional[str] = Field(
+    aspect_ratio: Optional[str] = Field(
         None,
-        description="Формат вывода изображения: png, jpg/jpeg или webp",
+        description="Соотношение сторон: auto, 1:1, 16:9 или 9:16",
     )
 
-    @field_validator("output_format")
+    @field_validator("aspect_ratio")
     @classmethod
-    def validate_output_format(cls, v: Optional[str]) -> Optional[str]:
-        return _normalize_output_format(v)
+    def validate_aspect_ratio(cls, v: Optional[str]) -> Optional[str]:
+        return _normalize_aspect_ratio(v)
 
 
 class GenerateImageResponse(BaseModel):

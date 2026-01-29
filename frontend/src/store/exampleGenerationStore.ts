@@ -5,7 +5,7 @@
 import { create } from 'zustand';
 import type { ChatAttachment } from '../types/editing';
 import type { FittingStatusResponse, FittingResult, GenerationStatus } from '../types/fitting';
-import type { OutputFormat } from '../types/generation';
+import type { AspectRatio } from '../types/generation';
 import { generateExampleImage, pollEditingStatus } from '../api/editing';
 import { useAuthStore } from './authStore';
 import toast from 'react-hot-toast';
@@ -21,7 +21,7 @@ interface ExampleGenerationState {
   result: FittingResult | null;
   error: string | null;
 
-  startGeneration: (prompt: string, attachments: ChatAttachment[], outputFormat?: OutputFormat) => Promise<FittingResult>;
+  startGeneration: (prompt: string, attachments: ChatAttachment[], aspectRatio?: AspectRatio) => Promise<FittingResult>;
   reset: () => void;
   updateProgress: (status: FittingStatusResponse) => void;
 }
@@ -35,7 +35,7 @@ export const useExampleGenerationStore = create<ExampleGenerationState>((set, ge
   result: null,
   error: null,
 
-  startGeneration: async (prompt: string, attachments: ChatAttachment[], outputFormat?: OutputFormat) => {
+  startGeneration: async (prompt: string, attachments: ChatAttachment[], aspectRatio?: AspectRatio) => {
     const trimmedPrompt = prompt.trim();
     if (!trimmedPrompt) {
       throw new Error('Промпт не может быть пустым');
@@ -59,7 +59,7 @@ export const useExampleGenerationStore = create<ExampleGenerationState>((set, ge
       const response = await generateExampleImage({
         prompt: trimmedPrompt,
         attachments,
-        output_format: outputFormat,
+        aspect_ratio: aspectRatio,
       });
 
       if (!response.task_id) {

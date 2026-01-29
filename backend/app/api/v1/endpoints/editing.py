@@ -497,7 +497,7 @@ async def generate_image(
                 "primary_provider": primary_provider,
                 "fallback_provider": fallback_provider,
                 "disable_fallback": disable_fallback,
-                "output_format": request.output_format,
+                "aspect_ratio": request.aspect_ratio,
             },
             task_id=str(generation.id),
         )
@@ -639,7 +639,7 @@ async def generate_image_from_example(
                 "primary_provider": primary_provider,
                 "fallback_provider": fallback_provider,
                 "disable_fallback": disable_fallback,
-                "output_format": request.output_format,
+                "aspect_ratio": request.aspect_ratio,
             },
             task_id=str(generation.id),
         )

@@ -13,7 +13,7 @@ import type { ChatAttachment } from '../../types/editing';
 import toast from 'react-hot-toast';
 import { getUploadErrorMessage } from '../../utils/uploadErrors';
 import { compressImageFile } from '../../utils/imageCompression';
-import type { OutputFormat } from '../../types/generation';
+import type { AspectRatio } from '../../types/generation';
 
 interface ChatInputProps {
   onSend: (message: string, attachments?: ChatAttachment[]) => void;
@@ -23,9 +23,9 @@ interface ChatInputProps {
   requireAttachments?: boolean;
   attachmentsHint?: string;
   attachmentTooltip?: string;
-  outputFormat?: OutputFormat;
-  onOutputFormatChange?: (format: OutputFormat) => void;
-  showOutputFormatSelect?: boolean;
+  aspectRatio?: AspectRatio;
+  onAspectRatioChange?: (ratio: AspectRatio) => void;
+  showAspectRatioSelect?: boolean;
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({
@@ -36,9 +36,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   requireAttachments = false,
   attachmentsHint,
   attachmentTooltip,
-  outputFormat,
-  onOutputFormatChange,
-  showOutputFormatSelect = false,
+  aspectRatio,
+  onAspectRatioChange,
+  showAspectRatioSelect = false,
 }) => {
   const [message, setMessage] = React.useState('');
   const [attachments, setAttachments] = React.useState<ChatAttachment[]>([]);
@@ -226,18 +226,19 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             </span>
           )}
         </div>
-        {showOutputFormatSelect && outputFormat && onOutputFormatChange && (
+        {showAspectRatioSelect && aspectRatio && onAspectRatioChange && (
           <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-dark-600">
-            <span className="font-medium text-dark-700">Формат вывода:</span>
+            <span className="font-medium text-dark-700">Соотношение сторон:</span>
             <select
-              value={outputFormat}
-              onChange={(e) => onOutputFormatChange(e.target.value as OutputFormat)}
+              value={aspectRatio}
+              onChange={(e) => onAspectRatioChange(e.target.value as AspectRatio)}
               disabled={disabled || isUploadingAttachment}
               className="rounded-lg border border-primary-200 bg-white px-2 py-1 text-xs font-medium text-dark-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-300"
             >
-              <option value="png">PNG</option>
-              <option value="jpeg">JPG</option>
-              <option value="webp">WebP</option>
+              <option value="auto">Авто (по референсу)</option>
+              <option value="1:1">1:1 (квадрат)</option>
+              <option value="16:9">16:9 (горизонтальный)</option>
+              <option value="9:16">9:16 (вертикальный)</option>
             </select>
             <span className="text-dark-500">Можно выбрать до запуска генерации.</span>
           </div>

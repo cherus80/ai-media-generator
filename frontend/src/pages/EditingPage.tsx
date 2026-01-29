@@ -40,8 +40,8 @@ export const EditingPage: React.FC = () => {
     error,
     clearError,
     clearUploadError,
-    outputFormat,
-    setOutputFormat,
+    aspectRatio,
+    setAspectRatio,
   } = useChatStore();
   const { user } = useAuthStore();
 
@@ -480,9 +480,9 @@ export const EditingPage: React.FC = () => {
                 disabled={isSendingMessage || isGenerating || decisionLoadingTarget !== null}
                 placeholder="Опишите изменение..."
                 prefillMessage={prefillMessage}
-                outputFormat={outputFormat}
-                onOutputFormatChange={setOutputFormat}
-                showOutputFormatSelect
+                aspectRatio={aspectRatio}
+                onAspectRatioChange={setAspectRatio}
+                showAspectRatioSelect
               />
               <p className="text-xs text-dark-400 px-4 mb-6 max-w-4xl mx-auto">
                 Сервис "AI Generator" не несёт ответственности за результаты сгенерированных изображений, так как генерация происходит на сторонних ресурсах с помощью ИИ.

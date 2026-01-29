@@ -26,7 +26,7 @@ import toast from 'react-hot-toast';
 import { getAuthToken } from '../utils/authToken';
 import { getUploadErrorMessage } from '../utils/uploadErrors';
 import { compressImageFile } from '../utils/imageCompression';
-import type { OutputFormat } from '../types/generation';
+import type { AspectRatio } from '../types/generation';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000')
   .replace(/\/$/, '')
@@ -53,7 +53,7 @@ interface ChatState {
   isGenerating: boolean;
   taskId: string | null;
   generationProgress: number; // 0-100
-  outputFormat: OutputFormat;
+  aspectRatio: AspectRatio;
 
   // State: ошибки
   error: string | null;
@@ -75,7 +75,7 @@ interface ChatState {
   resetSession: () => Promise<void>;
   clearError: () => void;
   clearUploadError: () => void;
-  setOutputFormat: (format: OutputFormat) => void;
+  setAspectRatio: (ratio: AspectRatio) => void;
 
   // Actions: внутренние
   updateGenerationProgress: (status: FittingStatusResponse) => void;
@@ -102,7 +102,7 @@ export const useChatStore = create<ChatState>()(
   generationProgress: 0,
   error: null,
   uploadError: null,
-  outputFormat: 'png',
+  aspectRatio: 'auto',
 
   // Загрузка базового изображения и создание сессии
   uploadAndCreateSession: async (file: File) => {
@@ -337,7 +337,7 @@ export const useChatStore = create<ChatState>()(
         session_id: sessionId,
         prompt,
         attachments,
-        output_format: get().outputFormat,
+        aspect_ratio: get().aspectRatio,
       });
 
       console.log('[chatStore] API response:', response);
@@ -442,7 +442,7 @@ export const useChatStore = create<ChatState>()(
       generationProgress: 0,
       error: null,
       uploadError: null,
-      outputFormat: 'png',
+      aspectRatio: 'auto',
     });
   },
 
@@ -474,8 +474,8 @@ export const useChatStore = create<ChatState>()(
   clearUploadError: () => {
     set({ uploadError: null });
   },
-  setOutputFormat: (format: OutputFormat) => {
-    set({ outputFormat: format });
+  setAspectRatio: (ratio: AspectRatio) => {
+    set({ aspectRatio: ratio });
   },
     }),
     {

@@ -3,7 +3,7 @@
  * Соответствуют backend схемам из app/schemas/editing.py
  */
 
-import type { OutputFormat } from './generation';
+import type { AspectRatio } from './generation';
 
 // Роли сообщений в чате
 export type MessageRole = 'user' | 'assistant';
@@ -51,14 +51,14 @@ export interface GenerateImageRequest {
   session_id: string;
   prompt: string;
   attachments?: ChatAttachment[];
-  output_format?: OutputFormat;
+  aspect_ratio?: AspectRatio;
 }
 
 // Запрос на генерацию по образцу (без истории)
 export interface ExampleGenerateRequest {
   prompt: string;
   attachments?: ChatAttachment[];
-  output_format?: OutputFormat;
+  aspect_ratio?: AspectRatio;
 }
 
 // Ответ при запуске генерации

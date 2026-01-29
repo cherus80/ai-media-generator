@@ -26,7 +26,7 @@ const ZONES = [
 
 export const Step3Zone: React.FC<Step3ZoneProps> = ({ onBack, onGenerate }) => {
   const navigate = useNavigate();
-  const { accessoryZone, setAccessoryZone, outputFormat, setOutputFormat } = useFittingStore();
+  const { accessoryZone, setAccessoryZone, aspectRatio, setAspectRatio } = useFittingStore();
   const { user } = useAuthStore();
   const [balanceWarning, setBalanceWarning] = React.useState<{
     description: string;
@@ -107,22 +107,23 @@ export const Step3Zone: React.FC<Step3ZoneProps> = ({ onBack, onGenerate }) => {
         </div>
       )}
 
-      {/* Output format selection */}
+      {/* Aspect ratio selection */}
       <div className="mb-6 p-4 bg-white border border-gray-200 rounded-lg">
         <label className="block text-sm font-semibold text-gray-900 mb-2">
-          Формат результата
+          Соотношение сторон результата
         </label>
         <select
-          value={outputFormat}
-          onChange={(e) => setOutputFormat(e.target.value as 'png' | 'jpeg' | 'webp')}
+          value={aspectRatio}
+          onChange={(e) => setAspectRatio(e.target.value as 'auto' | '1:1' | '16:9' | '9:16')}
           className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400"
         >
-          <option value="png">PNG — максимум качества</option>
-          <option value="jpeg">JPG — меньше размер</option>
-          <option value="webp">WebP — оптимально для веба</option>
+          <option value="auto">Авто (по фото пользователя)</option>
+          <option value="1:1">1:1 (квадрат)</option>
+          <option value="16:9">16:9 (горизонтальный)</option>
+          <option value="9:16">9:16 (вертикальный)</option>
         </select>
         <p className="mt-2 text-xs text-gray-500">
-          Формат применяется при сохранении результата.
+          В режиме «Авто» размеры подбираются по загруженному фото.
         </p>
       </div>
 

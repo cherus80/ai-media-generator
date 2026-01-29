@@ -32,7 +32,6 @@ from app.utils.image_utils import (
     ensure_upright_image,
     download_image_bytes,
     normalize_image_bytes,
-    normalize_output_format,
 )
 from app.utils.runtime_config import get_generation_providers_for_worker
 
@@ -73,7 +72,7 @@ def generate_editing_task(
     primary_provider: str | None = None,
     fallback_provider: str | None = None,
     disable_fallback: bool | None = None,
-    output_format: str | None = None,
+    aspect_ratio: str | None = None,
 ) -> dict:
     """
     Celery задача для генерации редактирования изображения.
@@ -95,7 +94,6 @@ def generate_editing_task(
         """Async функция для выполнения генерации"""
         base_image_url_local = base_image_url  # избегаем UnboundLocal при переопределении в блоках ниже
         attachment_items = attachments or []
-        target_output_format = normalize_output_format(output_format) if output_format else None
         async with async_session() as session:
             try:
                 # Обновление статуса: processing
@@ -179,9 +177,13 @@ def generate_editing_task(
                     f"prompt: {prompt[:100]}..."
                 )
 
-                # Определение aspect_ratio для сохранения оригинального размера
-                aspect_ratio = determine_image_size_for_editing(base_image_path)
-                logger.info(f"Determined aspect ratio for editing: {aspect_ratio}")
+                # Определение aspect_ratio: если выбрано auto, берём пропорции base image
+                aspect_ratio = (aspect_ratio or "auto").lower()
+                if aspect_ratio == "auto":
+                    aspect_ratio = determine_image_size_for_editing(base_image_path)
+                    logger.info("Determined aspect ratio for editing: %s", aspect_ratio)
+                else:
+                    logger.info("Using requested aspect ratio for editing: %s", aspect_ratio)
 
                 # Подготавливаем вложения: публичные URL и data URLs
                 attachment_public_urls: list[str] = []
@@ -325,17 +327,10 @@ def generate_editing_task(
                             async with KieAIClient() as kie_ai_client:
                                 await update_generation_status(session, generation_id, "processing", progress=55)
 
-                                kie_output_format = (
-                                    target_output_format
-                                    if target_output_format in {"png", "jpeg", "jpg"}
-                                    else "png"
-                                )
-
                                 result_url = await kie_ai_client.generate_image_edit(
                                     base_image_url=public_base_image_url,
                                     prompt=prompt,
                                     image_size=aspect_ratio,
-                                    output_format=kie_output_format,
                                     attachments_urls=attachment_public_urls,
                                     progress_callback=progress_callback,
                                 )
@@ -416,7 +411,6 @@ def generate_editing_task(
                         normalized_bytes, normalized_ext = normalize_image_bytes(
                             raw_bytes,
                             image_format,
-                            target_format=target_output_format,
                         )
                         normalized_content_type = (
                             "image/jpeg" if normalized_ext in {"jpg", "jpeg"} else f"image/{normalized_ext}"
@@ -434,7 +428,6 @@ def generate_editing_task(
                         normalized_bytes, normalized_ext = normalize_image_bytes(
                             raw_bytes,
                             ext,
-                            target_format=target_output_format,
                         )
                         normalized_content_type = content_type or (
                             "image/jpeg" if normalized_ext in {"jpg", "jpeg"} else f"image/{normalized_ext}"
