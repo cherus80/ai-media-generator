@@ -24,7 +24,7 @@ def _normalize_provider(value: Optional[str]) -> Optional[str]:
     if not value:
         return None
     value = value.lower()
-    if value not in {"kie_ai", "openrouter"}:
+    if value not in {"grsai", "kie_ai", "openrouter"}:
         return None
     return value
 
@@ -63,7 +63,7 @@ def get_generation_providers_for_worker() -> Tuple[str, Optional[str], bool]:
     Returns:
         (primary, fallback, disable_fallback)
     """
-    primary = settings.GENERATION_PRIMARY_PROVIDER or ("kie_ai" if settings.USE_KIE_AI else "openrouter")
+    primary = settings.GENERATION_PRIMARY_PROVIDER or ("kie_ai" if settings.USE_KIE_AI else "grsai")
     fallback = None if settings.KIE_AI_DISABLE_FALLBACK else settings.GENERATION_FALLBACK_PROVIDER
     disable_fallback = settings.KIE_AI_DISABLE_FALLBACK
 

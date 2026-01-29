@@ -252,12 +252,13 @@ class AdminUsersRequest(BaseModel):
 
 
 # ============================================================================
-# Настройки fallback (kie.ai / OpenRouter)
+# Настройки fallback (GrsAI / kie.ai / OpenRouter)
 # ============================================================================
 
 class GenerationProvider(str, Enum):
     """Доступные провайдеры генерации изображений."""
 
+    GRS_AI = "grsai"
     KIE_AI = "kie_ai"
     OPENROUTER = "openrouter"
 
@@ -271,12 +272,12 @@ class FallbackSettingsResponse(BaseModel):
         description="Запасной провайдер (None — без автоматического переключения)",
     )
     available_providers: list[GenerationProvider] = Field(
-        default_factory=lambda: [GenerationProvider.KIE_AI, GenerationProvider.OPENROUTER],
+        default_factory=lambda: [GenerationProvider.GRS_AI, GenerationProvider.KIE_AI, GenerationProvider.OPENROUTER],
         description="Список поддерживаемых провайдеров",
     )
     # Поля для обратной совместимости (старый UI)
     use_kie_ai: bool = Field(..., description="Использовать kie.ai как основной сервис")
-    disable_fallback: bool = Field(..., description="Запретить fallback на OpenRouter при ошибках kie.ai")
+    disable_fallback: bool = Field(..., description="Запретить fallback на резервный провайдер")
 
 
 class UpdateFallbackSettingsRequest(BaseModel):

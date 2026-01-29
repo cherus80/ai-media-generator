@@ -17,6 +17,7 @@ from app.models.chat import ChatHistory
 from app.services.file_storage import save_upload_file_by_content, get_file_by_id
 from app.services.openrouter import OpenRouterClient, OpenRouterError
 from app.services.kie_ai import KieAIClient, KieAIError, KieAITimeoutError, KieAITaskFailedError
+from app.services.grsai import GrsAIClient, GrsAIError, GrsAITimeoutError, GrsAITaskFailedError
 from app.tasks.celery_app import celery_app
 from app.tasks.utils import (
     should_add_watermark,
@@ -254,10 +255,54 @@ def generate_editing_task(
                         providers_chain.append(candidate)
 
                 if not providers_chain:
-                    providers_chain.append("openrouter")
+                    providers_chain.append("grsai")
 
                 for provider in providers_chain:
-                    if provider == "kie_ai":
+                    if provider == "grsai":
+                        if not settings.GRS_AI_API_KEY:
+                            generation_errors.append("grsai: API ключ не задан, пропускаем")
+                            continue
+
+                        logger.info("Attempting image editing with GrsAI...")
+                        try:
+                            async def progress_callback(status: str, progress_pct: int):
+                                actual_progress = 50 + int(progress_pct * 0.3)  # 50-80%
+                                await update_generation_status(
+                                    session,
+                                    generation_id,
+                                    "processing",
+                                    progress=actual_progress
+                                )
+
+                            urls = [public_base_image_url, *attachment_public_urls] if attachment_public_urls else [public_base_image_url]
+
+                            async with GrsAIClient() as grs_client:
+                                await update_generation_status(session, generation_id, "processing", progress=55)
+
+                                result_url = await grs_client.generate_image(
+                                    prompt=prompt,
+                                    urls=urls,
+                                    aspect_ratio=aspect_ratio,
+                                    image_size=settings.GRS_AI_IMAGE_SIZE,
+                                    progress_callback=progress_callback,
+                                )
+
+                            service_used = "grsai"
+                            logger.info("GrsAI image editing successful")
+                            break
+
+                        except (GrsAIError, GrsAITimeoutError, GrsAITaskFailedError, Exception) as grs_error:
+                            error_text = f"{type(grs_error).__name__}: {grs_error}"
+                            generation_errors.append(f"grsai: {error_text}")
+                            logger.warning(
+                                "GrsAI editing failed: %s. %s",
+                                error_text,
+                                "Fallback to next provider..." if fallback_provider else "No fallback configured",
+                            )
+                            result_url = None
+                            continue
+
+                    elif provider == "kie_ai":
                         if not settings.KIE_AI_API_KEY:
                             generation_errors.append("kie_ai: API ключ не задан, пропускаем")
                             continue

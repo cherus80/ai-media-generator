@@ -10,7 +10,8 @@ import type {
 import toast from 'react-hot-toast';
 
 const providerLabels: Record<GenerationProvider, string> = {
-  kie_ai: 'kie.ai (primary)',
+  grsai: 'GrsAI (primary)',
+  kie_ai: 'kie.ai',
   openrouter: 'OpenRouter',
 };
 
@@ -61,7 +62,7 @@ export const FallbackSettings: React.FC = () => {
     await handleUpdate({ fallback_provider: normalized });
   };
 
-  const providers = settings?.available_providers || (['kie_ai', 'openrouter'] as GenerationProvider[]);
+  const providers = settings?.available_providers || (['grsai', 'kie_ai', 'openrouter'] as GenerationProvider[]);
   const chain = settings
     ? [settings.primary_provider, settings.fallback_provider].filter(Boolean).join(' → ') || '—'
     : '—';
@@ -106,7 +107,7 @@ export const FallbackSettings: React.FC = () => {
                 ))}
               </select>
               <p className="text-xs text-dark-500">
-                Основной канал для генераций. Рекомендуем kia.ai, fallback — OpenRouter.
+                Основной канал для генераций. Рекомендуем GrsAI, fallback — kie.ai.
               </p>
             </div>
 

@@ -74,7 +74,7 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = Field(default="HS256")
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default=60 * 24 * 30)
 
-    # OpenRouter API (GPT-4.1 Mini для промптов, Nano Banana Pro для генерации)
+    # OpenRouter API (GPT-4.1 Mini для промптов)
     OPENROUTER_API_KEY: Optional[str] = Field(default=None, description="API key for OpenRouter (optional)")
     OPENROUTER_BASE_URL: str = Field(default="https://openrouter.ai/api/v1")
     OPENROUTER_MODEL: str = Field(default="anthropic/claude-3-haiku-20240307")
@@ -83,17 +83,41 @@ class Settings(BaseSettings):
         description="Модель OpenRouter для улучшения промптов (GPT-4.1 Mini, по умолчанию)",
     )
 
-    # kie.ai Nano Banana Pro API (Primary service for image generation)
+    # GrsAI Nano Banana Pro API (Primary service for image generation)
+    GRS_AI_API_KEY: Optional[str] = Field(default=None, description="API key for GrsAI (optional)")
+    GRS_AI_BASE_URL: str = Field(default="https://grsaiapi.com")
+    GRS_AI_TIMEOUT: int = Field(
+        default=180,
+        description="Timeout для GrsAI запросов в секундах",
+    )
+    GRS_AI_POLL_INTERVAL: int = Field(
+        default=5,
+        description="Интервал polling статуса задачи в секундах",
+    )
+    GRS_AI_MAX_POLLS: int = Field(
+        default=36,
+        description="Максимальное число polling-итераций для GrsAI",
+    )
+    GRS_AI_MODEL: str = Field(
+        default="nano-banana-pro",
+        description="Модель GrsAI для генерации изображений",
+    )
+    GRS_AI_IMAGE_SIZE: str = Field(
+        default="1K",
+        description="Размер изображения для GrsAI (1K/2K/4K)",
+    )
+
+    # kie.ai Nano Banana Pro API (Fallback for image generation)
     USE_KIE_AI: bool = Field(
-        default=True,
-        description="Использовать kie.ai как основной сервис (fallback на OpenRouter при ошибках)",
+        default=False,
+        description="Legacy флаг: использовать kie.ai как основной сервис",
     )
     GENERATION_PRIMARY_PROVIDER: str = Field(
-        default="kie_ai",
-        description="Основной провайдер генерации (kie_ai или openrouter)",
+        default="grsai",
+        description="Основной провайдер генерации (grsai, kie_ai или openrouter)",
     )
     GENERATION_FALLBACK_PROVIDER: Optional[str] = Field(
-        default="openrouter",
+        default="kie_ai",
         description="Запасной провайдер для генерации (None — без fallback)",
     )
     KIE_AI_API_KEY: Optional[str] = Field(default=None, description="API key for kie.ai (optional)")
@@ -345,7 +369,7 @@ class Settings(BaseSettings):
         """Валидация названий провайдеров генерации."""
         if v is None:
             return None
-        allowed = {"kie_ai", "openrouter"}
+        allowed = {"grsai", "kie_ai", "openrouter"}
         normalized = v.lower()
         if normalized not in allowed:
             raise ValueError(f"{info.field_name} must be one of {allowed} or null")
