@@ -195,6 +195,9 @@ async def rate_limit_requests(request: Request, call_next):
     elif path.startswith("/api/v1/fitting/generate"):
         scope = "fitting_generate"
         limit_per_minute = settings.API_RATE_LIMIT_FITTING_GENERATE_PER_MINUTE
+    elif path.startswith("/api/v1/fitting/status") or path.startswith("/api/v1/fitting/result"):
+        scope = "fitting_status"
+        limit_per_minute = settings.API_RATE_LIMIT_FITTING_STATUS_PER_MINUTE
 
     identity = resolve_identity(request)
 

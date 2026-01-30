@@ -285,6 +285,10 @@ class Settings(BaseSettings):
         default=10,
         description="Лимит генераций примерки в минуту",
     )
+    API_RATE_LIMIT_FITTING_STATUS_PER_MINUTE: int = Field(
+        default=300,
+        description="Лимит запросов статуса/результата генерации в минуту",
+    )
 
     # Sentry (опционально)
     SENTRY_DSN: Optional[str] = Field(default=None)

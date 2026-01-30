@@ -3,6 +3,7 @@
  * Все запросы к /api/v1/fitting/*
  */
 
+import axios from 'axios';
 import apiClient from './client';
 import type {
   FittingUploadResponse,
@@ -124,6 +125,19 @@ export const pollFittingStatus = async (
   const startedAt = Date.now();
   let warnedSlow = false;
 
+  const getRetryDelayMs = (error: unknown, fallbackMs: number) => {
+    if (axios.isAxiosError(error)) {
+      const retryAfter = error.response?.headers?.['retry-after'];
+      if (retryAfter) {
+        const parsed = Number(retryAfter);
+        if (!Number.isNaN(parsed)) {
+          return Math.min(parsed * 1000, 15000);
+        }
+      }
+    }
+    return Math.min(Math.max(fallbackMs, 2000) * 2, 15000);
+  };
+
   return new Promise((resolve, reject) => {
     const poll = async () => {
       try {
@@ -155,6 +169,16 @@ export const pollFittingStatus = async (
         // Продолжаем опрос
         setTimeout(poll, intervalMs);
       } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 429) {
+          attempts = Math.max(0, attempts - 1);
+          if (!warnedSlow && Date.now() - startedAt >= slowWarningMs) {
+            warnedSlow = true;
+            onSlowWarning?.();
+          }
+          const delay = getRetryDelayMs(error, intervalMs);
+          setTimeout(poll, delay + Math.floor(Math.random() * 250));
+          return;
+        }
         reject(error);
       }
     };
