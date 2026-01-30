@@ -139,6 +139,28 @@ class Settings(BaseSettings):
         description="Если true — не делать fallback на OpenRouter при ошибках kie.ai (для тестов)",
     )
 
+    # Telegram alerts (error notifications)
+    TELEGRAM_ALERTS_ENABLED: bool = Field(
+        default=False,
+        description="Включить уведомления об ошибках в Telegram",
+    )
+    TELEGRAM_BOT_TOKEN: Optional[str] = Field(
+        default=None,
+        description="Токен Telegram бота для алертов",
+    )
+    TELEGRAM_CHAT_ID: Optional[str] = Field(
+        default=None,
+        description="Chat ID для отправки алертов",
+    )
+    TELEGRAM_ALERTS_RATE_LIMIT_PER_MINUTE: int = Field(
+        default=10,
+        description="Лимит алертов в минуту (0 = без лимита)",
+    )
+    TELEGRAM_ALERTS_INCLUDE_PII: bool = Field(
+        default=False,
+        description="Включать пользовательские данные (email/username/telegram_id) в алерты",
+    )
+
     # ЮKassa (опционально - только для платежей)
     YUKASSA_SHOP_ID: Optional[str] = Field(default=None, description="ЮKassa shop ID (optional)")
     YUKASSA_SECRET_KEY: Optional[str] = Field(default=None, description="ЮKassa secret key (optional)")

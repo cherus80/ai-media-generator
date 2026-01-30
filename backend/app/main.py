@@ -8,7 +8,8 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import AsyncGenerator
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -19,6 +20,7 @@ from app.core.config import settings
 from app.db import init_db, close_db
 from app.services.openrouter import close_openrouter_client
 from app.services.yukassa import close_yukassa_client
+from app.services.telegram_alerts import notify_error, fetch_user
 from app.utils.rate_limit import (
     init_rate_limiter,
     close_rate_limiter,
@@ -123,6 +125,44 @@ app.add_middleware(
 
 # GZip Compression
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+
+# Middleware для алертов об ошибках в Telegram
+@app.middleware("http")
+async def telegram_error_notifier(request: Request, call_next):
+    if not settings.TELEGRAM_ALERTS_ENABLED:
+        return await call_next(request)
+
+    try:
+        return await call_next(request)
+    except HTTPException:
+        raise
+    except RequestValidationError:
+        raise
+    except Exception as exc:
+        user_id = None
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            try:
+                from app.utils.jwt import get_user_id_from_token
+                token = auth_header.split(" ", 1)[1]
+                user_id = get_user_id_from_token(token)
+            except Exception:
+                user_id = None
+
+        user = await fetch_user(user_id)
+        await notify_error(
+            title="Backend API error",
+            error=exc,
+            user=user,
+            user_id=user_id,
+            extra={
+                "method": request.method,
+                "path": request.url.path,
+                "query": request.url.query or None,
+            },
+        )
+        raise
 
 
 # Middleware для rate limiting

@@ -17,6 +17,7 @@ from app.models.chat import ChatHistory
 from app.services.file_storage import save_upload_file_by_content, get_file_by_id
 from app.services.openrouter import OpenRouterClient, OpenRouterError
 from app.services.kie_ai import KieAIClient, KieAIError, KieAITimeoutError, KieAITaskFailedError
+from app.services.telegram_alerts import notify_error
 from app.services.grsai import (
     GrsAIClient,
     GrsAIError,
@@ -100,6 +101,8 @@ def generate_editing_task(
 
     async def _run_generation(requested_aspect_ratio: str | None = aspect_ratio):
         """Async функция для выполнения генерации"""
+        user = None
+        service_used = None
         base_image_url_local = base_image_url  # избегаем UnboundLocal при переопределении в блоках ниже
         attachment_items = attachments or []
         async with async_session() as session:
@@ -584,6 +587,21 @@ def generate_editing_task(
                     "failed",
                     error_message=USER_ERROR_MESSAGE,
                 )
+
+                try:
+                    await notify_error(
+                        title="Editing generation failed",
+                        error=e,
+                        user=user,
+                        user_id=user_id,
+                        extra={
+                            "generation_id": generation_id,
+                            "session_id": session_id,
+                            "provider": service_used,
+                        },
+                    )
+                except Exception:
+                    logger.warning("Failed to send Telegram alert for editing error", exc_info=True)
 
                 return {
                     "status": "failed",

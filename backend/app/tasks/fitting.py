@@ -17,6 +17,7 @@ from app.models.user import User
 from app.services.file_storage import save_upload_file_by_content, get_file_by_id
 from app.services.openrouter import OpenRouterClient, OpenRouterError
 from app.services.kie_ai import KieAIClient, KieAIError, KieAITimeoutError, KieAITaskFailedError
+from app.services.telegram_alerts import notify_error
 from app.services.grsai import (
     GrsAIClient,
     GrsAIError,
@@ -101,6 +102,8 @@ def generate_fitting_task(
 
     async def _run_generation(requested_aspect_ratio: str | None = aspect_ratio):
         """Async функция для выполнения генерации"""
+        user = None
+        service_used = None
         async with async_session() as session:
             try:
                 # Обновление статуса: processing
@@ -485,6 +488,22 @@ def generate_fitting_task(
                     "failed",
                     error_message=USER_ERROR_MESSAGE,
                 )
+
+                try:
+                    await notify_error(
+                        title="Fitting generation failed",
+                        error=e,
+                        user=user,
+                        user_id=user_id,
+                        extra={
+                            "generation_id": generation_id,
+                            "accessory_zone": accessory_zone,
+                            "provider": service_used,
+                            "retry_attempt": getattr(self.request, "retries", 0),
+                        },
+                    )
+                except Exception:
+                    logger.warning("Failed to send Telegram alert for fitting error", exc_info=True)
 
                 # Retry при определенных ошибках
                 if "API" in str(e) or "timeout" in str(e).lower():
