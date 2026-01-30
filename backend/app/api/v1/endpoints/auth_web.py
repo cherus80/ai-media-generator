@@ -270,7 +270,7 @@ async def register_with_email(
     await db.commit()
     await db.refresh(user)
 
-    # Free trial +10 кредитов (однократно)
+    # Free trial кредиты (однократно)
     billing = BillingV5Service(db)
     try:
         await billing.grant_free_trial(
