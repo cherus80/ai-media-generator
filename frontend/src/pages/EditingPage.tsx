@@ -19,6 +19,7 @@ import { Button } from '../components/ui/Button';
 import { InsufficientBalanceModal } from '../components/payment/InsufficientBalanceModal';
 import toast from 'react-hot-toast';
 import type { ChatAttachment } from '../types/editing';
+import { getGenerationErrorMessage, isInsufficientBalanceError } from '../utils/billingErrors';
 
 export const EditingPage: React.FC = () => {
   const navigate = useNavigate();
@@ -147,6 +148,26 @@ export const EditingPage: React.FC = () => {
     setBalanceWarning(payload);
   };
 
+  const openGenerationBalanceWarning = () => {
+    openBalanceWarning({
+      description: 'Для генерации нужно 2 ⭐️звезды или активная подписка с генерациями.',
+      requiredCredits: 2,
+      requiredActions: 1,
+    });
+  };
+
+  const openAssistantBalanceWarning = () => {
+    const requiredCredits = hasActiveSubscriptionActions ? 1 : 3;
+    openBalanceWarning({
+      title: 'Недостаточно ⭐️звезд для ассистента',
+      description: hasActiveSubscriptionActions
+        ? 'Для улучшения через AI нужна 1 ⭐️звезда. Генерация спишет 1 генерацию по подписке.'
+        : 'Для улучшения через AI и последующей генерации нужно 3 ⭐️звезды (1 за ассистента и 2 за генерацию).',
+      requiredCredits,
+      requiredActions: hasActiveSubscriptionActions ? 1 : undefined,
+    });
+  };
+
   const handleBuyCredits = () => {
     setBalanceWarning(null);
     navigate('/profile?buy=credits');
@@ -235,7 +256,11 @@ export const EditingPage: React.FC = () => {
       setPendingAttachments([]);
     } catch (err: any) {
       console.error('[EditingPage] Error in handleUseOriginalPrompt:', err);
-      toast.error(err.message || 'Ошибка генерации изображения');
+      if (isInsufficientBalanceError(err)) {
+        openGenerationBalanceWarning();
+        return;
+      }
+      toast.error(getGenerationErrorMessage(err));
     } finally {
       setDecisionLoadingTarget(null);
     }
@@ -263,7 +288,11 @@ export const EditingPage: React.FC = () => {
       setPendingPrompt(null);
       setPendingAttachments([]);
     } catch (err: any) {
-      toast.error(err.message || 'Ошибка отправки запроса AI-ассистенту');
+      if (isInsufficientBalanceError(err)) {
+        openAssistantBalanceWarning();
+        return;
+      }
+      toast.error(getGenerationErrorMessage(err));
     } finally {
       setDecisionLoadingTarget(null);
     }
@@ -283,7 +312,11 @@ export const EditingPage: React.FC = () => {
       await generateImage(prompt, attachments);
       toast.success('Изображение сгенерировано!');
     } catch (err: any) {
-      toast.error(err.message || 'Ошибка генерации изображения');
+      if (isInsufficientBalanceError(err)) {
+        openGenerationBalanceWarning();
+        return;
+      }
+      toast.error(getGenerationErrorMessage(err));
     }
   };
 

@@ -21,6 +21,7 @@ import toast from 'react-hot-toast';
 import { getUploadErrorMessage } from '../utils/uploadErrors';
 import { compressImageFile } from '../utils/imageCompression';
 import type { AspectRatio } from '../types/generation';
+import { getGenerationErrorMessage } from '../utils/billingErrors';
 
 const CLIENT_MAX_FILE_SIZE = 10 * 1024 * 1024;
 const TARGET_UPLOAD_SIZE = 5 * 1024 * 1024;
@@ -283,7 +284,7 @@ export const useFittingStore = create<FittingState>((set, get) => ({
 
       return result;
     } catch (error: any) {
-      const errorMessage = error.response?.data?.detail || error.message || 'Ошибка генерации';
+      const errorMessage = getGenerationErrorMessage(error);
       set({
         isGenerating: false,
         error: errorMessage,

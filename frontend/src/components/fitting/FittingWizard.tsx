@@ -13,6 +13,7 @@ import { FittingResult } from './FittingResult';
 import { useFittingStore } from '../../store/fittingStore';
 import { Card } from '../ui/Card';
 import toast from 'react-hot-toast';
+import { getGenerationErrorMessage } from '../../utils/billingErrors';
 
 type WizardStep = 'user_photo' | 'item_photo' | 'zone' | 'generating' | 'result';
 
@@ -48,7 +49,7 @@ export const FittingWizard = forwardRef<FittingWizardHandle>((_, ref) => {
       await startGeneration();
       setCurrentStep('result');
     } catch (error: any) {
-      toast.error(error.message || 'Ошибка генерации');
+      toast.error(getGenerationErrorMessage(error));
       // Остаёмся на шаге выбора зоны при ошибке
       setCurrentStep('zone');
     }

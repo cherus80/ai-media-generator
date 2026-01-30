@@ -27,6 +27,7 @@ import { getAuthToken } from '../utils/authToken';
 import { getUploadErrorMessage } from '../utils/uploadErrors';
 import { compressImageFile } from '../utils/imageCompression';
 import type { AspectRatio } from '../types/generation';
+import { getGenerationErrorMessage } from '../utils/billingErrors';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000')
   .replace(/\/$/, '')
@@ -284,7 +285,10 @@ export const useChatStore = create<ChatState>()(
       // Обновляем профиль пользователя (списан 1 кредит)
       await useAuthStore.getState().refreshProfile();
     } catch (error: any) {
-      const errorMessage = error.response?.data?.detail || error.message || 'Ошибка отправки сообщения';
+      const errorMessage = getGenerationErrorMessage(
+        error,
+        'Произошла ошибка, повторите запрос еще раз или зайдите позже.'
+      );
       set({ error: errorMessage, isSendingMessage: false });
 
       // Удаляем сообщение пользователя, если произошла ошибка
@@ -398,7 +402,7 @@ export const useChatStore = create<ChatState>()(
 
       return result;
     } catch (error: any) {
-      const errorMessage = error.response?.data?.detail || error.message || 'Ошибка генерации изображения';
+      const errorMessage = getGenerationErrorMessage(error);
       set({
         isGenerating: false,
         error: errorMessage,

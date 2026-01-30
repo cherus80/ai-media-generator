@@ -9,6 +9,7 @@ import type { AspectRatio } from '../types/generation';
 import { generateExampleImage, pollEditingStatus } from '../api/editing';
 import { useAuthStore } from './authStore';
 import toast from 'react-hot-toast';
+import { getGenerationErrorMessage } from '../utils/billingErrors';
 
 const MAX_PROMPT_LENGTH = 4000;
 
@@ -99,7 +100,7 @@ export const useExampleGenerationStore = create<ExampleGenerationState>((set, ge
 
       return result;
     } catch (error: any) {
-      const errorMessage = error.response?.data?.detail || error.message || 'Ошибка генерации';
+      const errorMessage = getGenerationErrorMessage(error);
       set({
         isGenerating: false,
         error: errorMessage,

@@ -6,9 +6,12 @@ import { ChatInput } from '../components/editing/ChatInput';
 import { ExampleGenerationProgress } from '../components/examples/ExampleGenerationProgress';
 import { ExampleGenerationResult } from '../components/examples/ExampleGenerationResult';
 import { useExampleGenerationStore } from '../store/exampleGenerationStore';
+import { useAuthStore } from '../store/authStore';
 import toast from 'react-hot-toast';
 import type { ChatAttachment } from '../types/editing';
 import type { AspectRatio } from '../types/generation';
+import { InsufficientBalanceModal } from '../components/payment/InsufficientBalanceModal';
+import { getGenerationErrorMessage, isInsufficientBalanceError } from '../utils/billingErrors';
 
 export const ExampleGenerationPage: React.FC = () => {
   const navigate = useNavigate();
@@ -16,6 +19,12 @@ export const ExampleGenerationPage: React.FC = () => {
   const rawPrompt = searchParams.get('prompt') || '';
   const prompt = useMemo(() => rawPrompt.trim(), [rawPrompt]);
   const [aspectRatio, setAspectRatio] = React.useState<AspectRatio>('auto');
+  const { user } = useAuthStore();
+  const [balanceWarning, setBalanceWarning] = React.useState<{
+    description: string;
+    requiredCredits?: number;
+    requiredActions?: number;
+  } | null>(null);
 
   const {
     isGenerating,
@@ -23,6 +32,16 @@ export const ExampleGenerationPage: React.FC = () => {
     startGeneration,
     reset,
   } = useExampleGenerationStore();
+
+  const creditsBalance = user?.balance_credits ?? 0;
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+  const hasActiveSubscriptionActions = !!(
+    user?.subscription_type &&
+    user.subscription_type !== 'none' &&
+    user.subscription_expires_at &&
+    new Date(user.subscription_expires_at) > new Date() &&
+    (user.subscription_ops_remaining ?? 0) > 0
+  );
 
   useEffect(() => {
     reset();
@@ -33,9 +52,30 @@ export const ExampleGenerationPage: React.FC = () => {
 
   const handleSend = async (message: string, attachments?: ChatAttachment[]) => {
     try {
+      if (!user) {
+        toast.error('Необходима авторизация');
+        return;
+      }
+      if (!isAdmin && !hasActiveSubscriptionActions && creditsBalance < 2) {
+        setBalanceWarning({
+          description: 'Для генерации нужно 2 ⭐️звезды или активная подписка с генерациями.',
+          requiredCredits: 2,
+          requiredActions: 1,
+        });
+        return;
+      }
+
       await startGeneration(message, attachments || [], aspectRatio);
     } catch (err: any) {
-      toast.error(err?.response?.data?.detail || err?.message || 'Ошибка генерации');
+      if (isInsufficientBalanceError(err)) {
+        setBalanceWarning({
+          description: 'Для генерации нужно 2 ⭐️звезды или активная подписка с генерациями.',
+          requiredCredits: 2,
+          requiredActions: 1,
+        });
+        return;
+      }
+      toast.error(getGenerationErrorMessage(err));
     }
   };
 
@@ -92,6 +132,23 @@ export const ExampleGenerationPage: React.FC = () => {
             />
           )}
         </div>
+
+        <InsufficientBalanceModal
+          isOpen={Boolean(balanceWarning)}
+          description={balanceWarning?.description || ''}
+          currentCredits={creditsBalance}
+          requiredCredits={balanceWarning?.requiredCredits}
+          requiredActions={balanceWarning?.requiredActions}
+          onClose={() => setBalanceWarning(null)}
+          onBuyCredits={() => {
+            setBalanceWarning(null);
+            navigate('/profile?buy=credits');
+          }}
+          onBuySubscription={() => {
+            setBalanceWarning(null);
+            navigate('/profile?buy=subscription');
+          }}
+        />
       </Layout>
     </AuthGuard>
   );
