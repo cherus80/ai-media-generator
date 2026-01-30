@@ -102,6 +102,10 @@ class Settings(BaseSettings):
         default="nano-banana-pro",
         description="Модель GrsAI для генерации изображений",
     )
+    GRS_AI_FALLBACK_MODEL: str = Field(
+        default="nano-banana-pro-cl",
+        description="Fallback модель GrsAI при ошибках 500/429/timeout",
+    )
     GRS_AI_IMAGE_SIZE: str = Field(
         default="1K",
         description="Размер изображения для GrsAI (1K/2K/4K)",

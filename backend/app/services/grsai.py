@@ -31,6 +31,10 @@ class GrsAIRateLimitError(GrsAIError):
     """Rate limit exceeded (429)."""
 
 
+class GrsAIServerError(GrsAIError):
+    """Server error (5xx)."""
+
+
 class GrsAITimeoutError(GrsAIError):
     """Request/polling timeout."""
 
@@ -109,12 +113,13 @@ class GrsAIClient:
         urls: Optional[List[str]] = None,
         aspect_ratio: str = "auto",
         image_size: Optional[str] = None,
+        model: Optional[str] = None,
         progress_callback: Optional[callable] = None,
     ) -> str:
         logger.info("Starting GrsAI generation: prompt=%s...", prompt[:50])
 
         payload: Dict = {
-            "model": self.model,
+            "model": model or self.model,
             "prompt": prompt,
             "aspectRatio": aspect_ratio or "auto",
             "imageSize": image_size or self.image_size,
@@ -124,11 +129,18 @@ class GrsAIClient:
         if urls:
             payload["urls"] = urls
 
-        task_id, direct_url = await self._submit_task(payload)
+        try:
+            task_id, direct_url = await self._submit_task(payload)
+        except (httpx.TimeoutException, httpx.RequestError) as err:
+            raise GrsAITimeoutError(str(err)) from err
+
         if direct_url:
             return direct_url
 
-        task_data = await self._poll_task_until_complete(task_id, progress_callback)
+        try:
+            task_data = await self._poll_task_until_complete(task_id, progress_callback)
+        except (httpx.TimeoutException, httpx.RequestError) as err:
+            raise GrsAITimeoutError(str(err)) from err
         return self._extract_image_from_result(task_data)
 
     # ---------------------------------------------------------------
@@ -149,7 +161,7 @@ class GrsAIClient:
         if response.status_code == 429:
             raise GrsAIRateLimitError("Rate limit exceeded")
         if response.status_code >= 500:
-            raise GrsAIError(f"GrsAI server error: {response.status_code}")
+            raise GrsAIServerError(f"GrsAI server error: {response.status_code}")
         if response.status_code != 200:
             raise GrsAIError(f"GrsAI API error: {response.status_code}, details: {response.text}")
 
@@ -193,7 +205,7 @@ class GrsAIClient:
             if response.status_code == 429:
                 raise GrsAIRateLimitError("Rate limit exceeded")
             if response.status_code >= 500:
-                raise GrsAIError(f"Result check failed: {response.status_code}")
+                raise GrsAIServerError(f"Result check failed: {response.status_code}")
             if response.status_code != 200:
                 raise GrsAIError(f"GrsAI result API error: {response.status_code}")
 

@@ -17,7 +17,14 @@ from app.models.user import User
 from app.services.file_storage import save_upload_file_by_content, get_file_by_id
 from app.services.openrouter import OpenRouterClient, OpenRouterError
 from app.services.kie_ai import KieAIClient, KieAIError, KieAITimeoutError, KieAITaskFailedError
-from app.services.grsai import GrsAIClient, GrsAIError, GrsAITimeoutError, GrsAITaskFailedError
+from app.services.grsai import (
+    GrsAIClient,
+    GrsAIError,
+    GrsAITimeoutError,
+    GrsAITaskFailedError,
+    GrsAIRateLimitError,
+    GrsAIServerError,
+)
 from app.tasks.celery_app import celery_app
 from app.tasks.utils import (
     extract_file_id_from_url,
@@ -38,6 +45,7 @@ from app.utils.runtime_config import get_generation_providers_for_worker
 from app.services.fitting_prompts import get_prompt_for_zone
 
 logger = logging.getLogger(__name__)
+USER_ERROR_MESSAGE = "Произошла ошибка, повторите запрос еще раз или зайдите позже"
 
 
 class FittingTask(Task):
@@ -222,16 +230,34 @@ def generate_fitting_task(
                                     progress=actual_progress
                                 )
 
+                            primary_model = settings.GRS_AI_MODEL
+                            fallback_model = settings.GRS_AI_FALLBACK_MODEL
+
                             async with GrsAIClient() as grs_client:
                                 await update_generation_status(session, generation_id, "processing", progress=55)
-
-                                generated_image_url = await grs_client.generate_image(
-                                    prompt=prompt,
-                                    urls=[public_user_photo_url, public_item_photo_url],
-                                    aspect_ratio=resolved_aspect_ratio,
-                                    image_size=settings.GRS_AI_IMAGE_SIZE,
-                                    progress_callback=progress_callback,
-                                )
+                                try:
+                                    generated_image_url = await grs_client.generate_image(
+                                        prompt=prompt,
+                                        urls=[public_user_photo_url, public_item_photo_url],
+                                        aspect_ratio=resolved_aspect_ratio,
+                                        image_size=settings.GRS_AI_IMAGE_SIZE,
+                                        model=primary_model,
+                                        progress_callback=progress_callback,
+                                    )
+                                except (GrsAIServerError, GrsAIRateLimitError, GrsAITimeoutError) as grs_retry_err:
+                                    logger.warning(
+                                        "GrsAI primary model failed (%s). Retrying with fallback model %s",
+                                        grs_retry_err,
+                                        fallback_model,
+                                    )
+                                    generated_image_url = await grs_client.generate_image(
+                                        prompt=prompt,
+                                        urls=[public_user_photo_url, public_item_photo_url],
+                                        aspect_ratio=resolved_aspect_ratio,
+                                        image_size=settings.GRS_AI_IMAGE_SIZE,
+                                        model=fallback_model,
+                                        progress_callback=progress_callback,
+                                    )
 
                             service_used = "grsai"
                             logger.info("GrsAI virtual try-on successful")
@@ -388,7 +414,6 @@ def generate_fitting_task(
                     generation.image_url = final_image_url
                     generation.has_watermark = has_watermark
                     generation.prompt = prompt
-                    generation.credits_spent = credits_cost
                     await session.commit()
 
                 logger.info(
@@ -396,11 +421,51 @@ def generate_fitting_task(
                     f"service={service_used}, aspect_ratio={resolved_aspect_ratio}"
                 )
 
-                if not settings.BILLING_V5_ENABLED:
+                if settings.BILLING_V5_ENABLED:
+                    try:
+                        from app.services.billing_v5 import BillingV5Service
+
+                        billing = BillingV5Service(session)
+                        charge_info = await billing.charge_generation(
+                            user_id,
+                            kind="tryon",
+                            meta={
+                                "generation_id": generation_id,
+                                "feature": "fitting_generation",
+                                "user_photo_url": user_photo_url,
+                                "item_photo_url": item_photo_url,
+                            },
+                            cost_credits=credits_cost,
+                        )
+                        generation_record = await session.get(Generation, generation_id)
+                        if generation_record:
+                            generation_record.credits_spent = (
+                                credits_cost
+                                if charge_info and charge_info.get("payment_source") == "credits"
+                                else 0
+                            )
+                            await session.commit()
+                        logger.info(
+                            "Charged %s credits for fitting generation %s (Billing v5)",
+                            credits_cost,
+                            generation_id,
+                        )
+                    except Exception as credit_error:
+                        logger.error(
+                            "Failed to charge credits for fitting generation %s: %s",
+                            generation_id,
+                            credit_error,
+                            exc_info=True,
+                        )
+                else:
                     user = await session.get(User, user_id)
                     if user:
                         from app.services.credits import deduct_credits
                         await deduct_credits(session, user, credits_cost, generation_id=generation_id)
+                        generation_record = await session.get(Generation, generation_id)
+                        if generation_record:
+                            generation_record.credits_spent = credits_cost
+                            await session.commit()
                         logger.info(f"Credits deducted after successful generation: {credits_cost}")
 
                 await update_generation_status(session, generation_id, "completed", progress=100)
@@ -413,11 +478,12 @@ def generate_fitting_task(
 
             except Exception as e:
                 # Обработка ошибки
+                logger.error("Fitting generation failed: %s", e, exc_info=True)
                 await update_generation_status(
                     session,
                     generation_id,
                     "failed",
-                    error_message=str(e)
+                    error_message=USER_ERROR_MESSAGE,
                 )
 
                 # Retry при определенных ошибках

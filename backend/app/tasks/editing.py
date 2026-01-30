@@ -17,7 +17,14 @@ from app.models.chat import ChatHistory
 from app.services.file_storage import save_upload_file_by_content, get_file_by_id
 from app.services.openrouter import OpenRouterClient, OpenRouterError
 from app.services.kie_ai import KieAIClient, KieAIError, KieAITimeoutError, KieAITaskFailedError
-from app.services.grsai import GrsAIClient, GrsAIError, GrsAITimeoutError, GrsAITaskFailedError
+from app.services.grsai import (
+    GrsAIClient,
+    GrsAIError,
+    GrsAITimeoutError,
+    GrsAITaskFailedError,
+    GrsAIRateLimitError,
+    GrsAIServerError,
+)
 from app.tasks.celery_app import celery_app
 from app.tasks.utils import (
     should_add_watermark,
@@ -36,6 +43,7 @@ from app.utils.image_utils import (
 from app.utils.runtime_config import get_generation_providers_for_worker
 
 logger = logging.getLogger(__name__)
+USER_ERROR_MESSAGE = "Произошла ошибка, повторите запрос еще раз или зайдите позже"
 
 
 class EditingTask(Task):
@@ -281,16 +289,35 @@ def generate_editing_task(
 
                             urls = [public_base_image_url, *attachment_public_urls] if attachment_public_urls else [public_base_image_url]
 
+                            primary_model = settings.GRS_AI_MODEL
+                            fallback_model = settings.GRS_AI_FALLBACK_MODEL
+
                             async with GrsAIClient() as grs_client:
                                 await update_generation_status(session, generation_id, "processing", progress=55)
 
-                                result_url = await grs_client.generate_image(
-                                    prompt=prompt,
-                                    urls=urls,
-                                    aspect_ratio=resolved_aspect_ratio,
-                                    image_size=settings.GRS_AI_IMAGE_SIZE,
-                                    progress_callback=progress_callback,
-                                )
+                                try:
+                                    result_url = await grs_client.generate_image(
+                                        prompt=prompt,
+                                        urls=urls,
+                                        aspect_ratio=resolved_aspect_ratio,
+                                        image_size=settings.GRS_AI_IMAGE_SIZE,
+                                        model=primary_model,
+                                        progress_callback=progress_callback,
+                                    )
+                                except (GrsAIServerError, GrsAIRateLimitError, GrsAITimeoutError) as grs_retry_err:
+                                    logger.warning(
+                                        "GrsAI primary model failed (%s). Retrying with fallback model %s",
+                                        grs_retry_err,
+                                        fallback_model,
+                                    )
+                                    result_url = await grs_client.generate_image(
+                                        prompt=prompt,
+                                        urls=urls,
+                                        aspect_ratio=resolved_aspect_ratio,
+                                        image_size=settings.GRS_AI_IMAGE_SIZE,
+                                        model=fallback_model,
+                                        progress_callback=progress_callback,
+                                    )
 
                             service_used = "grsai"
                             logger.info("GrsAI image editing successful")
@@ -544,8 +571,10 @@ def generate_editing_task(
 
             except Exception as e:
                 logger.error(
-                    f"Error in editing generation {generation_id}: {e}",
-                    exc_info=True
+                    "Error in editing generation %s: %s",
+                    generation_id,
+                    e,
+                    exc_info=True,
                 )
 
                 # Обновление статуса: failed
@@ -553,12 +582,12 @@ def generate_editing_task(
                     session,
                     generation_id,
                     "failed",
-                    error_message=str(e),
+                    error_message=USER_ERROR_MESSAGE,
                 )
 
                 return {
                     "status": "failed",
-                    "error": str(e),
+                    "error": USER_ERROR_MESSAGE,
                     "generation_id": generation_id,
                 }
 

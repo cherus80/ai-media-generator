@@ -108,7 +108,6 @@ async def generate_fitting(
     """
     billing_v5_enabled = settings.BILLING_V5_ENABLED
     credits_cost = settings.BILLING_GENERATION_COST_CREDITS if billing_v5_enabled else 2
-    charge_info = None
 
     # Проверка существования файлов
     # Важно: проверяем, что файлы существуют и не истёк срок хранения (24 часа)
@@ -140,14 +139,19 @@ async def generate_fitting(
 
     if billing_v5_enabled:
         billing = BillingV5Service(db)
-        charge_info = await billing.charge_generation(
-            current_user.id,
-            meta={
-                "feature": "fitting",
-                "user_photo_id": str(request.user_photo_id),
-                "item_photo_id": str(request.item_photo_id),
-            },
+        can_use_actions = (
+            billing._has_active_plan(current_user)
+            and billing._actions_remaining(current_user) > 0
         )
+        if not (
+            getattr(current_user, "is_admin", False)
+            or can_use_actions
+            or current_user.balance_credits >= credits_cost
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail={"error": "NOT_ENOUGH_BALANCE"},
+            )
     else:
         # Проверка баланса для старой модели
         try:
@@ -173,11 +177,7 @@ async def generate_fitting(
         accessory_zone=request.accessory_zone,
         prompt="Virtual try-on generation",  # Placeholder prompt for database
         status="pending",
-        credits_spent=(
-            credits_cost
-            if billing_v5_enabled and charge_info and charge_info.get("payment_source") == "credits"
-            else 0
-        ),
+        credits_spent=0,
     )
 
     db.add(generation)
