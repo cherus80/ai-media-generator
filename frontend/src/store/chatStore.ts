@@ -33,7 +33,7 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:800
   .replace(/\/$/, '')
   .replace(/\/api$/, '');
 const MAX_PROMPT_LENGTH = 4000;
-const TARGET_UPLOAD_SIZE = 5 * 1024 * 1024;
+const TARGET_UPLOAD_SIZE = 9 * 1024 * 1024;
 const MAX_SOURCE_FILE_SIZE = 40 * 1024 * 1024;
 
 interface ChatState {
@@ -136,7 +136,7 @@ export const useChatStore = create<ChatState>()(
         throw new Error(
           isIphoneFormat
             ? 'Формат HEIC/HEIF/MPO нельзя сжать в браузере. Сохраните файл в JPEG/PNG или выберите фото меньшего размера.'
-            : 'Не удалось сжать изображение до 5MB. Попробуйте другое фото или уменьшите размер.'
+            : 'Не удалось сжать изображение до 9MB. Попробуйте другое фото или уменьшите размер.'
         );
       }
 
@@ -173,7 +173,7 @@ export const useChatStore = create<ChatState>()(
     } catch (error: any) {
       const errorMessage = getUploadErrorMessage(error, {
         kind: 'image',
-        maxSizeMb: 5,
+        maxSizeMb: 9,
         allowedTypesLabel: 'JPEG, PNG, WebP, HEIC/HEIF, MPO',
         fallback: 'Не удалось загрузить изображение. Попробуйте еще раз.',
       });

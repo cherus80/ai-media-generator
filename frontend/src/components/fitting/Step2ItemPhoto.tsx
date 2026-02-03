@@ -61,7 +61,7 @@ export const Step2ItemPhoto: React.FC<Step2ItemPhotoProps> = ({
         error={uploadError}
         maxSize={40 * 1024 * 1024}
         label="Одежда или аксессуар"
-        hint="Загрузите фото одежды, обуви или аксессуара. JPEG / PNG / WebP / HEIC, до 40MB (если файл больше 5MB — сожмём автоматически)."
+        hint="Загрузите фото одежды, обуви или аксессуара. JPEG / PNG / WebP / HEIC, до 40MB (если файл больше 9MB — сожмём автоматически)."
       />
 
       {/* File info */}

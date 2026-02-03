@@ -57,7 +57,7 @@ export const Step1UserPhoto: React.FC<Step1UserPhotoProps> = ({ onNext }) => {
         error={uploadError}
         maxSize={40 * 1024 * 1024}
         label="Ваше фото"
-        hint="Загрузите фото в полный рост или портрет. JPEG / PNG / WebP / HEIC, до 40MB (если файл больше 5MB — сожмём автоматически)."
+        hint="Загрузите фото в полный рост или портрет. JPEG / PNG / WebP / HEIC, до 40MB (если файл больше 9MB — сожмём автоматически)."
       />
 
       {/* File info */}

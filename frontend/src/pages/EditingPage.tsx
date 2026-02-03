@@ -431,7 +431,7 @@ export const EditingPage: React.FC = () => {
                   error={uploadError}
                   maxSize={40 * 1024 * 1024}
                   label="Базовое изображение"
-                  hint="JPEG / PNG / WebP / HEIC, до 40MB (если файл больше 5MB — сожмём автоматически)."
+                  hint="JPEG / PNG / WebP / HEIC, до 40MB (если файл больше 9MB — сожмём автоматически)."
                 />
               </motion.div>
 

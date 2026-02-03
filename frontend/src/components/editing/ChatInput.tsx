@@ -53,7 +53,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const trimmedMessage = message.trim();
   const promptLength = trimmedMessage.length;
   const isPromptTooLong = promptLength > MAX_PROMPT_LENGTH;
-  const TARGET_UPLOAD_SIZE = 5 * 1024 * 1024;
+  const TARGET_UPLOAD_SIZE = 9 * 1024 * 1024;
   const MAX_SOURCE_FILE_SIZE = 40 * 1024 * 1024;
 
   const hasActiveSubscription = !!(
@@ -164,7 +164,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         toast.error(
           isIphoneFormat
             ? 'Формат HEIC/HEIF/MPO нельзя сжать в браузере. Сохраните файл в JPEG/PNG или выберите фото меньшего размера.'
-            : 'Не удалось сжать изображение до 5MB. Попробуйте другое фото или уменьшите размер.'
+            : 'Не удалось сжать изображение до 9MB. Попробуйте другое фото или уменьшите размер.'
         );
         return;
       }
@@ -181,7 +181,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       toast.error(
         getUploadErrorMessage(err, {
           kind: 'image',
-          maxSizeMb: 5,
+          maxSizeMb: 9,
           allowedTypesLabel: 'JPEG, PNG, WebP, HEIC/HEIF, MPO',
           fallback: 'Не удалось загрузить файл. Попробуйте еще раз.',
         })
