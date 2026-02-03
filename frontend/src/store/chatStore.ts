@@ -33,8 +33,8 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:800
   .replace(/\/$/, '')
   .replace(/\/api$/, '');
 const MAX_PROMPT_LENGTH = 4000;
-const CLIENT_MAX_FILE_SIZE = 10 * 1024 * 1024;
 const TARGET_UPLOAD_SIZE = 5 * 1024 * 1024;
+const MAX_SOURCE_FILE_SIZE = 40 * 1024 * 1024;
 
 interface ChatState {
   // State: сессия чата
@@ -121,9 +121,9 @@ export const useChatStore = create<ChatState>()(
         );
       }
 
-      if (file.size > CLIENT_MAX_FILE_SIZE) {
+      if (file.size > MAX_SOURCE_FILE_SIZE) {
         throw new Error(
-          'Файл слишком большой. Максимальный размер: 10MB. Сожмите изображение или выберите файл меньшего размера.'
+          'Файл слишком большой для автосжатия. Максимальный размер исходного файла: 40MB. Выберите файл меньшего размера.'
         );
       }
 

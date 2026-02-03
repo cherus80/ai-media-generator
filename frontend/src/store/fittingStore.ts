@@ -23,8 +23,8 @@ import { compressImageFile } from '../utils/imageCompression';
 import type { AspectRatio } from '../types/generation';
 import { getGenerationErrorMessage } from '../utils/billingErrors';
 
-const CLIENT_MAX_FILE_SIZE = 10 * 1024 * 1024;
 const TARGET_UPLOAD_SIZE = 5 * 1024 * 1024;
+const MAX_SOURCE_FILE_SIZE = 40 * 1024 * 1024;
 
 interface FittingState {
   // State: загруженные файлы
@@ -95,9 +95,9 @@ export const useFittingStore = create<FittingState>((set, get) => ({
         );
       }
 
-      if (file.size > CLIENT_MAX_FILE_SIZE) {
+      if (file.size > MAX_SOURCE_FILE_SIZE) {
         throw new Error(
-          'Файл слишком большой. Максимальный размер: 10MB. Сожмите изображение или выберите файл меньшего размера.'
+          'Файл слишком большой для автосжатия. Максимальный размер исходного файла: 40MB. Выберите файл меньшего размера.'
         );
       }
 
@@ -160,9 +160,9 @@ export const useFittingStore = create<FittingState>((set, get) => ({
         );
       }
 
-      if (file.size > CLIENT_MAX_FILE_SIZE) {
+      if (file.size > MAX_SOURCE_FILE_SIZE) {
         throw new Error(
-          'Файл слишком большой. Максимальный размер: 10MB. Сожмите изображение или выберите файл меньшего размера.'
+          'Файл слишком большой для автосжатия. Максимальный размер исходного файла: 40MB. Выберите файл меньшего размера.'
         );
       }
 

@@ -53,8 +53,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const trimmedMessage = message.trim();
   const promptLength = trimmedMessage.length;
   const isPromptTooLong = promptLength > MAX_PROMPT_LENGTH;
-  const CLIENT_MAX_FILE_SIZE = 10 * 1024 * 1024;
   const TARGET_UPLOAD_SIZE = 5 * 1024 * 1024;
+  const MAX_SOURCE_FILE_SIZE = 40 * 1024 * 1024;
 
   const hasActiveSubscription = !!(
     user?.subscription_type &&
@@ -145,9 +145,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       return;
     }
 
-    if (file.size > CLIENT_MAX_FILE_SIZE) {
+    if (file.size > MAX_SOURCE_FILE_SIZE) {
       toast.error(
-        'Файл слишком большой. Максимальный размер: 10MB. Сожмите изображение или выберите файл меньшего размера.'
+        'Файл слишком большой для автосжатия. Максимальный размер исходного файла: 40MB. Выберите файл меньшего размера.'
       );
       e.target.value = '';
       return;
