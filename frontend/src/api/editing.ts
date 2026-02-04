@@ -190,20 +190,27 @@ export const pollEditingStatus = async (
   options: {
     intervalMs?: number;
     maxAttempts?: number;
+    maxDurationMs?: number;
     slowWarningMs?: number;
+    verySlowWarningMs?: number;
     onSlowWarning?: () => void;
+    onVerySlowWarning?: () => void;
   } = {}
 ): Promise<FittingResult> => {
   let attempts = 0;
   const {
     intervalMs = 2000,
-    maxAttempts = 150,
+    maxAttempts,
+    maxDurationMs = 10 * 60 * 1000,
     slowWarningMs = 60000,
+    verySlowWarningMs = 5 * 60 * 1000,
     onSlowWarning,
+    onVerySlowWarning,
   } = options;
 
   const startedAt = Date.now();
   let warnedSlow = false;
+  let warnedVerySlow = false;
 
   const getRetryDelayMs = (error: unknown, fallbackMs: number) => {
     if (axios.isAxiosError(error)) {
@@ -234,14 +241,24 @@ export const pollEditingStatus = async (
           return;
         }
 
+        const elapsedMs = Date.now() - startedAt;
+
         // Сообщение о долгой генерации
-        if (!warnedSlow && Date.now() - startedAt >= slowWarningMs) {
+        if (!warnedSlow && elapsedMs >= slowWarningMs) {
           warnedSlow = true;
           onSlowWarning?.();
         }
+        if (!warnedVerySlow && elapsedMs >= verySlowWarningMs) {
+          warnedVerySlow = true;
+          onVerySlowWarning?.();
+        }
 
         // Если превышено количество попыток
-        if (attempts >= maxAttempts) {
+        if (typeof maxAttempts === 'number' && attempts >= maxAttempts) {
+          reject(new Error('Таймаут: генерация заняла слишком много времени'));
+          return;
+        }
+        if (elapsedMs >= maxDurationMs) {
           reject(new Error('Таймаут: генерация заняла слишком много времени'));
           return;
         }
@@ -251,9 +268,18 @@ export const pollEditingStatus = async (
       } catch (error) {
         if (axios.isAxiosError(error) && error.response?.status === 429) {
           attempts = Math.max(0, attempts - 1);
-          if (!warnedSlow && Date.now() - startedAt >= slowWarningMs) {
+          const elapsedMs = Date.now() - startedAt;
+          if (!warnedSlow && elapsedMs >= slowWarningMs) {
             warnedSlow = true;
             onSlowWarning?.();
+          }
+          if (!warnedVerySlow && elapsedMs >= verySlowWarningMs) {
+            warnedVerySlow = true;
+            onVerySlowWarning?.();
+          }
+          if (elapsedMs >= maxDurationMs) {
+            reject(new Error('Таймаут: генерация заняла слишком много времени'));
+            return;
           }
           const delay = getRetryDelayMs(error, intervalMs);
           setTimeout(poll, delay + Math.floor(Math.random() * 250));

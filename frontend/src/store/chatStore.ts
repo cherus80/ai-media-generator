@@ -357,10 +357,17 @@ export const useChatStore = create<ChatState>()(
           get().updateGenerationProgress(status);
         },
         {
+          maxDurationMs: 10 * 60 * 1000,
           slowWarningMs: 60000,
           onSlowWarning: () =>
             toast(
-              'Генерация может занять до 5 минут из-за нагрузки на сервис. Приложение продолжает ждать ответ.',
+              'Генерация может занять до 10 минут из-за нагрузки на сервис. Приложение продолжает ждать ответ.',
+              { icon: '⏳' }
+            ),
+          verySlowWarningMs: 5 * 60 * 1000,
+          onVerySlowWarning: () =>
+            toast(
+              'Генерация все еще выполняется (возможен fallback модели). Не закрывайте страницу — результат появится автоматически.',
               { icon: '⏳' }
             ),
         }
