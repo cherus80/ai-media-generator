@@ -27,6 +27,7 @@ from app.utils.jwt import create_user_access_token
 from app.utils.referrals import generate_referral_code
 from app.utils.telegram import TelegramInitDataError, validate_telegram_init_data
 from app.services.billing_v5 import BillingV5Service
+from app.services.notifications import create_new_user_welcome_notification
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -146,6 +147,7 @@ async def login_with_telegram(
         db.add(user)
         await db.commit()
         await db.refresh(user)
+        await create_new_user_welcome_notification(db=db, user_id=user.id)
 
     # Free trial при регистрации (однократно)
     if created_new_user:

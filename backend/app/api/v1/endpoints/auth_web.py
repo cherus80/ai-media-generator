@@ -26,6 +26,7 @@ from app.core.config import settings
 from app.models.user import User, AuthProvider, UserRole
 from app.models.user_consent import UserConsent
 from app.services.billing_v5 import BillingV5Service
+from app.services.notifications import create_new_user_welcome_notification
 from app.schemas.auth_web import (
     RegisterRequest,
     LoginRequest,
@@ -269,6 +270,7 @@ async def register_with_email(
     db.add(user)
     await db.commit()
     await db.refresh(user)
+    await create_new_user_welcome_notification(db=db, user_id=user.id)
 
     # Free trial кредиты (однократно)
     billing = BillingV5Service(db)
@@ -660,6 +662,7 @@ async def login_with_google(
         db.add(user)
         await db.commit()
         await db.refresh(user)
+        await create_new_user_welcome_notification(db=db, user_id=user.id)
 
         billing = BillingV5Service(db)
         try:
@@ -879,6 +882,7 @@ async def login_with_vk_pkce(
         db.add(user)
         await db.commit()
         await db.refresh(user)
+        await create_new_user_welcome_notification(db=db, user_id=user.id)
 
         billing = BillingV5Service(db)
         try:
@@ -1050,6 +1054,7 @@ async def login_with_vk(
         db.add(user)
         await db.commit()
         await db.refresh(user)
+        await create_new_user_welcome_notification(db=db, user_id=user.id)
 
         billing = BillingV5Service(db)
         try:
