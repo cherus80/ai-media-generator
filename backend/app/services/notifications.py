@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 
 WELCOME_NOTIFICATION_TITLE = "Подпишитесь на наш Telegram-канал"
 WELCOME_NOTIFICATION_MESSAGE = (
-    "Рекомендуем подписаться на Telegram-канал сообщества: "
-    "https://t.me/+Fj-R8QqIEEg5OTE6\n\n"
+    "Рекомендуем подписаться на "
+    "[Telegram-канал](https://t.me/+Fj-R8QqIEEg5OTE6) сообщества.\n\n"
     "Там мы регулярно публикуем новые пресеты для генераций, "
     "инструкции по оптимальной работе с приложением и отвечаем на вопросы пользователей."
 )

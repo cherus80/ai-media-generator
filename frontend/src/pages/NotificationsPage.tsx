@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { Fragment, useEffect, useRef, type ReactNode } from 'react';
 import { AuthGuard } from '../components/auth/AuthGuard';
 import { Layout } from '../components/common/Layout';
 import { Card } from '../components/ui/Card';
@@ -6,6 +6,103 @@ import { useNotificationsStore } from '../store/notificationsStore';
 import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import toast from 'react-hot-toast';
+
+const MARKDOWN_LINK_RE = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+const URL_RE = /(https?:\/\/[^\s)]+)/g;
+
+const isSafeHttpUrl = (value: string): boolean => /^https?:\/\//i.test(value);
+
+const renderPlainTextWithLinks = (text: string, keyPrefix: string): ReactNode[] => {
+  const nodes: ReactNode[] = [];
+  let lastIndex = 0;
+  let linkIndex = 0;
+
+  for (const match of text.matchAll(URL_RE)) {
+    if (match.index === undefined) {
+      continue;
+    }
+    const url = match[0];
+    const start = match.index;
+    if (start > lastIndex) {
+      nodes.push(text.slice(lastIndex, start));
+    }
+    if (isSafeHttpUrl(url)) {
+      nodes.push(
+        <a
+          key={`${keyPrefix}-url-${linkIndex}`}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-medium text-primary-700 underline break-all hover:text-primary-800"
+        >
+          {url}
+        </a>
+      );
+    } else {
+      nodes.push(url);
+    }
+    lastIndex = start + url.length;
+    linkIndex += 1;
+  }
+
+  if (lastIndex < text.length) {
+    nodes.push(text.slice(lastIndex));
+  }
+
+  return nodes;
+};
+
+const renderNotificationMessage = (message: string, keyPrefix: string): ReactNode[] => {
+  const nodes: ReactNode[] = [];
+  let lastIndex = 0;
+  let linkIndex = 0;
+
+  for (const match of message.matchAll(MARKDOWN_LINK_RE)) {
+    if (match.index === undefined) {
+      continue;
+    }
+    const [source, label, url] = match;
+    const start = match.index;
+    if (start > lastIndex) {
+      const plainChunk = message.slice(lastIndex, start);
+      nodes.push(
+        <Fragment key={`${keyPrefix}-text-${linkIndex}`}>
+          {renderPlainTextWithLinks(plainChunk, `${keyPrefix}-plain-${linkIndex}`)}
+        </Fragment>
+      );
+    }
+
+    if (isSafeHttpUrl(url)) {
+      nodes.push(
+        <a
+          key={`${keyPrefix}-md-link-${linkIndex}`}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-medium text-primary-700 underline hover:text-primary-800"
+        >
+          {label}
+        </a>
+      );
+    } else {
+      nodes.push(source);
+    }
+
+    lastIndex = start + source.length;
+    linkIndex += 1;
+  }
+
+  if (lastIndex < message.length) {
+    const tail = message.slice(lastIndex);
+    nodes.push(
+      <Fragment key={`${keyPrefix}-tail`}>
+        {renderPlainTextWithLinks(tail, `${keyPrefix}-tail-plain`)}
+      </Fragment>
+    );
+  }
+
+  return nodes;
+};
 
 export const NotificationsPage = () => {
   const {
@@ -128,7 +225,9 @@ export const NotificationsPage = () => {
                             Новое
                           </span>
                         </div>
-                        <div className="text-sm text-gray-700 whitespace-pre-wrap">{item.message}</div>
+                        <div className="text-sm text-gray-700 whitespace-pre-wrap break-words">
+                          {renderNotificationMessage(item.message, `unread-${item.id}`)}
+                        </div>
                         <div className="pt-2">
                           <button
                             onClick={() => handleMarkRead(item.id)}
@@ -168,7 +267,9 @@ export const NotificationsPage = () => {
                             Прочитано
                           </span>
                         </div>
-                        <div className="text-sm text-gray-700 whitespace-pre-wrap">{item.message}</div>
+                        <div className="text-sm text-gray-700 whitespace-pre-wrap break-words">
+                          {renderNotificationMessage(item.message, `read-${item.id}`)}
+                        </div>
                         {item.read_at && (
                           <div className="text-xs text-gray-400">Прочитано {renderTimestamp(item.read_at)}</div>
                         )}

@@ -22,8 +22,6 @@ export type SubscriptionType = 'basic' | 'pro' | 'premium' | 'none';
 export interface RegisterRequest {
   email: string;
   password: string;
-  first_name?: string;
-  last_name?: string;
   consent_version?: string;
 }
 
@@ -215,8 +213,6 @@ export interface ValidationError {
 export interface FormErrors {
   email?: string;
   password?: string;
-  first_name?: string;
-  last_name?: string;
   general?: string;
 }
 

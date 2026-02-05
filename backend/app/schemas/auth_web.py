@@ -116,20 +116,6 @@ class RegisterRequest(BaseModel):
         example="MySecurePass123!"
     )
 
-    first_name: Optional[str] = Field(
-        None,
-        max_length=255,
-        description="First name",
-        example="John"
-    )
-
-    last_name: Optional[str] = Field(
-        None,
-        max_length=255,
-        description="Last name",
-        example="Doe"
-    )
-
     consent_version: Optional[str] = Field(
         default=None,
         max_length=64,

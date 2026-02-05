@@ -253,8 +253,6 @@ async def register_with_email(
         email_verified=False,  # TODO: Добавить email verification позже
         password_hash=password_hash,
         auth_provider=AuthProvider.email,
-        first_name=request_body.first_name,
-        last_name=request_body.last_name,
         username=request_body.email.split('@')[0],  # Временный username из email
         balance_credits=0,
         freemium_actions_used=0,

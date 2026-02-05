@@ -17,8 +17,6 @@ export function RegisterPage() {
     email: '',
     password: '',
     confirmPassword: '',
-    first_name: '',
-    last_name: '',
   });
   const [formErrors, setFormErrors] = useState<any>({});
   const [showPassword, setShowPassword] = useState(false);
@@ -78,8 +76,6 @@ export function RegisterPage() {
       await registerWithEmail({
         email: formData.email,
         password: formData.password,
-        first_name: formData.first_name || undefined,
-        last_name: formData.last_name || undefined,
         consent_version: PD_CONSENT_VERSION,
       });
 
@@ -191,33 +187,6 @@ export function RegisterPage() {
           )}
 
           <form className="space-y-4" onSubmit={handleSubmit}>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="first_name" className="block text-sm font-medium text-gray-700">
-                  Имя
-                </label>
-                <input
-                  id="first_name"
-                  type="text"
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  value={formData.first_name}
-                  onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                />
-              </div>
-              <div>
-                <label htmlFor="last_name" className="block text-sm font-medium text-gray-700">
-                  Фамилия
-                </label>
-                <input
-                  id="last_name"
-                  type="text"
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  value={formData.last_name}
-                  onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                />
-              </div>
-            </div>
-
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Email адрес
