@@ -10,11 +10,14 @@ import type {
   LoginRequest,
   GoogleOAuthRequest,
   VKOAuthRequest,
+  YandexOAuthRequest,
   LoginResponse,
   GoogleOAuthResponse,
   VKOAuthResponse,
+  YandexOAuthResponse,
   VKOAuthPKCERequest,
   UserProfileResponse,
+  TelegramUser,
   SendVerificationEmailResponse,
   VerifyEmailResponse,
   PasswordResetRequest,
@@ -60,6 +63,29 @@ export async function loginWithVK(token: string, uuid: string, consentVersion?: 
  */
 export async function loginWithVKPKCE(payload: VKOAuthPKCERequest): Promise<VKOAuthResponse> {
   const response = await client.post<VKOAuthResponse>('/api/v1/auth-web/vk/pkce', payload);
+  return response.data;
+}
+
+/**
+ * Login with Yandex ID (OAuth)
+ */
+export async function loginWithYandex(code: string, consentVersion?: string): Promise<YandexOAuthResponse> {
+  const data: YandexOAuthRequest = { code, consent_version: consentVersion };
+  const response = await client.post<YandexOAuthResponse>('/api/v1/auth-web/yandex', data);
+  return response.data;
+}
+
+/**
+ * Login with Telegram Widget
+ */
+export async function loginWithTelegramWidget(user: TelegramUser, consentVersion?: string): Promise<LoginResponse> {
+  const response = await client.post<LoginResponse>(
+    '/api/v1/auth-web/telegram/widget',
+    {
+      ...user,
+      consent_version: consentVersion,
+    }
+  );
   return response.data;
 }
 

@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Реализованы рабочие OAuth-флоу для Яндекс ID и Telegram Login Widget: backend endpoints `/api/v1/auth-web/yandex` и `/api/v1/auth-web/telegram/widget`, фронтовый callback `/yandex/callback`, синхронизация API-клиента/типов.
+- Добавлена миграция `20260211_add_auth_provider_yandex_tg_widget`, расширяющая `auth_provider_enum` значениями `yandex` и `telegram_widget`.
 - Добавлен скрипт `scripts/backup-from-vps.sh` для бэкапа БД с VPS на компьютер.
 - Добавлен скрипт `scripts/restore-vps-db.sh` для восстановления БД на VPS из локального дампа с проверкой.
 - Для новых пользователей добавлено одноразовое welcome-оповещение в разделе "Оповещения" с приглашением в Telegram-канал с пресетами, инструкциями и поддержкой.
@@ -38,6 +40,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GrsAI подключён как основной провайдер Nano Banana Pro, kie.ai используется как fallback вместо OpenRouter.
 
 ### Fixed
+- Исправлен `backend/app/api/v1/endpoints/auth.py`: устранена синтаксическая ошибка импорта, восстановлена компиляция backend и корректная маркировка legacy Telegram-пользователей (`auth_provider=telegram`).
+- Прод-конфиг фронтенда дополнен недостающими переменными OAuth (`VITE_YANDEX_CLIENT_ID`, `VITE_YANDEX_REDIRECT_URI`, `VITE_TELEGRAM_BOT_NAME`) в `Dockerfile.prod`, `docker-compose.prod.yml` и `.env.example`.
 - Сообщения статуса генерации переведены на русский язык.
 - Исправлен клиентский pre-check размера: автосжатие теперь срабатывает и для изображений больше 10MB (если файл не превышает 40MB и формат поддерживает сжатие в браузере).
 - Исправлена ошибка `UnboundLocalError` при генерации с выбором соотношения сторон.

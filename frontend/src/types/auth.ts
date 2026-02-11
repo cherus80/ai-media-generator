@@ -4,6 +4,7 @@
  * Поддерживает:
  * - Email/Password регистрацию и вход
  * - Google OAuth авторизацию
+ * - OAuth авторизацию (Google, VK, Yandex, Telegram Widget)
  * - Legacy Telegram авторизацию (для обратной совместимости)
  */
 
@@ -11,7 +12,7 @@
 // Auth Providers
 // ============================================================================
 
-export type AuthProvider = 'email' | 'google' | 'vk' | 'telegram';
+export type AuthProvider = 'email' | 'google' | 'vk' | 'yandex' | 'telegram' | 'telegram_widget';
 
 export type SubscriptionType = 'basic' | 'pro' | 'premium' | 'none';
 
@@ -71,6 +72,18 @@ export interface VKOAuthPKCERequest {
 export type VKOAuthResponse = GoogleOAuthResponse;
 
 // ============================================================================
+// Yandex OAuth
+// ============================================================================
+
+export interface YandexOAuthRequest {
+  code: string;
+  consent_version?: string;
+}
+
+// Yandex OAuth response is identical to Google OAuth response
+export type YandexOAuthResponse = GoogleOAuthResponse;
+
+// ============================================================================
 // Legacy Telegram (для обратной совместимости)
 // ============================================================================
 
@@ -78,6 +91,9 @@ export interface TelegramUser {
   id: number;
   first_name: string;
   last_name?: string;
+  photo_url?: string;
+  auth_date?: number;
+  hash?: string;
   username?: string;
   language_code?: string;
   is_premium?: boolean;

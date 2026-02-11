@@ -278,7 +278,7 @@ async def root():
         "service": "AI Generator API",
         "version": "0.12.0",
         "environment": settings.ENVIRONMENT,
-        "auth_methods": ["email", "google", "telegram_legacy"],
+        "auth_methods": ["email", "google", "vk", "yandex", "telegram_widget", "telegram_legacy"],
     }
 
 

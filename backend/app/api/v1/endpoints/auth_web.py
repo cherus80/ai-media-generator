@@ -2,12 +2,14 @@
 Web Authentication API endpoints.
 
 Endpoints:
-- POST /auth/register - Регистрация через Email/Password
-- POST /auth/login - Вход через Email/Password
-- POST /auth/google - Вход через Google OAuth
-- POST /auth/vk - Вход через VK ID OAuth
-- GET /auth/me - Получение текущего профиля пользователя
-- POST /auth/logout - Выход (для будущего расширения)
+- POST /auth-web/register - Регистрация через Email/Password
+- POST /auth-web/login - Вход через Email/Password
+- POST /auth-web/google - Вход через Google OAuth
+- POST /auth-web/vk - Вход через VK ID OAuth
+- POST /auth-web/yandex - Вход через Yandex ID OAuth
+- POST /auth-web/telegram/widget - Вход через Telegram Login Widget
+- GET /auth-web/me - Получение текущего профиля пользователя
+- POST /auth-web/logout - Выход (для будущего расширения)
 """
 
 import logging
@@ -40,6 +42,10 @@ from app.schemas.auth_web import (
     VKOAuthRequest,
     VKOAuthPKCERequest,
     VKOAuthResponse,
+    YandexOAuthRequest,
+    YandexOAuthResponse,
+    TelegramWidgetRequest,
+    TelegramWidgetResponse,
     UserProfile,
     UserProfileResponse,
     SendVerificationEmailResponse,
@@ -55,6 +61,8 @@ from app.utils.vk_oauth import (
     verify_vk_id_token,
     VKOAuthError,
 )
+from app.utils.yandex_oauth import verify_yandex_auth_code, YandexOAuthError
+from app.utils.telegram_widget import verify_telegram_widget_data, TelegramWidgetError
 from app.utils.referrals import generate_referral_code
 from app.services.email import email_service
 from app.models.email_verification import EmailVerificationToken
@@ -1084,6 +1092,266 @@ async def login_with_vk(
 
     # Формируем ответ
     return VKOAuthResponse(
+        access_token=access_token,
+        token_type="bearer",
+        user=user_to_profile(user),
+        is_new_user=is_new_user,
+    )
+
+
+# ============================================================================
+# Yandex ID OAuth
+# ============================================================================
+
+
+@router.post("/yandex", response_model=YandexOAuthResponse, status_code=status.HTTP_200_OK)
+async def login_with_yandex(
+    request: YandexOAuthRequest,
+    db: DBSession,
+    raw_request: Request,
+) -> YandexOAuthResponse:
+    """
+    Вход/Регистрация через Yandex ID OAuth.
+    """
+    if not settings.YANDEX_CLIENT_ID or not settings.YANDEX_CLIENT_SECRET:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Yandex OAuth is not configured. Please use email/password authentication.",
+        )
+
+    try:
+        yandex_user_info = verify_yandex_auth_code(request.code)
+    except YandexOAuthError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid Yandex OAuth code: {str(e)}",
+        )
+
+    yandex_user_id = yandex_user_info.get("yandex_id")
+    email = yandex_user_info.get("email")
+    first_name = yandex_user_info.get("first_name")
+    last_name = yandex_user_info.get("last_name")
+    login = yandex_user_info.get("login")
+    display_name = yandex_user_info.get("display_name")
+
+    if not yandex_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Yandex user ID not provided by Yandex.",
+        )
+
+    yandex_user_id_str = str(yandex_user_id)
+
+    if email:
+        result = await db.execute(
+            select(User).where(
+                (User.oauth_provider_id == yandex_user_id_str) |
+                (User.email == email)
+            )
+        )
+    else:
+        result = await db.execute(
+            select(User).where(User.oauth_provider_id == yandex_user_id_str)
+        )
+
+    user = result.scalar_one_or_none()
+    is_new_user = False
+
+    if user:
+        if user.auth_provider == AuthProvider.email:
+            user.auth_provider = AuthProvider.yandex
+            user.oauth_provider_id = yandex_user_id_str
+        elif user.auth_provider == AuthProvider.yandex and not user.oauth_provider_id:
+            user.oauth_provider_id = yandex_user_id_str
+
+        if email:
+            user.email = email
+            if not user.email_verified:
+                user.email_verified = True
+                user.email_verified_at = datetime.utcnow()
+            elif not user.email_verified_at:
+                user.email_verified_at = datetime.utcnow()
+
+        user.first_name = first_name or user.first_name
+        user.last_name = last_name or user.last_name
+        if not user.username:
+            user.username = login or display_name or (email.split("@")[0] if email else f"yandex_user_{yandex_user_id_str}")
+        user.updated_at = datetime.utcnow()
+
+        if user.email and user.email.lower() in settings.admin_email_list and user.role != UserRole.ADMIN:
+            user.role = UserRole.ADMIN
+
+        user.reset_freemium_if_needed()
+        await db.commit()
+        await db.refresh(user)
+    else:
+        is_new_user = True
+        username = login or display_name or (email.split("@")[0] if email else f"yandex_user_{yandex_user_id_str}")
+
+        user = User(
+            email=email,
+            email_verified=bool(email),
+            email_verified_at=datetime.utcnow() if email else None,
+            auth_provider=AuthProvider.yandex,
+            oauth_provider_id=yandex_user_id_str,
+            first_name=first_name,
+            last_name=last_name,
+            username=username,
+            balance_credits=0,
+            freemium_actions_used=0,
+            freemium_reset_at=datetime.utcnow(),
+            is_active=True,
+            is_banned=False,
+        )
+
+        if user.email and user.email.lower() in settings.admin_email_list:
+            user.role = UserRole.ADMIN
+
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+        await create_new_user_welcome_notification(db=db, user_id=user.id)
+
+        billing = BillingV5Service(db)
+        try:
+            await billing.grant_free_trial(user, meta={"reason": "yandex_oauth"})
+        except Exception as e:
+            logger = logging.getLogger(__name__)
+            logger.error("Failed to grant free trial (yandex): %s", e)
+
+    if user.is_banned:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User account is blocked",
+        )
+
+    access_token = create_user_access_token(
+        user_id=user.id,
+        email=user.email,
+        telegram_id=user.telegram_id,
+    )
+
+    await _save_pd_consent(
+        db=db,
+        user=user,
+        consent_version=request.consent_version,
+        source="yandex",
+        request=raw_request,
+    )
+
+    return YandexOAuthResponse(
+        access_token=access_token,
+        token_type="bearer",
+        user=user_to_profile(user),
+        is_new_user=is_new_user,
+    )
+
+
+# ============================================================================
+# Telegram Login Widget
+# ============================================================================
+
+
+@router.post("/telegram/widget", response_model=TelegramWidgetResponse, status_code=status.HTTP_200_OK)
+async def login_with_telegram_widget(
+    request: TelegramWidgetRequest,
+    db: DBSession,
+    raw_request: Request,
+) -> TelegramWidgetResponse:
+    """
+    Вход/Регистрация через Telegram Login Widget.
+    """
+    if not settings.TELEGRAM_BOT_TOKEN:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Telegram Login Widget is not configured. Please set TELEGRAM_BOT_TOKEN.",
+        )
+
+    widget_payload = request.model_dump(
+        exclude_none=True,
+        exclude={"consent_version"},
+    )
+
+    try:
+        telegram_data = verify_telegram_widget_data(widget_payload)
+    except TelegramWidgetError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f"Invalid Telegram widget data: {str(e)}",
+        )
+
+    telegram_id = telegram_data["telegram_id"]
+    telegram_id_str = str(telegram_id)
+
+    result = await db.execute(
+        select(User).where(User.telegram_id == telegram_id)
+    )
+    user = result.scalar_one_or_none()
+    is_new_user = False
+
+    if user:
+        if user.auth_provider in (AuthProvider.telegram, AuthProvider.telegram_widget):
+            user.auth_provider = AuthProvider.telegram_widget
+            user.oauth_provider_id = telegram_id_str
+
+        user.telegram_id = telegram_id
+        user.username = telegram_data.get("username") or user.username
+        user.first_name = telegram_data.get("first_name") or user.first_name
+        user.last_name = telegram_data.get("last_name") or user.last_name
+        user.updated_at = datetime.utcnow()
+        user.reset_freemium_if_needed()
+
+        await db.commit()
+        await db.refresh(user)
+    else:
+        is_new_user = True
+        user = User(
+            telegram_id=telegram_id,
+            auth_provider=AuthProvider.telegram_widget,
+            oauth_provider_id=telegram_id_str,
+            username=telegram_data.get("username") or f"tg_user_{telegram_id}",
+            first_name=telegram_data.get("first_name"),
+            last_name=telegram_data.get("last_name"),
+            balance_credits=0,
+            freemium_actions_used=0,
+            freemium_reset_at=datetime.utcnow(),
+            is_active=True,
+            is_banned=False,
+        )
+
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+        await create_new_user_welcome_notification(db=db, user_id=user.id)
+
+        billing = BillingV5Service(db)
+        try:
+            await billing.grant_free_trial(user, meta={"reason": "telegram_widget_signup"})
+        except Exception as e:
+            logger = logging.getLogger(__name__)
+            logger.error("Failed to grant free trial (telegram_widget): %s", e)
+
+    if user.is_banned:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User account is blocked",
+        )
+
+    access_token = create_user_access_token(
+        user_id=user.id,
+        telegram_id=user.telegram_id,
+        email=user.email,
+    )
+
+    await _save_pd_consent(
+        db=db,
+        user=user,
+        consent_version=request.consent_version,
+        source="telegram_widget",
+        request=raw_request,
+    )
+
+    return TelegramWidgetResponse(
         access_token=access_token,
         token_type="bearer",
         user=user_to_profile(user),

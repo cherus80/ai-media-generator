@@ -29,7 +29,7 @@ class UserProfile(BaseModel):
     # Auth method
     auth_provider: str = Field(
         ...,
-        description="Authentication provider (email, google, vk, telegram)"
+        description="Authentication provider (email, google, vk, yandex, telegram, telegram_widget)"
     )
 
     # Email (for web users)
@@ -348,6 +348,94 @@ class VKOAuthPKCERequest(BaseModel):
         description="Версия формы согласия на обработку ПДн",
         example="v1",
     )
+
+
+# ============================================================================
+# Yandex ID OAuth
+# ============================================================================
+
+
+class YandexOAuthRequest(BaseModel):
+    """Запрос на вход через Yandex ID OAuth"""
+
+    code: str = Field(
+        ...,
+        description="Authorization code from Yandex OAuth redirect",
+        example="auth_code_from_yandex"
+    )
+
+    consent_version: Optional[str] = Field(
+        default=None,
+        max_length=64,
+        description="Версия формы согласия на обработку ПДн",
+        example="v1",
+    )
+
+
+# YandexOAuthResponse is identical to GoogleOAuthResponse
+YandexOAuthResponse = GoogleOAuthResponse
+
+
+# ============================================================================
+# Telegram Login Widget
+# ============================================================================
+
+
+class TelegramWidgetRequest(BaseModel):
+    """Запрос на вход через Telegram Login Widget"""
+
+    id: int = Field(
+        ...,
+        description="Telegram user ID",
+        example=123456789
+    )
+
+    first_name: str = Field(
+        ...,
+        description="User's first name from Telegram",
+        example="Иван"
+    )
+
+    last_name: Optional[str] = Field(
+        default=None,
+        description="User's last name from Telegram",
+        example="Петров"
+    )
+
+    username: Optional[str] = Field(
+        default=None,
+        description="Telegram username (without @)",
+        example="ivanpetrov"
+    )
+
+    photo_url: Optional[str] = Field(
+        default=None,
+        description="URL of user's profile photo",
+        example="https://t.me/i/userpic/320/username.jpg"
+    )
+
+    auth_date: int = Field(
+        ...,
+        description="UNIX timestamp of the authentication",
+        example=1234567890
+    )
+
+    hash: str = Field(
+        ...,
+        description="HMAC-SHA256 hash for data verification",
+        example="abc123def456..."
+    )
+
+    consent_version: Optional[str] = Field(
+        default=None,
+        max_length=64,
+        description="Версия формы согласия на обработку ПДн",
+        example="v1",
+    )
+
+
+# TelegramWidgetResponse is identical to GoogleOAuthResponse
+TelegramWidgetResponse = GoogleOAuthResponse
 
 
 # ============================================================================

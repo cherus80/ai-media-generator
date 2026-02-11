@@ -16,7 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import CurrentUser, DBSession
 from app.core.config import settings
-from app.models.user import User
+from app.models.user import User, AuthProvider
 from app.schemas.auth import (
     LoginResponse,
     TelegramAuthRequest,
@@ -96,6 +96,12 @@ async def login_with_telegram(
     Raises:
         HTTPException 401: Если initData невалидный
     """
+    if not settings.TELEGRAM_BOT_TOKEN:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Telegram auth is not configured. Please set TELEGRAM_BOT_TOKEN.",
+        )
+
     # Валидация initData
     try:
         telegram_data = validate_telegram_init_data(
@@ -118,6 +124,9 @@ async def login_with_telegram(
 
     if user:
         # Обновляем данные существующего пользователя
+        user.auth_provider = AuthProvider.telegram
+        if not user.oauth_provider_id:
+            user.oauth_provider_id = str(telegram_data["telegram_id"])
         user.username = telegram_data.get("username")
         user.first_name = telegram_data.get("first_name")
         user.last_name = telegram_data.get("last_name")
@@ -133,6 +142,8 @@ async def login_with_telegram(
         # Создаём нового пользователя
         user = User(
             telegram_id=telegram_data["telegram_id"],
+            auth_provider=AuthProvider.telegram,
+            oauth_provider_id=str(telegram_data["telegram_id"]),
             username=telegram_data.get("username"),
             first_name=telegram_data.get("first_name"),
             last_name=telegram_data.get("last_name"),

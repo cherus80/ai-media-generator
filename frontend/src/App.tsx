@@ -14,6 +14,7 @@ import MockPaymentEmulator from './pages/MockPaymentEmulator';
 import { HistoryPage } from './pages/HistoryPage';
 import { VerifyRequiredPage } from './pages/VerifyRequiredPage';
 import { VKCallbackPage } from './pages/VKCallbackPage';
+import { YandexCallbackPage } from './pages/YandexCallbackPage';
 import { OfertaPage } from './pages/OfertaPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { LandingPage } from './pages/LandingPage';
@@ -42,6 +43,7 @@ function App() {
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/verify-required" element={<VerifyRequiredPage />} />
           <Route path="/vk/callback" element={<VKCallbackPage />} />
+          <Route path="/yandex/callback" element={<YandexCallbackPage />} />
 
           {/* Публичные страницы */}
           <Route path="/" element={<LandingPage />} />

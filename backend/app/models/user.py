@@ -36,7 +36,9 @@ class AuthProvider(str, enum.Enum):
     email = "email"       # Email/Password
     google = "google"     # Google OAuth
     vk = "vk"             # VK ID OAuth
+    yandex = "yandex"     # Yandex ID OAuth
     telegram = "telegram" # Legacy Telegram (для обратной совместимости)
+    telegram_widget = "telegram_widget" # Telegram Login Widget
 
 
 class UserRole(str, enum.Enum):
@@ -101,7 +103,7 @@ class User(Base, TimestampMixin):
         Enum(AuthProvider, name="auth_provider_enum"),
         default=AuthProvider.email,
         nullable=False,
-        comment="Authentication provider (email, google, telegram)",
+        comment="Authentication provider (email, google, vk, yandex, telegram, telegram_widget)",
     )
 
     # OAuth provider ID (Google sub, etc.)

@@ -176,6 +176,9 @@ services:
         - VITE_VK_APP_ID=${VITE_VK_APP_ID}
         - VITE_VK_REDIRECT_URI=${VITE_VK_REDIRECT_URI}
         - VITE_VK_AUTH_URL=${VITE_VK_AUTH_URL:-https://id.vk.com/authorize}
+        - VITE_YANDEX_CLIENT_ID=${VITE_YANDEX_CLIENT_ID}
+        - VITE_YANDEX_REDIRECT_URI=${VITE_YANDEX_REDIRECT_URI}
+        - VITE_TELEGRAM_BOT_NAME=${VITE_TELEGRAM_BOT_NAME}
         - VITE_YANDEX_METRIKA_ID=${VITE_YANDEX_METRIKA_ID}
         - VITE_ENV=production
     container_name: ai_image_generator_frontend_prod

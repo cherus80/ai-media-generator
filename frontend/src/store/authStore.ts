@@ -10,13 +10,15 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { UserProfile, RegisterRequest, LoginRequest } from '../types/auth';
+import type { UserProfile, RegisterRequest, LoginRequest, TelegramUser } from '../types/auth';
 import {
   registerWithEmail as registerEmailAPI,
   loginWithEmail as loginEmailAPI,
   loginWithGoogle as loginGoogleAPI,
   loginWithVK as loginVKAPI,
   loginWithVKPKCE as loginVKPKCEAPI,
+  loginWithYandex as loginYandexAPI,
+  loginWithTelegramWidget as loginTelegramWidgetAPI,
   getCurrentUser,
 } from '../api/authWeb';
 import { loginWithTelegram } from '../api/auth'; // Legacy Telegram auth
@@ -42,6 +44,8 @@ interface AuthState {
   loginWithGoogle: (idToken: string, consentVersion?: string) => Promise<void>;
   loginWithVK: (token: string, uuid: string, consentVersion?: string) => Promise<void>;
   loginWithVKPKCE: (payload: VKOAuthPKCERequest) => Promise<void>;
+  loginWithYandex: (code: string, consentVersion?: string) => Promise<void>;
+  loginWithTelegramWidget: (user: TelegramUser, consentVersion?: string) => Promise<void>;
   loginWithTelegram: () => Promise<void>; // Legacy
   logout: () => void;
   refreshProfile: () => Promise<void>;
@@ -276,6 +280,72 @@ export const useAuthStore = create<AuthState>()(
             });
             setAuthToken(null);
 
+            throw error;
+          }
+        },
+
+        // Login with Yandex
+        loginWithYandex: async (code: string, consentVersion?: string) => {
+          set({ isLoading: true, error: null });
+          try {
+            const response = await loginYandexAPI(code, consentVersion);
+            const acceptedVersion = consentVersion || PD_CONSENT_VERSION;
+            set({
+              token: response.access_token,
+              user: response.user,
+              isAuthenticated: true,
+              isLoading: false,
+              error: null,
+              pdConsentVersionAccepted: acceptedVersion,
+              ...computeAccessFlags(response.user),
+            });
+            setAuthToken(response.access_token);
+            setStoredPdConsentVersion(acceptedVersion);
+            await registerPendingReferral();
+          } catch (error: any) {
+            const errorMessage = error.response?.data?.detail || error.message || 'Не удалось войти через Яндекс';
+            set({
+              token: null,
+              user: null,
+              isAuthenticated: false,
+              isLoading: false,
+              error: errorMessage,
+              ...computeAccessFlags(null),
+            });
+            setAuthToken(null);
+            throw error;
+          }
+        },
+
+        // Login with Telegram Widget
+        loginWithTelegramWidget: async (user: TelegramUser, consentVersion?: string) => {
+          set({ isLoading: true, error: null });
+          try {
+            const response = await loginTelegramWidgetAPI(user, consentVersion);
+            const acceptedVersion = consentVersion || PD_CONSENT_VERSION;
+            set({
+              token: response.access_token,
+              user: response.user,
+              isAuthenticated: true,
+              isLoading: false,
+              error: null,
+              pdConsentVersionAccepted: acceptedVersion,
+              ...computeAccessFlags(response.user),
+            });
+            setAuthToken(response.access_token);
+            setStoredPdConsentVersion(acceptedVersion);
+            await registerPendingReferral();
+          } catch (error: any) {
+            const errorMessage = error.response?.data?.detail || error.message || 'Не удалось войти через Telegram';
+            set({
+              token: null,
+              user: null,
+              isAuthenticated: false,
+              isLoading: false,
+              error: errorMessage,
+              ...computeAccessFlags(null),
+            });
+            setAuthToken(null);
             throw error;
           }
         },

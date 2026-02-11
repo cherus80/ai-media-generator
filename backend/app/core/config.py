@@ -69,6 +69,13 @@ class Settings(BaseSettings):
         description="JWKS endpoint for VK ID id_token verification",
     )
 
+    # Yandex ID OAuth (опционально для локального тестирования)
+    YANDEX_CLIENT_ID: Optional[str] = Field(default=None, description="Yandex OAuth Client ID (optional)")
+    YANDEX_CLIENT_SECRET: Optional[str] = Field(default=None, description="Yandex OAuth Client Secret (optional)")
+
+    # Telegram Login Widget
+    TELEGRAM_BOT_USERNAME: Optional[str] = Field(default=None, description="Telegram bot username for Login Widget (optional)")
+
     # JWT настройки
     JWT_SECRET_KEY: str = Field(..., description="Secret key for JWT tokens")
     JWT_ALGORITHM: str = Field(default="HS256")
