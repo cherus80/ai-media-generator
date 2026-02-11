@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Исправлен `backend/app/api/v1/endpoints/auth.py`: устранена синтаксическая ошибка импорта, восстановлена компиляция backend и корректная маркировка legacy Telegram-пользователей (`auth_provider=telegram`).
 - Прод-конфиг фронтенда дополнен недостающими переменными OAuth (`VITE_YANDEX_CLIENT_ID`, `VITE_YANDEX_REDIRECT_URI`, `VITE_TELEGRAM_BOT_NAME`) в `Dockerfile.prod`, `docker-compose.prod.yml` и `.env.example`.
+- Обновлён CSP в `Caddyfile` и `nginx/ai-image-bot.conf`: добавлены разрешения `telegram.org`/`oauth.telegram.org` для Telegram Login Widget (скрипт и iframe больше не блокируются).
 - Сообщения статуса генерации переведены на русский язык.
 - Исправлен клиентский pre-check размера: автосжатие теперь срабатывает и для изображений больше 10MB (если файл не превышает 40MB и формат поддерживает сжатие в браузере).
 - Исправлена ошибка `UnboundLocalError` при генерации с выбором соотношения сторон.
