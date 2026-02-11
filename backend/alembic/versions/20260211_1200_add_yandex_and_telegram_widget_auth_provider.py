@@ -1,6 +1,6 @@
 """add yandex and telegram_widget auth providers
 
-Revision ID: 20260211_add_auth_provider_yandex_tg_widget
+Revision ID: 20260211_yandex_tg_widget_auth
 Revises: 20260125_add_notifications
 Create Date: 2026-02-11 12:00:00.000000
 
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "20260211_add_auth_provider_yandex_tg_widget"
+revision: str = "20260211_yandex_tg_widget_auth"
 down_revision: Union[str, None] = "20260125_add_notifications"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
