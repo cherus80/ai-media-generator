@@ -1,0 +1,9 @@
+{
+  "email": "ui-smoke-b2b14a9f66@gmail.com",
+  "fixture": "/Users/ruslancernov/Documents/Боты на Python/ai-media-generator_1/ai-image-generator_1/imeg/1.JPG",
+  "started_at": "2026-02-04T10:44:17.312491+00:00",
+  "fitting": "ok",
+  "editing": "ok",
+  "history": "failed: Error: LocatorAssertions.to_be_visible: Error: strict mode violation: get_by_text(\"Открыть результат\") resolved to 2 elements:\n    1) <a target=\"_blank\" rel=\"noreferrer\" class=\"text-primary-600 hover:text-primary-700 text-sm font-semibold underline\" href=\"https://ai-generator.mix4.ru/uploads/532adb7d-b544-42dc-b7db-5ce0c108d83c.png\">Открыть результат</a> aka locator(\"div\").filter(has_text=re.compile(r\"^Открыть результатTask: 283$\")).get_by_role(\"link\")\n    2) <a target=\"_blank\" rel=\"noreferrer\" class=\"text-primary-600 hover:text-primary-700 text-sm font-semibold underline\" href=\"https://ai-generator.mix4.ru/uploads/20f02700-ce8d-42c0-a6b3-b16fb02dfcfa.png\">Открыть результат</a> aka locator(\"div\").filter(has_text=re.compile(r\"^Открыть результатTask: ad17b27c-3a6a-41f7-8100-2dca340bc8d6$\")).get_by_role(\"link\")\n\nCall log:\n  - Expect \"to_be_visible\" with timeout 120000ms\n  - waiting for get_by_text(\"Открыть результат\")\n",
+  "finished_at": "2026-02-04T10:46:12.786736+00:00"
+}

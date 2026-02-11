@@ -19,6 +19,22 @@ class TelegramAuthRequest(BaseModel):
     )
 
 
+class YandexAuthRequest(BaseModel):
+    """Запрос на авторизацию через Yandex ID"""
+    
+    code: str = Field(..., description="Authorization code from Yandex")
+
+
+class TelegramWidgetAuthRequest(BaseModel):
+    """Запрос на авторизацию через Telegram Login Widget"""
+    
+    id: int
+    first_name: str
+    last_name: Optional[str] = None
+    username: Optional[str] = None
+    photo_url: Optional[str] = None
+    auth_date: int
+    hash: str
 # Response схемы
 class TokenResponse(BaseModel):
     """Ответ с JWT токеном"""

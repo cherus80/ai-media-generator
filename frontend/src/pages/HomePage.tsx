@@ -10,6 +10,7 @@ import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { AuthGuard } from '../components/auth/AuthGuard';
 import { Layout } from '../components/common/Layout';
+import { useAuthStore } from '../store/authStore';
 import { getGenerationExamples, incrementExampleUse } from '../api/content';
 import type { GenerationExampleItem } from '../types/content';
 
@@ -19,8 +20,18 @@ const resolveImageUrl = (url: string) =>
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [topExamples, setTopExamples] = React.useState<GenerationExampleItem[]>([]);
   const [loadingTop, setLoadingTop] = React.useState(true);
+
+  // Проверка активной подписки (есть ли доступные действия)
+  const hasActiveSubscriptionActions = !!(
+    user?.subscription_type &&
+    user.subscription_type !== 'none' &&
+    user.subscription_expires_at &&
+    new Date(user.subscription_expires_at) > new Date() &&
+    (user.subscription_ops_remaining ?? 0) > 0
+  );
 
   React.useEffect(() => {
     const loadTop = async () => {
@@ -46,7 +57,7 @@ export const HomePage: React.FC = () => {
       details: 'Загрузите своё фото и фото одежды — AI покажет посадку и образ, но итог не гарантирует точного совпадения с оригиналом',
       path: '/fitting',
       gradient: 'from-purple-500 to-blue-500',
-      cost: '2 ⭐️звезды за примерку',
+      cost: hasActiveSubscriptionActions ? 'Включено в подписку' : '2 ⭐️звезды за примерку',
     },
     {
       id: 'editing',
@@ -56,7 +67,9 @@ export const HomePage: React.FC = () => {
       details: 'Опишите правки, прикрепите референсы и выберите: отправить запрос сразу или улучшить через AI',
       path: '/editing',
       gradient: 'from-pink-500 to-orange-500',
-      cost: 'Ассистент 1 ⭐️звезда + генерация 2 ⭐️звезды (или 1 генерация по подписке)',
+      cost: hasActiveSubscriptionActions
+        ? 'Ассистент 1 ⭐️ + Генерация по подписке'
+        : 'Ассистент 1 ⭐️ + Генерация 2 ⭐️',
     },
   ];
 

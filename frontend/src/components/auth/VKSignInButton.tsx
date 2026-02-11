@@ -53,13 +53,14 @@ export function VKSignInButton({ onSuccess, onError, className, disabled = false
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
+        width="24"
+        height="24"
         viewBox="0 0 24 24"
-        fill="#0077FF"
+        fill="none"
         aria-hidden="true"
       >
-        <path d="M3 5c.1 5.5 2.8 9.2 7.6 9.4h.3v-3c1.7.2 3-.7 3.5-2.6h2.4c-.3 1.8-1.7 3-3.4 3.3V17h-2v-2.8C7.9 14 6 11 6 7h-.9L3 5Z" />
+        <rect width="24" height="24" rx="6" fill="#0077FF" />
+        <path d="M12.78 16.5c-4.8.17-7.83-3.18-7.92-8.56h2.57c.09 3.94 1.81 5.61 3.19 5.95v-5.95h2.41v3.38c1.47.15 2.52-1.57 2.96-3.38h2.4c-.12 3.44-2.95 6.12-5.38 6.33.49 1.69.61 2.07 2.07 2.07h.56v2.12c-.1 0-2.3.14-3.86-2.07z" fill="white" />
       </svg>
       {isLoading ? 'Переходим в VK ID...' : 'Войти через VK ID'}
     </button>

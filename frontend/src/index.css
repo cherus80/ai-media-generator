@@ -54,7 +54,8 @@ body {
   padding: 0;
   min-height: 100vh;
   min-height: 100dvh;
-  background: linear-gradient(to bottom right, #f8fafc, #e2e8f0);
+  /* Более нейтральный и светлый фон для контента */
+  background: linear-gradient(to bottom right, #f8fafc, #f1f5f9);
   overflow-x: hidden;
 }
 
@@ -70,23 +71,26 @@ body {
 
 /* Улучшенный скроллбар */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  /* Чуть шире для удобства */
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 10px;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #0ea5e9, #a855f7);
-  border-radius: 10px;
-  transition: background 0.3s ease;
+  background-color: #cbd5e1;
+  /* Более нейтральный цвет */
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: 9999px;
+  transition: background-color 0.2s;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #0284c7, #7e22ce);
+  background-color: #94a3b8;
 }
 
 /* Плавные переходы для всех интерактивных элементов */
@@ -109,8 +113,10 @@ select {
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(10px);
+    /* Меньше смещение для большей плавности */
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -118,22 +124,26 @@ select {
 }
 
 .animate-fade-in-up {
-  animation: fadeInUp 0.5s ease-out;
+  animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Глассморфизм эффект */
+/* Глассморфизм эффект - УЛУЧШЕННАЯ ЧИТАЕМОСТЬ */
 .glass {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.85);
+  /* Повышенная непрозрачность для читаемости */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  /* Мягкие, чистые тени */
 }
 
 .glass-dark {
-  background: rgba(30, 41, 59, 0.7);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 /* Градиентный текст */
@@ -173,10 +183,12 @@ select {
     transform: scale(0.95);
     opacity: 1;
   }
+
   50% {
     transform: scale(1);
     opacity: 0.7;
   }
+
   100% {
     transform: scale(0.95);
     opacity: 1;
@@ -250,6 +262,7 @@ select {
   0% {
     background-position: -200% 0;
   }
+
   100% {
     background-position: 200% 0;
   }

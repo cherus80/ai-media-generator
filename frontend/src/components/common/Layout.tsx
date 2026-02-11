@@ -117,7 +117,7 @@ export const Layout: React.FC<LayoutProps> = ({
   );
 
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-gradient-to-br from-primary-50 via-white to-secondary-50 overflow-x-hidden">
+    <div className="min-h-[100dvh] flex flex-col overflow-x-hidden">
       {/* Header */}
       <header className="sticky top-0 z-20 backdrop-blur-md bg-white/70 border-b border-white/20 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 py-4">

@@ -18,9 +18,9 @@ interface CardProps {
 }
 
 const variantClasses: Record<CardVariant, string> = {
-  default: 'bg-white border border-dark-200 shadow-soft',
-  glass: 'bg-white/70 backdrop-blur-lg border border-white/30 shadow-medium',
-  gradient: 'bg-gradient-to-br from-primary-50 to-secondary-50 border border-primary-200 shadow-medium',
+  default: 'bg-white border border-slate-100 shadow-soft',
+  glass: 'glass', /* Используем класс из index.css для единого стиля */
+  gradient: 'bg-gradient-to-br from-primary-50/50 to-secondary-50/50 border border-primary-100 shadow-medium',
   bordered: 'bg-white border-2 border-primary-200',
   elevated: 'bg-white shadow-large',
 };
