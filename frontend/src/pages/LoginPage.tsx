@@ -7,6 +7,7 @@ import { YandexSignInButton } from '../components/auth/YandexSignInButton';
 import { TelegramSignInButton } from '../components/auth/TelegramSignInButton';
 import { validateLoginForm } from '../utils/passwordValidation';
 import { PD_CONSENT_VERSION } from '../constants/pdConsent';
+import { MAX_SUPPORT_URL } from '../constants/supportLinks';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -21,6 +22,9 @@ export function LoginPage() {
   const oauthButtonClass =
     'rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-200';
   const { pdConsentVersionAccepted, setPdConsentAccepted } = useAuth();
+  const isBlockedError =
+    typeof error === 'string' &&
+    /(заблок|blocked|banned|мультиаккаунт)/i.test(error);
 
   useEffect(() => {
     if (pdConsentVersionAccepted === PD_CONSENT_VERSION) {
@@ -175,7 +179,23 @@ export function LoginPage() {
           {/* Error message */}
           {error && (
             <div className="rounded-xl bg-red-50 border border-red-100 p-4">
-              <p className="text-sm text-red-800">{error}</p>
+              {isBlockedError ? (
+                <p className="text-sm text-red-800">
+                  Ваш аккаунт заблокирован по причине подозрения на мультиаккаунтинг. Для обжалования блокировки
+                  напишите нам в{' '}
+                  <a
+                    href={MAX_SUPPORT_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold underline"
+                  >
+                    MAX
+                  </a>
+                  .
+                </p>
+              ) : (
+                <p className="text-sm text-red-800">{error}</p>
+              )}
             </div>
           )}
 

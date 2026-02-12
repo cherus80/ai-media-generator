@@ -7,6 +7,7 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../../store/authStore';
+import { MAX_SUPPORT_URL } from '../../constants/supportLinks';
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -114,7 +115,7 @@ export const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose }) => {
       label: 'Написать в MAX',
       onClick: () => {
         window.open(
-          'https://max.ru/join/LzUq8PZFGLKTP7Fv7Bzgh6ifDiWz15UYHVmOIkaI_EI',
+          MAX_SUPPORT_URL,
           '_blank',
           'noopener,noreferrer'
         );
