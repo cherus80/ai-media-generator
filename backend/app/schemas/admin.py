@@ -140,6 +140,15 @@ class AdminUserItem(BaseModel):
     referrals_count: int = Field(..., description="Количество приглашённых друзей")
     is_active: bool = Field(..., description="Был ли активен за последние 30 дней")
     is_blocked: bool = Field(..., description="Заблокирован ли пользователь")
+    last_login_at: datetime | None = Field(None, description="Время последнего входа")
+    last_login_ip: str | None = Field(None, description="IP последнего входа")
+    last_login_device: str | None = Field(None, description="Сводка устройства последнего входа")
+    last_login_user_agent: str | None = Field(None, description="Raw User-Agent последнего входа")
+    ip_shared_accounts: int = Field(default=0, description="Сколько аккаунтов имеют тот же IP последнего входа")
+    device_shared_accounts: int = Field(default=0, description="Сколько аккаунтов имеют ту же связку IP+устройство")
+    suspicion_score: int = Field(default=0, ge=0, le=100, description="Оценка риска мультиаккаунтинга")
+    is_suspicious: bool = Field(default=False, description="Флаг подозрения на мультиаккаунтинг")
+    suspicion_reason: str | None = Field(default=None, description="Пояснение причины подозрения")
 
 
 class AdminUsersResponse(BaseModel):

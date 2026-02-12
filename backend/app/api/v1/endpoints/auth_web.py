@@ -67,6 +67,7 @@ from app.utils.referrals import generate_referral_code
 from app.services.email import email_service
 from app.models.email_verification import EmailVerificationToken
 from app.models.password_reset import PasswordResetToken
+from app.utils.client_meta import update_user_login_metadata
 
 router = APIRouter(prefix="/auth-web", tags=["Web Authentication"])
 # In-memory rate limit for registrations
@@ -269,6 +270,8 @@ async def register_with_email(
         is_banned=False,
     )
 
+    update_user_login_metadata(user, request)
+
     # Автоматическое назначение роли ADMIN, если email в whitelist
     if user.email and user.email.lower() in settings.admin_email_list:
         user.role = UserRole.ADMIN
@@ -422,6 +425,7 @@ async def login_with_email(
 
     # Сбрасываем Freemium счётчик, если нужно
     user.reset_freemium_if_needed()
+    update_user_login_metadata(user, raw_request)
 
     await db.commit()
     await db.refresh(user)
@@ -684,6 +688,10 @@ async def login_with_google(
             detail="User account is blocked",
         )
 
+    update_user_login_metadata(user, raw_request)
+    await db.commit()
+    await db.refresh(user)
+
     # Создаём JWT токен
     access_token = create_user_access_token(
         user_id=user.id,
@@ -903,6 +911,10 @@ async def login_with_vk_pkce(
             detail="User account is blocked",
         )
 
+    update_user_login_metadata(user, raw_request)
+    await db.commit()
+    await db.refresh(user)
+
     access_token_jwt = create_user_access_token(
         user_id=user.id,
         email=user.email,
@@ -1076,6 +1088,10 @@ async def login_with_vk(
             detail="User account is blocked",
         )
 
+    update_user_login_metadata(user, raw_request)
+    await db.commit()
+    await db.refresh(user)
+
     # Создаём JWT токен
     access_token = create_user_access_token(
         user_id=user.id,
@@ -1225,6 +1241,10 @@ async def login_with_yandex(
             detail="User account is blocked",
         )
 
+    update_user_login_metadata(user, raw_request)
+    await db.commit()
+    await db.refresh(user)
+
     access_token = create_user_access_token(
         user_id=user.id,
         email=user.email,
@@ -1336,6 +1356,10 @@ async def login_with_telegram_widget(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User account is blocked",
         )
+
+    update_user_login_metadata(user, raw_request)
+    await db.commit()
+    await db.refresh(user)
 
     access_token = create_user_access_token(
         user_id=user.id,
@@ -1512,6 +1536,7 @@ async def send_verification_email(
 @router.get("/verify", response_model=VerifyEmailResponse, status_code=status.HTTP_200_OK)
 async def verify_email(
     token: str,
+    request: Request,
     db: DBSession,
 ) -> VerifyEmailResponse:
     """
@@ -1586,9 +1611,16 @@ async def verify_email(
             detail="Пользователь не найден",
         )
 
+    if user.is_banned:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User account is blocked",
+        )
+
     # Обновляем пользователя
     user.email_verified = True
     user.email_verified_at = datetime.utcnow()
+    update_user_login_metadata(user, request)
 
     # Помечаем токен как использованный
     verification_token.consumed_at = datetime.utcnow()

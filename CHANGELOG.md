@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Anti-multiaccounting в админке: в таблицу пользователей добавлены поля последнего входа (`IP`, `устройство`, `raw user-agent`, `last_login_at`) и автоматическая риск-оценка (`suspicion_score`, причины, подсветка подозрительных аккаунтов).
+- Добавлена миграция `20260212_user_login_meta` с полями `users.last_login_at`, `users.last_login_ip`, `users.last_login_user_agent`, `users.last_login_device` и индексами по `last_login_at/last_login_ip`.
 - В админ-панели реализована блокировка/разблокировка пользователей для анти-мультиаккаунтинга: новый endpoint `PUT /api/v1/admin/users/{user_id}/block`, кнопка в разделе Users, индикация статуса блокировки в таблице и в деталях пользователя.
 - Реализованы рабочие OAuth-флоу для Яндекс ID и Telegram Login Widget: backend endpoints `/api/v1/auth-web/yandex` и `/api/v1/auth-web/telegram/widget`, фронтовый callback `/yandex/callback`, синхронизация API-клиента/типов.
 - Добавлена миграция `20260211_add_auth_provider_yandex_tg_widget`, расширяющая `auth_provider_enum` значениями `yandex` и `telegram_widget`.
@@ -41,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GrsAI подключён как основной провайдер Nano Banana Pro, kie.ai используется как fallback вместо OpenRouter.
 
 ### Fixed
+- Все web/legacy auth-flow теперь обновляют метаданные последнего успешного входа пользователя (IP + устройство), что позволяет надежнее выявлять мультиаккаунтинг.
 - Legacy endpoint `POST /api/v1/auth/telegram` теперь отклоняет вход для заблокированных пользователей (`403 User account is blocked`), чтобы бан применялся ко всем каналам авторизации.
 - В API-клиенте фронтенда добавлена обработка `403` с признаками блокировки (`blocked`/`banned`): сессия очищается и пользователь переходит на повторный вход.
 - Исправлен `backend/app/api/v1/endpoints/auth.py`: устранена синтаксическая ошибка импорта, восстановлена компиляция backend и корректная маркировка legacy Telegram-пользователей (`auth_provider=telegram`).

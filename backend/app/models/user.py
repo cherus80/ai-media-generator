@@ -255,6 +255,31 @@ class User(Base, TimestampMixin):
         comment="Дата и время последней активности",
     )
 
+    # Метаданные последнего входа (anti-multiaccounting)
+    last_login_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="Дата и время последней успешной авторизации",
+    )
+
+    last_login_ip: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        nullable=True,
+        comment="IP адрес последнего входа",
+    )
+
+    last_login_user_agent: Mapped[Optional[str]] = mapped_column(
+        String(1024),
+        nullable=True,
+        comment="Raw User-Agent последнего входа",
+    )
+
+    last_login_device: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True,
+        comment="Краткая сводка устройства последнего входа",
+    )
+
     # Relationships
     generations: Mapped[list["Generation"]] = relationship(
         "Generation",
@@ -332,6 +357,8 @@ class User(Base, TimestampMixin):
         Index("idx_auth_provider", "auth_provider"),
         Index("idx_role", "role"),
         Index("idx_last_active_at", "last_active_at"),
+        Index("idx_last_login_at", "last_login_at"),
+        Index("idx_last_login_ip", "last_login_ip"),
     )
 
     def __repr__(self) -> str:

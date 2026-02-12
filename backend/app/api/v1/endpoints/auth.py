@@ -10,7 +10,7 @@ import logging
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -28,6 +28,7 @@ from app.utils.referrals import generate_referral_code
 from app.utils.telegram import TelegramInitDataError, validate_telegram_init_data
 from app.services.billing_v5 import BillingV5Service
 from app.services.notifications import create_new_user_welcome_notification
+from app.utils.client_meta import update_user_login_metadata
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -78,6 +79,7 @@ def user_to_profile(user: User) -> UserProfile:
 @router.post("/telegram", response_model=LoginResponse, status_code=status.HTTP_200_OK)
 async def login_with_telegram(
     request: TelegramAuthRequest,
+    raw_request: Request,
     db: DBSession,
 ) -> LoginResponse:
     """
@@ -137,6 +139,7 @@ async def login_with_telegram(
         user.first_name = telegram_data.get("first_name")
         user.last_name = telegram_data.get("last_name")
         user.updated_at = datetime.utcnow()
+        update_user_login_metadata(user, raw_request)
 
         # Сбрасываем Freemium счётчик, если нужно
         user.reset_freemium_if_needed()
@@ -160,6 +163,7 @@ async def login_with_telegram(
             is_banned=False,
         )
 
+        update_user_login_metadata(user, raw_request)
         created_new_user = True
         db.add(user)
         await db.commit()

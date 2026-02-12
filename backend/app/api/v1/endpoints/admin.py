@@ -24,7 +24,7 @@ import logging
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response
 import sqlalchemy as sa
-from sqlalchemy import and_, func, select, or_
+from sqlalchemy import and_, func, select, or_, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.dependencies import AdminUser, SuperAdminUser, DBSession, get_current_admin
@@ -107,6 +107,45 @@ def _ensure_fallback_consistency() -> None:
     """Гарантируем, что fallback не совпадает с primary."""
     if settings.GENERATION_FALLBACK_PROVIDER == settings.GENERATION_PRIMARY_PROVIDER:
         settings.GENERATION_FALLBACK_PROVIDER = None
+
+
+def _calculate_multipaccount_risk(
+    ip_shared_accounts: int,
+    device_shared_accounts: int,
+) -> tuple[int, bool, str | None]:
+    """
+    Простейшая риск-модель мультиаккаунтинга.
+
+    - shared IP даёт базовый риск.
+    - shared IP + shared device (одинаковая связка) усиливает риск.
+    """
+    score = 0
+    reasons: list[str] = []
+
+    if ip_shared_accounts >= 2:
+        # 2 аккаунта на одном IP — умеренно подозрительно, 3+ — заметно выше.
+        if ip_shared_accounts == 2:
+            score += 35
+        elif ip_shared_accounts == 3:
+            score += 50
+        else:
+            score += 65
+        reasons.append(f"Одинаковый IP у {ip_shared_accounts} аккаунтов")
+
+    if device_shared_accounts >= 2:
+        if device_shared_accounts == 2:
+            score += 45
+        else:
+            score += 60
+        reasons.append(f"Одинаковая связка IP+устройство у {device_shared_accounts} аккаунтов")
+
+    if ip_shared_accounts >= 2 and device_shared_accounts >= 2:
+        score += 10
+
+    score = min(score, 100)
+    is_suspicious = score >= 50
+    reason = "; ".join(reasons) if reasons else None
+    return score, is_suspicious, reason
 
 
 @router.get("/fallback", response_model=FallbackSettingsResponse)
@@ -543,6 +582,49 @@ async def get_admin_users(
     result = await db.execute(query)
     users = result.scalars().all()
 
+    # Готовим данные для anti-multiaccounting оценки (только по USER-аккаунтам).
+    page_ips = {user.last_login_ip for user in users if user.last_login_ip}
+    page_device_keys = {
+        (user.last_login_ip, user.last_login_device)
+        for user in users
+        if user.last_login_ip and user.last_login_device
+    }
+
+    ip_shared_counts: dict[str, int] = {}
+    if page_ips:
+        ip_rows = await db.execute(
+            select(User.last_login_ip, func.count(User.id))
+            .where(
+                User.last_login_ip.is_not(None),
+                User.last_login_ip.in_(page_ips),
+                User.role == UserRole.USER,
+            )
+            .group_by(User.last_login_ip)
+        )
+        ip_shared_counts = {
+            ip: int(count or 0)
+            for ip, count in ip_rows.all()
+            if ip
+        }
+
+    device_shared_counts: dict[tuple[str, str], int] = {}
+    if page_device_keys:
+        device_rows = await db.execute(
+            select(User.last_login_ip, User.last_login_device, func.count(User.id))
+            .where(
+                User.last_login_ip.is_not(None),
+                User.last_login_device.is_not(None),
+                User.role == UserRole.USER,
+                tuple_(User.last_login_ip, User.last_login_device).in_(list(page_device_keys)),
+            )
+            .group_by(User.last_login_ip, User.last_login_device)
+        )
+        device_shared_counts = {
+            (ip, device): int(count or 0)
+            for ip, device, count in device_rows.all()
+            if ip and device
+        }
+
     # Формирование ответа с дополнительными данными
     user_items = []
     for user in users:
@@ -566,6 +648,18 @@ async def get_admin_users(
 
         # Проверка активности
         is_active = user.last_active_at is not None and user.last_active_at >= month_ago
+        user_ip = user.last_login_ip
+        user_device = user.last_login_device
+        ip_shared_accounts = ip_shared_counts.get(user_ip, 0) if user_ip else 0
+        device_shared_accounts = (
+            device_shared_counts.get((user_ip, user_device), 0)
+            if user_ip and user_device
+            else 0
+        )
+        suspicion_score, is_suspicious, suspicion_reason = _calculate_multipaccount_risk(
+            ip_shared_accounts=ip_shared_accounts,
+            device_shared_accounts=device_shared_accounts,
+        )
 
         user_items.append(
             AdminUserItem(
@@ -588,6 +682,15 @@ async def get_admin_users(
                 referrals_count=referrals_count,
                 is_active=is_active,
                 is_blocked=user.is_banned,
+                last_login_at=user.last_login_at,
+                last_login_ip=user.last_login_ip,
+                last_login_device=user.last_login_device,
+                last_login_user_agent=user.last_login_user_agent,
+                ip_shared_accounts=ip_shared_accounts,
+                device_shared_accounts=device_shared_accounts,
+                suspicion_score=suspicion_score,
+                is_suspicious=is_suspicious,
+                suspicion_reason=suspicion_reason,
             )
         )
 
@@ -920,6 +1023,33 @@ async def get_user_details(
     month_ago = now - timedelta(days=30)
     is_active = user.last_active_at is not None and user.last_active_at >= month_ago
 
+    ip_shared_accounts = 0
+    device_shared_accounts = 0
+    if user.last_login_ip:
+        ip_shared_accounts = int(
+            await db.scalar(
+                select(func.count(User.id)).where(
+                    User.last_login_ip == user.last_login_ip,
+                    User.role == UserRole.USER,
+                )
+            ) or 0
+        )
+    if user.last_login_ip and user.last_login_device:
+        device_shared_accounts = int(
+            await db.scalar(
+                select(func.count(User.id)).where(
+                    User.last_login_ip == user.last_login_ip,
+                    User.last_login_device == user.last_login_device,
+                    User.role == UserRole.USER,
+                )
+            ) or 0
+        )
+
+    suspicion_score, is_suspicious, suspicion_reason = _calculate_multipaccount_risk(
+        ip_shared_accounts=ip_shared_accounts,
+        device_shared_accounts=device_shared_accounts,
+    )
+
     # Последние 10 генераций
     generations_result = await db.execute(
         select(Generation)
@@ -994,6 +1124,15 @@ async def get_user_details(
         referrals_count=referrals_count,
         is_active=is_active,
         is_blocked=user.is_banned,
+        last_login_at=user.last_login_at,
+        last_login_ip=user.last_login_ip,
+        last_login_device=user.last_login_device,
+        last_login_user_agent=user.last_login_user_agent,
+        ip_shared_accounts=ip_shared_accounts,
+        device_shared_accounts=device_shared_accounts,
+        suspicion_score=suspicion_score,
+        is_suspicious=is_suspicious,
+        suspicion_reason=suspicion_reason,
     )
 
     return UserDetailsResponse(

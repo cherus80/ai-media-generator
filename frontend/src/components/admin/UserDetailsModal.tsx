@@ -150,6 +150,27 @@ export const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                           {userDetails.user.is_blocked ? 'Заблокирован' : 'Активен'}
                         </span>
                       </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Последний IP</p>
+                        <p className="font-medium text-gray-900">{userDetails.user.last_login_ip || '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Устройство</p>
+                        <p className="font-medium text-gray-900">{userDetails.user.last_login_device || '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Риск мультиаккаунтинга</p>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          userDetails.user.is_suspicious
+                            ? 'bg-orange-100 text-orange-800'
+                            : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          {userDetails.user.suspicion_score}/100
+                        </span>
+                        {userDetails.user.suspicion_reason && (
+                          <p className="text-xs text-orange-700 mt-1">{userDetails.user.suspicion_reason}</p>
+                        )}
+                      </div>
                     </div>
                   </div>
 

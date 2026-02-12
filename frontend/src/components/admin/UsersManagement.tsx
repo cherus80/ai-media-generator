@@ -20,6 +20,15 @@ interface User {
   role: 'USER' | 'ADMIN' | 'SUPER_ADMIN';
   balance_credits: number;
   is_blocked: boolean;
+  last_login_at?: string | null;
+  last_login_ip?: string | null;
+  last_login_device?: string | null;
+  last_login_user_agent?: string | null;
+  ip_shared_accounts?: number;
+  device_shared_accounts?: number;
+  suspicion_score?: number;
+  is_suspicious?: boolean;
+  suspicion_reason?: string | null;
   subscription_type?: string;
   subscription_expires_at?: string;
   created_at: string;
@@ -97,6 +106,17 @@ export const UsersManagement: React.FC<UsersManagementProps> = ({
   };
 
   const totalPages = Math.ceil(total / limit);
+
+  const formatDateTime = (dateString?: string | null) => {
+    if (!dateString) return '—';
+    return new Date(dateString).toLocaleString('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
 
   const handleToggleBlock = async (user: User) => {
     const targetState = !user.is_blocked;
@@ -206,6 +226,15 @@ export const UsersManagement: React.FC<UsersManagementProps> = ({
                     Статус
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Риск
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    IP
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Устройство
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     ⭐️Звезды
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -220,7 +249,13 @@ export const UsersManagement: React.FC<UsersManagementProps> = ({
                 {users.map((user) => (
                   <tr
                     key={user.id}
-                    className={user.is_blocked ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-gray-50'}
+                    className={
+                      user.is_blocked
+                        ? 'bg-red-50 hover:bg-red-100'
+                        : user.is_suspicious
+                        ? 'bg-amber-50 hover:bg-amber-100'
+                        : 'hover:bg-gray-50'
+                    }
                   >
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {user.id}
@@ -246,6 +281,39 @@ export const UsersManagement: React.FC<UsersManagementProps> = ({
                       }`}>
                         {user.is_blocked ? 'Заблокирован' : 'Активен'}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {user.is_suspicious ? (
+                        <span
+                          className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800"
+                          title={user.suspicion_reason || 'Подозрительная активность'}
+                        >
+                          ⚠️ {user.suspicion_score ?? 0}/100
+                        </span>
+                      ) : (
+                        <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-700">
+                          {user.suspicion_score ?? 0}/100
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <div>{user.last_login_ip || '—'}</div>
+                      <div className="text-xs text-gray-500">
+                        {formatDateTime(user.last_login_at)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900 max-w-xs">
+                      <div className="truncate" title={user.last_login_device || 'Нет данных'}>
+                        {user.last_login_device || 'Нет данных'}
+                      </div>
+                      {user.last_login_user_agent && (
+                        <div
+                          className="text-xs text-gray-500 truncate"
+                          title={user.last_login_user_agent}
+                        >
+                          {user.last_login_user_agent}
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {user.balance_credits}

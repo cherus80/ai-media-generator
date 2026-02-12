@@ -88,6 +88,15 @@ export interface AdminUserItem {
   referrals_count: number;
   is_active: boolean;
   is_blocked: boolean;
+  last_login_at: string | null; // ISO datetime
+  last_login_ip: string | null;
+  last_login_device: string | null;
+  last_login_user_agent: string | null;
+  ip_shared_accounts: number;
+  device_shared_accounts: number;
+  suspicion_score: number;
+  is_suspicious: boolean;
+  suspicion_reason: string | null;
 }
 
 export interface AdminUsersResponse {
