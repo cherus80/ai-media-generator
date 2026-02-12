@@ -81,6 +81,16 @@ apiClient.interceptors.response.use(
 
     // Handle 403 Forbidden - user is banned
     if (error.response?.status === 403) {
+      const detail = (error.response.data as { detail?: unknown } | undefined)?.detail;
+      const detailText = typeof detail === 'string' ? detail.toLowerCase() : '';
+      const isBlockedError =
+        detailText.includes('banned') ||
+        detailText.includes('blocked');
+
+      if (isBlockedError) {
+        handleUnauthorized();
+      }
+
       console.error('Доступ запрещён или пользователь заблокирован');
       // Здесь можно показать отдельную страницу или всплывающее окно
     }

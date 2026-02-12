@@ -123,6 +123,12 @@ async def login_with_telegram(
     user = result.scalar_one_or_none()
 
     if user:
+        if user.is_banned:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User account is blocked",
+            )
+
         # Обновляем данные существующего пользователя
         user.auth_provider = AuthProvider.telegram
         if not user.oauth_provider_id:

@@ -17,6 +17,8 @@ import type {
   UserDetailsResponse,
   UpdateCreditsRequest,
   UpdateCreditsResponse,
+  UpdateUserBlockRequest,
+  UpdateUserBlockResponse,
   ReferralStatsResponse,
   FittingPromptListResponse,
   FittingPromptItem,
@@ -120,6 +122,20 @@ export const updateUserCredits = async (
 ): Promise<UpdateCreditsResponse> => {
   const response = await apiClient.put<UpdateCreditsResponse>(
     `/api/v1/admin/users/${userId}/credits`,
+    data
+  );
+  return response.data;
+};
+
+/**
+ * Заблокировать или разблокировать пользователя.
+ */
+export const updateUserBlockStatus = async (
+  userId: number,
+  data: UpdateUserBlockRequest
+): Promise<UpdateUserBlockResponse> => {
+  const response = await apiClient.put<UpdateUserBlockResponse>(
+    `/api/v1/admin/users/${userId}/block`,
     data
   );
   return response.data;

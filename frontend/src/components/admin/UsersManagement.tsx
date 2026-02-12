@@ -5,11 +5,12 @@
  * - Таблица пользователей с пагинацией
  * - Поиск по email/username
  * - Фильтр по роли
- * - Действия: Редактирование кредитов, Delete User, Make Admin (для super admin)
+ * - Действия: Редактирование кредитов, Block/Unblock, Delete User, Make Admin (для super admin)
  */
 
 import React, { useState, useEffect } from 'react';
 import apiClient from '../../api/client';
+import { updateUserBlockStatus } from '../../api/admin';
 import { useAuthStore } from '../../store/authStore';
 
 interface User {
@@ -18,6 +19,7 @@ interface User {
   username?: string;
   role: 'USER' | 'ADMIN' | 'SUPER_ADMIN';
   balance_credits: number;
+  is_blocked: boolean;
   subscription_type?: string;
   subscription_expires_at?: string;
   created_at: string;
@@ -42,6 +44,7 @@ export const UsersManagement: React.FC<UsersManagementProps> = ({
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [actionUserId, setActionUserId] = useState<number | null>(null);
   const limit = 20;
 
   useEffect(() => {
@@ -94,6 +97,33 @@ export const UsersManagement: React.FC<UsersManagementProps> = ({
   };
 
   const totalPages = Math.ceil(total / limit);
+
+  const handleToggleBlock = async (user: User) => {
+    const targetState = !user.is_blocked;
+    const actionLabel = targetState ? 'заблокировать' : 'разблокировать';
+
+    const isConfirmed = window.confirm(
+      `Вы уверены, что хотите ${actionLabel} пользователя ${user.email || `ID ${user.id}`}?`
+    );
+
+    if (!isConfirmed) {
+      return;
+    }
+
+    try {
+      setActionUserId(user.id);
+      await updateUserBlockStatus(user.id, {
+        is_blocked: targetState,
+        reason: targetState ? 'Blocked from admin panel (anti-multiaccounting)' : 'Unblocked from admin panel',
+      });
+      await fetchUsers();
+    } catch (error) {
+      console.error('Failed to update user block status:', error);
+      window.alert('Не удалось изменить статус блокировки пользователя');
+    } finally {
+      setActionUserId(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -173,6 +203,9 @@ export const UsersManagement: React.FC<UsersManagementProps> = ({
                     Роль
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Статус
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     ⭐️Звезды
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -185,7 +218,10 @@ export const UsersManagement: React.FC<UsersManagementProps> = ({
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {users.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50">
+                  <tr
+                    key={user.id}
+                    className={user.is_blocked ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-gray-50'}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {user.id}
                     </td>
@@ -202,6 +238,13 @@ export const UsersManagement: React.FC<UsersManagementProps> = ({
                         )}`}
                       >
                         {user.role}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        user.is_blocked ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                      }`}>
+                        {user.is_blocked ? 'Заблокирован' : 'Активен'}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -237,6 +280,18 @@ export const UsersManagement: React.FC<UsersManagementProps> = ({
                           title="Сделать админом"
                         >
                           👑
+                        </button>
+                      )}
+
+                      {/* Block / Unblock */}
+                      {user.role !== 'SUPER_ADMIN' && (
+                        <button
+                          onClick={() => handleToggleBlock(user)}
+                          className={user.is_blocked ? 'text-green-600 hover:text-green-900' : 'text-orange-600 hover:text-orange-900'}
+                          title={user.is_blocked ? 'Разблокировать пользователя' : 'Заблокировать пользователя'}
+                          disabled={actionUserId === user.id}
+                        >
+                          {actionUserId === user.id ? '⏳' : user.is_blocked ? '✅' : '⛔'}
                         </button>
                       )}
 

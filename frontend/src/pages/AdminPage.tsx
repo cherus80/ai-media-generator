@@ -29,6 +29,7 @@ interface User {
   username?: string;
   role: 'USER' | 'ADMIN' | 'SUPER_ADMIN';
   balance_credits: number;
+  is_blocked?: boolean;
   subscription_type?: string;
   subscription_expires_at?: string;
   created_at: string;

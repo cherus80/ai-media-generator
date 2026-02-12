@@ -87,6 +87,7 @@ export interface AdminUserItem {
   total_spent: string; // Decimal as string
   referrals_count: number;
   is_active: boolean;
+  is_blocked: boolean;
 }
 
 export interface AdminUsersResponse {
@@ -259,6 +260,19 @@ export interface UpdateCreditsResponse {
   user_id: number;
   previous_balance: number;
   new_balance: number;
+  message: string;
+}
+
+export interface UpdateUserBlockRequest {
+  is_blocked: boolean;
+  reason?: string;
+}
+
+export interface UpdateUserBlockResponse {
+  success: boolean;
+  user_id: number;
+  previous_is_blocked: boolean;
+  is_blocked: boolean;
   message: string;
 }
 

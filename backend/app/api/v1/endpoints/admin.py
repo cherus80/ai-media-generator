@@ -8,6 +8,7 @@ Endpoints:
 - GET /api/v1/admin/users — список пользователей (защищено role=ADMIN)
 - GET /api/v1/admin/users/{user_id} — детали пользователя (защищено role=ADMIN)
 - PUT /api/v1/admin/users/{user_id}/credits — редактировать баланс кредитов (защищено role=ADMIN)
+- PUT /api/v1/admin/users/{user_id}/block — блокировать/разблокировать пользователя (защищено role=ADMIN)
 - GET /api/v1/admin/referrals/stats — статистика рефералов (защищено role=ADMIN)
 - GET /api/v1/admin/export/users — экспорт пользователей CSV (защищено role=ADMIN)
 - GET /api/v1/admin/export/payments — экспорт платежей CSV/JSON (защищено role=ADMIN)
@@ -30,6 +31,7 @@ from app.api.dependencies import AdminUser, SuperAdminUser, DBSession, get_curre
 from app.core.config import settings
 from app.db.session import get_db
 from app.models import ChatHistory, Generation, Payment, Referral, User, SubscriptionType, UserConsent
+from app.models.user import UserRole
 from app.schemas.admin import (
     AdminChartsData,
     AdminStats,
@@ -61,6 +63,8 @@ from app.schemas.admin import (
     DeleteConsentsResponse,
     UpdateCreditsRequest,
     UpdateCreditsResponse,
+    UpdateUserBlockRequest,
+    UpdateUserBlockResponse,
 )
 from app.utils.tax import (
     calculate_npd_tax,
@@ -515,7 +519,6 @@ async def get_admin_users(
 
     # Фильтрация по роли
     if role:
-        from app.models.user import UserRole
         try:
             user_role = UserRole(role)
             query = query.where(User.role == user_role)
@@ -584,6 +587,7 @@ async def get_admin_users(
                 total_spent=total_spent,
                 referrals_count=referrals_count,
                 is_active=is_active,
+                is_blocked=user.is_banned,
             )
         )
 
@@ -989,6 +993,7 @@ async def get_user_details(
         total_spent=total_spent,
         referrals_count=referrals_count,
         is_active=is_active,
+        is_blocked=user.is_banned,
     )
 
     return UserDetailsResponse(
@@ -1042,6 +1047,78 @@ async def update_user_credits(
         previous_balance=previous_balance,
         new_balance=user.balance_credits,
         message=f"Balance updated from {previous_balance} to {user.balance_credits}.{reason_suffix}"
+    )
+
+
+@router.put("/users/{user_id}/block", response_model=UpdateUserBlockResponse)
+async def update_user_block_status(
+    user_id: int,
+    request: UpdateUserBlockRequest,
+    admin: AdminUser,
+    db: DBSession,
+) -> UpdateUserBlockResponse:
+    """
+    Заблокировать или разблокировать пользователя.
+
+    Требует роль: ADMIN.
+
+    Ограничения:
+    - Нельзя заблокировать самого себя.
+    - Управлять блокировкой администраторов может только SUPER_ADMIN.
+    """
+    user = await db.scalar(select(User).where(User.id == user_id))
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Запрещаем само-блокировку
+    if request.is_blocked and user.id == admin.id:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot block yourself",
+        )
+
+    # ADMIN не может блокировать/разблокировать администраторов
+    if user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN] and admin.role != UserRole.SUPER_ADMIN:
+        raise HTTPException(
+            status_code=403,
+            detail="Only super admin can manage admin block status",
+        )
+
+    previous_is_blocked = bool(user.is_banned)
+    if previous_is_blocked == request.is_blocked:
+        state_text = "blocked" if request.is_blocked else "unblocked"
+        return UpdateUserBlockResponse(
+            success=True,
+            user_id=user.id,
+            previous_is_blocked=previous_is_blocked,
+            is_blocked=previous_is_blocked,
+            message=f"User is already {state_text}",
+        )
+
+    user.is_banned = request.is_blocked
+    await db.commit()
+    await db.refresh(user)
+
+    action = "blocked" if user.is_banned else "unblocked"
+    reason_suffix = f" (reason={request.reason})" if request.reason else ""
+
+    logger.warning(
+        "Admin %s (%s) %s user_id=%s email=%s role=%s%s",
+        admin.id,
+        getattr(admin, "email", "unknown"),
+        action,
+        user.id,
+        user.email,
+        user.role.value if hasattr(user.role, "value") else str(user.role),
+        reason_suffix,
+    )
+
+    return UpdateUserBlockResponse(
+        success=True,
+        user_id=user.id,
+        previous_is_blocked=previous_is_blocked,
+        is_blocked=user.is_banned,
+        message=f"User has been {action}",
     )
 
 
@@ -1315,8 +1392,6 @@ async def make_user_admin(
 
     Только главный администратор может назначать других администраторов.
     """
-    from app.models.user import UserRole
-
     # Найти пользователя по email
     result = await db.execute(
         select(User).where(User.email == request.email)
@@ -1376,8 +1451,6 @@ async def delete_user(
     - Нельзя удалить себя
     - Обычный ADMIN не может удалить SUPER_ADMIN (только другой SUPER_ADMIN может)
     """
-    from app.models.user import UserRole
-
     # Найти пользователя
     result = await db.execute(
         select(User).where(User.id == user_id)

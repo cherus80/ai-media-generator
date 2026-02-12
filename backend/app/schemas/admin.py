@@ -139,6 +139,7 @@ class AdminUserItem(BaseModel):
     total_spent: Decimal = Field(..., description="Всего потрачено (₽)")
     referrals_count: int = Field(..., description="Количество приглашённых друзей")
     is_active: bool = Field(..., description="Был ли активен за последние 30 дней")
+    is_blocked: bool = Field(..., description="Заблокирован ли пользователь")
 
 
 class AdminUsersResponse(BaseModel):
@@ -407,6 +408,30 @@ class UpdateCreditsResponse(BaseModel):
     previous_balance: int = Field(..., description="Баланс до изменений")
     new_balance: int = Field(..., description="Новый баланс пользователя")
     message: str
+
+
+# ============================================================================
+# Блокировка пользователей
+# ============================================================================
+
+class UpdateUserBlockRequest(BaseModel):
+    """Запрос на блокировку/разблокировку пользователя."""
+    is_blocked: bool = Field(..., description="Заблокировать пользователя (true) или разблокировать (false)")
+    reason: str | None = Field(
+        default=None,
+        min_length=3,
+        max_length=200,
+        description="Причина блокировки/разблокировки (опционально)",
+    )
+
+
+class UpdateUserBlockResponse(BaseModel):
+    """Ответ на блокировку/разблокировку пользователя."""
+    success: bool = Field(..., description="Успешность операции")
+    user_id: int = Field(..., description="ID пользователя")
+    previous_is_blocked: bool = Field(..., description="Статус блокировки до изменения")
+    is_blocked: bool = Field(..., description="Текущий статус блокировки")
+    message: str = Field(..., description="Сообщение о результате")
 
 
 # ============================================================================

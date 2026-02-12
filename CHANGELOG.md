@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- В админ-панели реализована блокировка/разблокировка пользователей для анти-мультиаккаунтинга: новый endpoint `PUT /api/v1/admin/users/{user_id}/block`, кнопка в разделе Users, индикация статуса блокировки в таблице и в деталях пользователя.
 - Реализованы рабочие OAuth-флоу для Яндекс ID и Telegram Login Widget: backend endpoints `/api/v1/auth-web/yandex` и `/api/v1/auth-web/telegram/widget`, фронтовый callback `/yandex/callback`, синхронизация API-клиента/типов.
 - Добавлена миграция `20260211_add_auth_provider_yandex_tg_widget`, расширяющая `auth_provider_enum` значениями `yandex` и `telegram_widget`.
 - Добавлен скрипт `scripts/backup-from-vps.sh` для бэкапа БД с VPS на компьютер.
@@ -40,6 +41,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GrsAI подключён как основной провайдер Nano Banana Pro, kie.ai используется как fallback вместо OpenRouter.
 
 ### Fixed
+- Legacy endpoint `POST /api/v1/auth/telegram` теперь отклоняет вход для заблокированных пользователей (`403 User account is blocked`), чтобы бан применялся ко всем каналам авторизации.
+- В API-клиенте фронтенда добавлена обработка `403` с признаками блокировки (`blocked`/`banned`): сессия очищается и пользователь переходит на повторный вход.
 - Исправлен `backend/app/api/v1/endpoints/auth.py`: устранена синтаксическая ошибка импорта, восстановлена компиляция backend и корректная маркировка legacy Telegram-пользователей (`auth_provider=telegram`).
 - Прод-конфиг фронтенда дополнен недостающими переменными OAuth (`VITE_YANDEX_CLIENT_ID`, `VITE_YANDEX_REDIRECT_URI`, `VITE_TELEGRAM_BOT_NAME`) в `Dockerfile.prod`, `docker-compose.prod.yml` и `.env.example`.
 - Обновлён CSP в `Caddyfile` и `nginx/ai-image-bot.conf`: добавлены разрешения `telegram.org`/`oauth.telegram.org` для Telegram Login Widget (скрипт и iframe больше не блокируются).

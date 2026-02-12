@@ -140,6 +140,16 @@ export const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                           {userDetails.user.role}
                         </span>
                       </div>
+                      <div>
+                        <p className="text-sm text-gray-600">Статус доступа</p>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          userDetails.user.is_blocked
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-green-100 text-green-800'
+                        }`}>
+                          {userDetails.user.is_blocked ? 'Заблокирован' : 'Активен'}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
