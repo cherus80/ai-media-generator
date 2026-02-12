@@ -4,6 +4,7 @@
 
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { clearAuthToken, getAuthToken } from '../utils/authToken';
+import { localizeErrorDetail, localizeErrorMessage } from '../utils/errorLocalization';
 
 // Base API URL from environment variable
 // Normalize API base: remove trailing slash and optional '/api' suffix to avoid double '/api/api'.
@@ -16,6 +17,23 @@ const API_BASE_URL = (
   .replace(/\/api$/, '');
 
 let isRedirectingToLogin = false;
+
+const localizeAxiosError = (error: AxiosError): void => {
+  if (typeof error.message === 'string') {
+    error.message = localizeErrorMessage(error.message);
+  }
+
+  const responseData = error.response?.data as Record<string, unknown> | undefined;
+  if (!responseData) return;
+
+  if ('detail' in responseData) {
+    responseData.detail = localizeErrorDetail(responseData.detail);
+  }
+
+  if (typeof responseData.message === 'string') {
+    responseData.message = localizeErrorMessage(responseData.message);
+  }
+};
 
 const handleUnauthorized = () => {
   if (typeof window === 'undefined' || isRedirectingToLogin) return;
@@ -62,6 +80,8 @@ apiClient.interceptors.response.use(
     return response;
   },
   async (error: AxiosError) => {
+    localizeAxiosError(error);
+
     const originalRequest = error.config as InternalAxiosRequestConfig & {
       _retry?: boolean;
     };
@@ -85,7 +105,8 @@ apiClient.interceptors.response.use(
       const detailText = typeof detail === 'string' ? detail.toLowerCase() : '';
       const isBlockedError =
         detailText.includes('banned') ||
-        detailText.includes('blocked');
+        detailText.includes('blocked') ||
+        detailText.includes('заблокирован');
 
       if (isBlockedError) {
         handleUnauthorized();
@@ -96,7 +117,10 @@ apiClient.interceptors.response.use(
     }
 
     // Handle network errors
-    if (error.message === 'Network Error') {
+    if (
+      error.message === 'Network Error' ||
+      error.message === 'Сетевая ошибка. Проверьте подключение к интернету.'
+    ) {
       console.error('Проблемы с сетью — проверьте подключение к интернету');
     }
 

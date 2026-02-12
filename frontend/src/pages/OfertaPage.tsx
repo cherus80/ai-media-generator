@@ -52,7 +52,7 @@ export const OfertaPage: React.FC = () => {
 
         <Card variant="glass" padding="lg" className="border border-primary-200 space-y-3">
           <h2 className="text-2xl font-bold">3. Регистрация и аккаунт</h2>
-          <p className="text-dark-700 text-sm leading-relaxed">Для использования требуется регистрация и подтверждение e-mail. Пользователь обеспечивает сохранность своих учётных данных.</p>
+          <p className="text-dark-700 text-sm leading-relaxed">Для использования требуется регистрация и подтверждение эл. почты. Пользователь обеспечивает сохранность своих учётных данных.</p>
         </Card>
 
         <Card variant="glass" padding="lg" className="border border-primary-200 space-y-3">
@@ -122,7 +122,7 @@ export const OfertaPage: React.FC = () => {
           <h2 className="text-2xl font-bold">11. Поддержка</h2>
           <ul className="space-y-2 text-dark-700 text-sm leading-relaxed">
             <li>Телефон: +7 913 220-69-67</li>
-            <li>E-mail: ai-generator@mix4.ru</li>
+            <li>Эл. почта: ai-generator@mix4.ru</li>
             <li>Часы поддержки: 10:00–18:00 (МСК)</li>
           </ul>
         </Card>

@@ -118,7 +118,7 @@ export function HistoryPage() {
                           Открыть результат
                         </a>
                       )}
-                      <span className="text-xs text-gray-400">Task: {item.task_id}</span>
+                      <span className="text-xs text-gray-400">Задача: {item.task_id}</span>
                     </div>
                   </div>
                 ))}

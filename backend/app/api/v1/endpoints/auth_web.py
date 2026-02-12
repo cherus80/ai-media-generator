@@ -242,7 +242,7 @@ async def register_with_email(
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered",
+            detail="Электронная почта уже зарегистрирована",
         )
 
     # Дополнительная проверка силы пароля (уже есть в схеме, но на всякий случай)
@@ -377,7 +377,7 @@ async def login_with_email(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password",
+            detail="Неверный email или пароль",
         )
 
     # --- Legacy поддержка старых аккаунтов ---
@@ -404,7 +404,7 @@ async def login_with_email(
     if not password_ok:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password",
+            detail="Неверный email или пароль",
         )
 
     # Автонормализация роли админа по whitelist
@@ -417,7 +417,7 @@ async def login_with_email(
     if user.is_banned:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="User account is blocked",
+            detail="Аккаунт пользователя заблокирован",
         )
 
     # Обновляем время активности
@@ -585,7 +585,7 @@ async def login_with_google(
     if not settings.GOOGLE_CLIENT_ID or not settings.GOOGLE_CLIENT_SECRET:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Google OAuth is not configured. Please use email/password authentication.",
+            detail="Авторизация через Google не настроена. Используйте вход по email/паролю.",
         )
 
     # Валидация Google ID token
@@ -594,7 +594,7 @@ async def login_with_google(
     except GoogleOAuthError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid Google ID token: {str(e)}",
+            detail=f"Некорректный Google ID token: {str(e)}",
         )
 
     # Извлекаем данные из Google
@@ -608,7 +608,7 @@ async def login_with_google(
     if not email:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email not provided by Google. Please allow email access.",
+            detail="Google не предоставил адрес электронной почты. Разрешите доступ к почте.",
         )
 
     # Ищем существующего пользователя по Google ID или email
@@ -685,7 +685,7 @@ async def login_with_google(
     if user.is_banned:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="User account is blocked",
+            detail="Аккаунт пользователя заблокирован",
         )
 
     update_user_login_metadata(user, raw_request)
@@ -739,7 +739,7 @@ async def login_with_vk_pkce(
     if not settings.VK_APP_ID or not settings.VK_CLIENT_SECRET:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="VK OAuth is not configured. Please use email/password authentication.",
+            detail="Авторизация через VK не настроена. Используйте вход по email/паролю.",
         )
 
     # Rate limit по client IP
@@ -768,7 +768,7 @@ async def login_with_vk_pkce(
         print(f"[VK_PKCE] code exchange failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid VK authorization code: {str(e)}",
+            detail=f"Некорректный код авторизации VK: {str(e)}",
         )
 
     access_token = token_payload.get("access_token")
@@ -778,7 +778,7 @@ async def login_with_vk_pkce(
         print(f"[VK_PKCE] missing access_token in response: {token_payload}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="VK OAuth response missing access_token",
+            detail="Ответ VK OAuth не содержит access_token",
         )
 
     # Верифицируем id_token подпись, aud/iss и nonce, если пришёл
@@ -797,13 +797,13 @@ async def login_with_vk_pkce(
         print(f"[VK_PKCE] user_info fetch failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid VK token: {str(e)}",
+            detail=f"Некорректный токен VK: {str(e)}",
         )
 
     if not vk_user_info:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="VK user info is empty",
+            detail="Не удалось получить данные пользователя VK",
         )
 
     vk_user_id = vk_user_info.get("user_id") or token_payload.get("user_id")
@@ -814,7 +814,7 @@ async def login_with_vk_pkce(
     if not vk_user_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="VK user ID not provided by VK.",
+            detail="VK не вернул ID пользователя",
         )
 
     vk_user_id_str = str(vk_user_id)
@@ -908,7 +908,7 @@ async def login_with_vk_pkce(
     if user.is_banned:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="User account is blocked",
+            detail="Аккаунт пользователя заблокирован",
         )
 
     update_user_login_metadata(user, raw_request)
@@ -961,7 +961,7 @@ async def login_with_vk(
     if not settings.VK_APP_ID or not settings.VK_CLIENT_SECRET:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="VK OAuth is not configured. Please use email/password authentication.",
+            detail="Авторизация через VK не настроена. Используйте вход по email/паролю.",
         )
 
     # Валидация VK ID silent token
@@ -970,7 +970,7 @@ async def login_with_vk(
     except VKOAuthError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid VK ID token: {str(e)}",
+            detail=f"Некорректный VK ID token: {str(e)}",
         )
 
     # Извлекаем данные из VK
@@ -982,7 +982,7 @@ async def login_with_vk(
     if not vk_user_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="VK user ID not provided by VK.",
+            detail="VK не вернул ID пользователя",
         )
 
     # Конвертируем VK user_id в строку для хранения в oauth_provider_id
@@ -1085,7 +1085,7 @@ async def login_with_vk(
     if user.is_banned:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="User account is blocked",
+            detail="Аккаунт пользователя заблокирован",
         )
 
     update_user_login_metadata(user, raw_request)
@@ -1132,7 +1132,7 @@ async def login_with_yandex(
     if not settings.YANDEX_CLIENT_ID or not settings.YANDEX_CLIENT_SECRET:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Yandex OAuth is not configured. Please use email/password authentication.",
+            detail="Авторизация через Яндекс не настроена. Используйте вход по email/паролю.",
         )
 
     try:
@@ -1140,7 +1140,7 @@ async def login_with_yandex(
     except YandexOAuthError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid Yandex OAuth code: {str(e)}",
+            detail=f"Некорректный OAuth-код Яндекса: {str(e)}",
         )
 
     yandex_user_id = yandex_user_info.get("yandex_id")
@@ -1153,7 +1153,7 @@ async def login_with_yandex(
     if not yandex_user_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Yandex user ID not provided by Yandex.",
+            detail="Яндекс не вернул ID пользователя",
         )
 
     yandex_user_id_str = str(yandex_user_id)
@@ -1238,7 +1238,7 @@ async def login_with_yandex(
     if user.is_banned:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="User account is blocked",
+            detail="Аккаунт пользователя заблокирован",
         )
 
     update_user_login_metadata(user, raw_request)
@@ -1284,7 +1284,7 @@ async def login_with_telegram_widget(
     if not settings.TELEGRAM_BOT_TOKEN:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Telegram Login Widget is not configured. Please set TELEGRAM_BOT_TOKEN.",
+            detail="Виджет входа Telegram не настроен. Укажите TELEGRAM_BOT_TOKEN.",
         )
 
     widget_payload = request.model_dump(
@@ -1297,7 +1297,7 @@ async def login_with_telegram_widget(
     except TelegramWidgetError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid Telegram widget data: {str(e)}",
+            detail=f"Некорректные данные Telegram Widget: {str(e)}",
         )
 
     telegram_id = telegram_data["telegram_id"]
@@ -1354,7 +1354,7 @@ async def login_with_telegram_widget(
     if user.is_banned:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="User account is blocked",
+            detail="Аккаунт пользователя заблокирован",
         )
 
     update_user_login_metadata(user, raw_request)
@@ -1437,20 +1437,20 @@ async def send_verification_email(
     if not settings.EMAIL_VERIFICATION_ENABLED:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Email verification is disabled",
+            detail="Подтверждение email отключено",
         )
 
     # Проверка, что у пользователя есть email
     if not current_user.email:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User does not have an email address",
+            detail="У пользователя отсутствует email-адрес",
         )
 
     # Если email уже подтверждён
     if current_user.email_verified:
         return SendVerificationEmailResponse(
-            message="Email уже подтверждён"
+            message="Электронная почта уже подтверждена"
         )
 
     # Проверка конфигурации SMTP заранее, чтобы не падать 500
@@ -1580,7 +1580,7 @@ async def verify_email(
         if user and user.email_verified:
             logger.info("Email already verified, token reused: %s", token_preview)
             return VerifyEmailResponse(
-                message="Email уже подтверждён",
+                message="Электронная почта уже подтверждена",
                 user=user_to_profile(user),
             )
 
@@ -1614,7 +1614,7 @@ async def verify_email(
     if user.is_banned:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="User account is blocked",
+            detail="Аккаунт пользователя заблокирован",
         )
 
     # Обновляем пользователя
@@ -1635,7 +1635,7 @@ async def verify_email(
     )
 
     return VerifyEmailResponse(
-        message="Email успешно подтверждён",
+        message="Электронная почта успешно подтверждена",
         user=user_to_profile(user),
         access_token=access_token,
         token_type="bearer",

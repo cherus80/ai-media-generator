@@ -64,7 +64,7 @@ const loadImageSource = async (file: File): Promise<HTMLImageElement | ImageBitm
     };
     img.onerror = () => {
       URL.revokeObjectURL(url);
-      reject(new Error('Image load failed'));
+      reject(new Error('Не удалось загрузить изображение'));
     };
     img.src = url;
   });
@@ -80,7 +80,7 @@ const drawToCanvas = (
   canvas.height = height;
   const ctx = canvas.getContext('2d');
   if (!ctx) {
-    throw new Error('Canvas context not available');
+    throw new Error('Контекст Canvas недоступен');
   }
   ctx.drawImage(source as CanvasImageSource, 0, 0, width, height);
   return canvas;

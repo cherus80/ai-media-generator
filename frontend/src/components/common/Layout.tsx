@@ -242,7 +242,7 @@ export const Layout: React.FC<LayoutProps> = ({
           <div className="flex flex-wrap items-center gap-3">
             <a href="/oferta" className="hover:text-primary-700 underline-offset-2 hover:underline">Оферта</a>
             <a href="/privacy" className="hover:text-primary-700 underline-offset-2 hover:underline">Политика ПДн</a>
-            <span className="text-dark-400">Cookie используются для авторизации и аналитики</span>
+            <span className="text-dark-400">Файлы cookie используются для авторизации и аналитики</span>
           </div>
         </div>
       </footer>

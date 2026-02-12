@@ -21,7 +21,7 @@ export function checkPasswordStrength(password: string): PasswordStrength {
 
   // Check length
   if (password.length < 8) {
-    feedback.push('Password must be at least 8 characters long');
+    feedback.push('Пароль должен содержать минимум 8 символов');
     return { score: 0, feedback, isStrong: false };
   }
   score++;
@@ -30,21 +30,21 @@ export function checkPasswordStrength(password: string): PasswordStrength {
   if (/[A-Z]/.test(password)) {
     score++;
   } else {
-    feedback.push('Add at least one uppercase letter');
+    feedback.push('Добавьте хотя бы одну заглавную букву');
   }
 
   // Check for lowercase
   if (/[a-z]/.test(password)) {
     score++;
   } else {
-    feedback.push('Add at least one lowercase letter');
+    feedback.push('Добавьте хотя бы одну строчную букву');
   }
 
   // Check for numbers
   if (/\d/.test(password)) {
     score++;
   } else {
-    feedback.push('Add at least one number');
+    feedback.push('Добавьте хотя бы одну цифру');
   }
 
   // Check for special characters
@@ -74,17 +74,17 @@ export function checkPasswordStrength(password: string): PasswordStrength {
 export function getPasswordStrengthLabel(score: number): string {
   switch (score) {
     case 0:
-      return 'Very Weak';
+      return 'Очень слабый';
     case 1:
-      return 'Weak';
+      return 'Слабый';
     case 2:
-      return 'Fair';
+      return 'Средний';
     case 3:
-      return 'Good';
+      return 'Хороший';
     case 4:
-      return 'Strong';
+      return 'Надёжный';
     default:
-      return 'Unknown';
+      return 'Неизвестно';
   }
 }
 
@@ -115,28 +115,28 @@ export function validatePassword(password: string): { isValid: boolean; error?: 
   if (password.length < 8) {
     return {
       isValid: false,
-      error: 'Password must be at least 8 characters long',
+      error: 'Пароль должен содержать минимум 8 символов',
     };
   }
 
   if (!/[A-Z]/.test(password)) {
     return {
       isValid: false,
-      error: 'Password must contain at least one uppercase letter',
+      error: 'Пароль должен содержать хотя бы одну заглавную букву',
     };
   }
 
   if (!/[a-z]/.test(password)) {
     return {
       isValid: false,
-      error: 'Password must contain at least one lowercase letter',
+      error: 'Пароль должен содержать хотя бы одну строчную букву',
     };
   }
 
   if (!/\d/.test(password)) {
     return {
       isValid: false,
-      error: 'Password must contain at least one number',
+      error: 'Пароль должен содержать хотя бы одну цифру',
     };
   }
 
@@ -160,13 +160,13 @@ export function validateLoginForm(email: string, password: string): {
   const errors: { email?: string; password?: string } = {};
 
   if (!email) {
-    errors.email = 'Email is required';
+    errors.email = 'Введите email';
   } else if (!isValidEmail(email)) {
-    errors.email = 'Invalid email format';
+    errors.email = 'Некорректный формат email';
   }
 
   if (!password) {
-    errors.password = 'Password is required';
+    errors.password = 'Введите пароль';
   }
 
   return {
@@ -189,13 +189,13 @@ export function validateRegisterForm(
   const errors: { email?: string; password?: string; confirmPassword?: string } = {};
 
   if (!email) {
-    errors.email = 'Email is required';
+    errors.email = 'Введите email';
   } else if (!isValidEmail(email)) {
-    errors.email = 'Invalid email format';
+    errors.email = 'Некорректный формат email';
   }
 
   if (!password) {
-    errors.password = 'Password is required';
+    errors.password = 'Введите пароль';
   } else {
     const passwordValidation = validatePassword(password);
     if (!passwordValidation.isValid) {
@@ -204,9 +204,9 @@ export function validateRegisterForm(
   }
 
   if (!confirmPassword) {
-    errors.confirmPassword = 'Please confirm your password';
+    errors.confirmPassword = 'Подтвердите пароль';
   } else if (password !== confirmPassword) {
-    errors.confirmPassword = 'Passwords do not match';
+    errors.confirmPassword = 'Пароли не совпадают';
   }
 
   return {

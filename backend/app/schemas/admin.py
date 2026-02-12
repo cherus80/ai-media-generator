@@ -519,7 +519,7 @@ class MakeAdminResponse(BaseModel):
                 "user_id": 42,
                 "email": "newadmin@example.com",
                 "role": "ADMIN",
-                "message": "User newadmin@example.com is now an admin"
+                "message": "Пользователь newadmin@example.com назначен администратором"
             }
         }
 
@@ -535,6 +535,6 @@ class DeleteUserResponse(BaseModel):
             "example": {
                 "success": True,
                 "user_id": 42,
-                "message": "User with ID 42 has been deleted"
+                "message": "Пользователь с ID 42 удалён"
             }
         }

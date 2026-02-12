@@ -70,7 +70,7 @@ async def check_user_can_perform_action(
         status_code=status.HTTP_402_PAYMENT_REQUIRED,
         detail={
             "error": "NOT_ENOUGH_BALANCE",
-            "message": "Not enough stars/actions. Please purchase stars or subscribe.",
+            "message": "Недостаточно ⭐️звёзд/действий. Пополните баланс или оформите подписку.",
             "balance_credits": user.balance_credits,
             "credits_required": credits_cost,
         }
@@ -110,7 +110,7 @@ async def deduct_credits(
     if not can_perform:
         raise HTTPException(
             status_code=status.HTTP_402_PAYMENT_REQUIRED,
-            detail="Insufficient stars"
+            detail="Недостаточно ⭐️звёзд"
         )
 
     # Списание в зависимости от метода оплаты
@@ -181,7 +181,7 @@ async def award_credits(
             return {
                 "status": "already_processed",
                 "credits_awarded": 0,
-                "message": "Credits already awarded for this payment"
+                "message": "⭐️Звёзды по этому платежу уже начислены"
             }
 
     # Получение пользователя
@@ -189,7 +189,7 @@ async def award_credits(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            detail="Пользователь не найден"
         )
 
     # Начисление кредитов
@@ -229,7 +229,7 @@ async def award_subscription(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            detail="Пользователь не найден"
         )
 
     # Установка подписки

@@ -349,5 +349,5 @@ async def get_image_dimensions(file: UploadFile) -> tuple[int, int]:
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Failed to read image dimensions: {str(e)}"
+            detail=f"Не удалось определить размеры изображения: {str(e)}"
         )

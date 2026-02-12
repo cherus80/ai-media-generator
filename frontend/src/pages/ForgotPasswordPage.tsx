@@ -15,7 +15,7 @@ export function ForgotPasswordPage() {
     setMessage(null);
 
     if (!email || !isValidEmail(email)) {
-      setError('Введите корректный email');
+      setError('Введите корректную эл. почту');
       return;
     }
 
@@ -36,7 +36,7 @@ export function ForgotPasswordPage() {
         <div className="text-center space-y-2">
           <h2 className="text-3xl font-extrabold text-dark-900">Сброс пароля</h2>
           <p className="text-sm text-dark-600">
-            Введите email, и мы отправим ссылку для сброса пароля.
+            Введите эл. почту, и мы отправим ссылку для сброса пароля.
           </p>
         </div>
 
@@ -54,7 +54,7 @@ export function ForgotPasswordPage() {
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="space-y-1.5">
             <label htmlFor="email" className="block text-sm font-semibold text-slate-800">
-              Email адрес
+              Эл. почта
             </label>
             <input
               id="email"

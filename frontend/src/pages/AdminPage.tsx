@@ -130,7 +130,7 @@ export const AdminPage: React.FC = () => {
                   }
                 `}
               >
-                🛡️ Fallback
+                🛡️ Резерв
               </button>
               <button
                 onClick={() => setActiveTab('consents')}

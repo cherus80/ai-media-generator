@@ -111,17 +111,17 @@ export const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                         <p className="font-medium text-gray-900">{userDetails.user.id}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Telegram ID</p>
+                        <p className="text-sm text-gray-600">ID Telegram</p>
                         <p className="font-medium text-gray-900">{userDetails.user.telegram_id}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Username</p>
+                        <p className="text-sm text-gray-600">Имя пользователя</p>
                         <p className="font-medium text-gray-900">
                           {userDetails.user.username ? `@${userDetails.user.username}` : '—'}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Email</p>
+                        <p className="text-sm text-gray-600">Эл. почта</p>
                         <p className="font-medium text-gray-900">{userDetails.user.email || '—'}</p>
                       </div>
                       <div>
@@ -193,7 +193,7 @@ export const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-600">Freemium генераций</p>
+                        <p className="text-sm text-gray-600">Бесплатных генераций</p>
                         <p className="text-2xl font-bold text-green-600">
                           {userDetails.user.freemium_actions_remaining}
                         </p>
@@ -387,7 +387,7 @@ export const UserDetailsModal: React.FC<UserDetailsModalProps> = ({
           userDetails
             ? {
                 id: userDetails.user.id,
-                email: userDetails.user.email || 'unknown',
+                email: userDetails.user.email || 'неизвестно',
                 username: userDetails.user.username || undefined,
                 balance_credits: userDetails.user.balance_credits,
               }

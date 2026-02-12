@@ -63,7 +63,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
                 />
               </svg>
             </div>
-            <span className="text-xs font-bold gradient-text bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-600">AI Assistant</span>
+            <span className="text-xs font-bold gradient-text bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-600">AI-ассистент</span>
           </div>
         )}
 
@@ -86,7 +86,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
               >
                 <img
                   src={resolveUrl(att.url)}
-                  alt={att.name || 'attachment'}
+                  alt={att.name || 'вложение'}
                   className="w-full h-full object-cover"
                 />
               </div>

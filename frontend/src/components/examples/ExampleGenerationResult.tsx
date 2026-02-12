@@ -143,14 +143,14 @@ export const ExampleGenerationResult: React.FC<ExampleGenerationResultProps> = (
         <div className="mb-6 relative">
           <img
             src={resolvedImageUrl}
-            alt="Example generation result"
+            alt="Результат генерации по примеру"
             className="w-full rounded-lg shadow-lg cursor-pointer"
             onClick={() => setIsFullscreen(true)}
             onError={() => toast.error('Не удалось загрузить превью изображения')}
           />
           {result.has_watermark && (
             <div className="absolute top-4 right-4 bg-yellow-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
-              Freemium
+              Бесплатный режим
             </div>
           )}
         </div>
@@ -197,7 +197,7 @@ export const ExampleGenerationResult: React.FC<ExampleGenerationResultProps> = (
         >
           <img
             src={result.image_url}
-            alt="Example generation fullscreen"
+            alt="Результат генерации (полный экран)"
             className="max-w-full max-h-full rounded-lg"
           />
         </div>

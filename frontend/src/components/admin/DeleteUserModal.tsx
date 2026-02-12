@@ -19,6 +19,8 @@ interface DeleteUserModalProps {
   onSuccess: () => void;
 }
 
+const DELETE_CONFIRMATION_WORD = 'УДАЛИТЬ';
+
 export const DeleteUserModal: React.FC<DeleteUserModalProps> = ({
   user,
   isOpen,
@@ -35,8 +37,8 @@ export const DeleteUserModal: React.FC<DeleteUserModalProps> = ({
     e.preventDefault();
     setError('');
 
-    if (confirmText !== 'DELETE') {
-      setError('Для подтверждения введите DELETE');
+    if (confirmText !== DELETE_CONFIRMATION_WORD) {
+      setError(`Для подтверждения введите ${DELETE_CONFIRMATION_WORD}`);
       return;
     }
 
@@ -106,7 +108,7 @@ export const DeleteUserModal: React.FC<DeleteUserModalProps> = ({
             <form onSubmit={handleSubmit} className="mt-4 space-y-4">
               <div>
                 <label htmlFor="confirm" className="block text-sm font-medium text-gray-700">
-                  Для подтверждения введите <span className="font-mono font-bold">DELETE</span>
+                  Для подтверждения введите <span className="font-mono font-bold">{DELETE_CONFIRMATION_WORD}</span>
                 </label>
                 <input
                   type="text"
@@ -115,7 +117,7 @@ export const DeleteUserModal: React.FC<DeleteUserModalProps> = ({
                   onChange={(e) => setConfirmText(e.target.value)}
                   required
                   className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
-                  placeholder="DELETE"
+                  placeholder={DELETE_CONFIRMATION_WORD}
                   disabled={loading}
                 />
               </div>
@@ -134,7 +136,7 @@ export const DeleteUserModal: React.FC<DeleteUserModalProps> = ({
             <button
               type="submit"
               onClick={handleSubmit}
-              disabled={loading || confirmText !== 'DELETE'}
+              disabled={loading || confirmText !== DELETE_CONFIRMATION_WORD}
               className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Удаление...' : 'Удалить пользователя'}

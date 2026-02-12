@@ -168,7 +168,7 @@ export function LoginPage() {
               <div className="w-full border-t border-slate-200" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-slate-500">Или продолжите с email</span>
+              <span className="px-2 bg-white text-slate-500">Или продолжите с эл. почтой</span>
             </div>
           </div>
 
@@ -183,7 +183,7 @@ export function LoginPage() {
           <form className="space-y-5" onSubmit={handleSubmit}>
             <div className="space-y-1.5">
               <label htmlFor="email" className="block text-sm font-semibold text-slate-800">
-                Email адрес
+                Эл. почта
               </label>
               <input
                 id="email"

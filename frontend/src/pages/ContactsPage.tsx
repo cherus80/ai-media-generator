@@ -30,7 +30,7 @@ export const ContactsPage: React.FC = () => {
               <a href="/#features" className="text-slate-600 hover:text-secondary-500 transition-colors">Возможности</a>
               <a href="/#how-it-works" className="text-slate-600 hover:text-secondary-500 transition-colors">Как это работает</a>
               <a href="/#pricing" className="text-slate-600 hover:text-secondary-500 transition-colors">Тарифы</a>
-              <a href="/#faq" className="text-slate-600 hover:text-secondary-500 transition-colors">FAQ</a>
+              <a href="/#faq" className="text-slate-600 hover:text-secondary-500 transition-colors">Вопросы и ответы</a>
             </nav>
 
             <div className="flex items-center gap-4 text-sm font-semibold">
@@ -72,7 +72,7 @@ export const ContactsPage: React.FC = () => {
                   <li>ИНН: 222312090918</li>
                   <li>Статус: Самозанятый (НПД)</li>
                   <li>Телефон: +7 913 220-69-67</li>
-                  <li>E-mail поддержки: ai-generator@mix4.ru</li>
+                  <li>Эл. почта поддержки: ai-generator@mix4.ru</li>
                   <li>Почтовый адрес: Энтузиастов 55-203, 656065, г. Барнаул</li>
                   <li>Сайт: https://ai-generator.mix4.ru</li>
                   <li>Часы поддержки: 10:00–18:00 (МСК)</li>

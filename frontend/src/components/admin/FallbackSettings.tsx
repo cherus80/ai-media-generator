@@ -71,7 +71,7 @@ export const FallbackSettings: React.FC = () => {
     <Card variant="glass" padding="lg" className="max-w-3xl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-dark-900">Fallback генерации</h2>
+          <h2 className="text-2xl font-bold text-dark-900">Резервная генерация</h2>
           <p className="text-sm text-dark-500">
             Переключайте основной и запасной провайдер без перезапуска сервиса.
           </p>

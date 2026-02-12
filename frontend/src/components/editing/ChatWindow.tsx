@@ -70,7 +70,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               <div className="relative rounded-xl overflow-hidden shadow-large bg-white/60 border border-white/40">
                 <img
                   src={baseImageUrl}
-                  alt="Base image"
+                  alt="Базовое изображение"
                   className="w-full max-h-96 object-contain mx-auto"
                 />
               </div>

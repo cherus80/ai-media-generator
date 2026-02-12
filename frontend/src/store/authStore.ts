@@ -359,7 +359,7 @@ export const useAuthStore = create<AuthState>()(
 
             if (!initData) {
               throw new Error(
-                'Telegram data not available. Please open this app in Telegram.'
+                'Данные Telegram недоступны. Откройте приложение внутри Telegram.'
               );
             }
 

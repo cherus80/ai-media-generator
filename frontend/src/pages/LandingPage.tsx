@@ -153,7 +153,7 @@ export const LandingPage: React.FC = () => {
               <a href="#features" className="text-slate-600 hover:text-secondary-500 transition-colors">Возможности</a>
               <a href="#how-it-works" className="text-slate-600 hover:text-secondary-500 transition-colors">Как это работает</a>
               <a href="#pricing" className="text-slate-600 hover:text-secondary-500 transition-colors">Тарифы</a>
-              <a href="#faq" className="text-slate-600 hover:text-secondary-500 transition-colors">FAQ</a>
+              <a href="#faq" className="text-slate-600 hover:text-secondary-500 transition-colors">Вопросы и ответы</a>
             </nav>
 
             <div className="flex items-center gap-2 sm:gap-4 text-sm font-semibold flex-shrink-0 max-[600px]:w-full max-[600px]:justify-between">
@@ -556,7 +556,7 @@ export const LandingPage: React.FC = () => {
                           <i className="fa-solid fa-wand-magic-sparkles text-sm" />
                         </div>
                         <div>
-                          <p className="text-xs font-bold text-purple-600 uppercase">AI Assistant</p>
+                          <p className="text-xs font-bold text-purple-600 uppercase">AI-ассистент</p>
                           <p className="text-[11px] text-slate-400">13:37</p>
                         </div>
                       </div>

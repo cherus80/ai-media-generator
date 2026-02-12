@@ -102,7 +102,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           <div className="mb-4">
             <img
               src={preview}
-              alt="Preview"
+              alt="Предпросмотр"
               className="max-h-48 mx-auto rounded-lg shadow-md object-contain"
             />
           </div>

@@ -131,7 +131,7 @@ export const NotificationsManager: React.FC = () => {
                 setSearch(event.target.value);
                 setPage(1);
               }}
-              placeholder="Email, username или Telegram ID"
+              placeholder="Эл. почта, имя пользователя или ID Telegram"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>

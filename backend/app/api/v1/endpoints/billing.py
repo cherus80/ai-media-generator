@@ -32,7 +32,7 @@ async def get_billing_state(
     if not settings.BILLING_V5_ENABLED:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Billing v5 is disabled",
+            detail="Платёжный модуль v5 отключён",
         )
 
     service = BillingV5Service(db)
@@ -78,7 +78,7 @@ async def get_ledger(
     if not settings.BILLING_LEDGER_ENABLED:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Ledger is disabled",
+            detail="Журнал операций отключён",
         )
 
     total_stmt = select(func.count(CreditsLedger.id)).where(CreditsLedger.user_id == current_user.id)

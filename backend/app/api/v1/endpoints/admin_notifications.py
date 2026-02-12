@@ -37,14 +37,14 @@ async def send_notifications(
     else:
         requested_ids = list({uid for uid in (payload.user_ids or [])})
         if not requested_ids:
-            raise HTTPException(status_code=400, detail="No user_ids provided")
+            raise HTTPException(status_code=400, detail="Не переданы user_ids")
         result = await db.execute(select(User.id).where(User.id.in_(requested_ids)))
         existing_ids = set(result.scalars().all())
         skipped_count = len(requested_ids) - len(existing_ids)
         user_ids = list(existing_ids)
 
     if not user_ids:
-        raise HTTPException(status_code=400, detail="No users found for notification")
+        raise HTTPException(status_code=400, detail="Не найдено пользователей для уведомления")
 
     notifications = [
         Notification(

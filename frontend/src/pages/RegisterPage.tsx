@@ -176,7 +176,7 @@ export function RegisterPage() {
               <div className="w-full border-t border-gray-300" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-gray-50 text-gray-500">Или зарегистрируйтесь с email</span>
+              <span className="px-2 bg-gray-50 text-gray-500">Или зарегистрируйтесь с эл. почтой</span>
             </div>
           </div>
 
@@ -189,7 +189,7 @@ export function RegisterPage() {
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email адрес
+                Эл. почта
               </label>
               <input
                 id="email"

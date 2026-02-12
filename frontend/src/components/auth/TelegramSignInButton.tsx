@@ -52,7 +52,7 @@ export function TelegramSignInButton({ onSuccess, onError, className, disabled =
                 onSuccess?.();
             } catch (error: any) {
                 console.error('Telegram login error:', error);
-                onError?.(error.message || 'Telegram login failed');
+                onError?.(error.message || 'Ошибка входа через Telegram');
             }
         };
 
@@ -69,7 +69,7 @@ export function TelegramSignInButton({ onSuccess, onError, className, disabled =
     if (!botName) {
         return (
             <div className={`flex items-center justify-center h-12 rounded-xl border border-slate-200 bg-white text-slate-400 text-xs ${className}`}>
-                Telegram not configured
+                Telegram не настроен
             </div>
         )
     }

@@ -26,7 +26,7 @@ def normalize_upload_url(raw_url: str) -> str:
     if not raw_url:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid upload URL",
+            detail="Некорректная ссылка загрузки",
         )
 
     path = raw_url

@@ -37,7 +37,7 @@ export function EmailVerificationPage() {
         // Покажем тост после редиректа на главную
         sessionStorage.setItem(
           'emailVerifiedMessage',
-          response.message || 'Email подтверждён! Теперь можно пользоваться приложением.'
+          response.message || 'Электронная почта подтверждена. Теперь можно пользоваться приложением.'
         );
 
         // Редирект в приложение через 2 секунды
@@ -47,7 +47,7 @@ export function EmailVerificationPage() {
       } catch (error: any) {
         setState('error');
 
-        const detail = error.response?.data?.detail || 'Не удалось подтвердить email';
+        const detail = error.response?.data?.detail || 'Не удалось подтвердить электронную почту';
         setMessage(detail);
       }
     };
@@ -113,8 +113,8 @@ export function EmailVerificationPage() {
 
           {/* Title */}
           <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            {state === 'loading' && 'Подтверждение email...'}
-            {state === 'success' && 'Email подтверждён!'}
+            {state === 'loading' && 'Подтверждение электронной почты...'}
+            {state === 'success' && 'Электронная почта подтверждена!'}
             {state === 'error' && 'Ошибка верификации'}
             {state === 'invalid' && 'Неверная ссылка'}
           </h2>

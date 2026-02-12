@@ -345,7 +345,7 @@ class BillingV5Service:
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found",
+                detail="Пользователь не найден",
             )
         return user
 
@@ -463,7 +463,7 @@ class BillingV5Service:
         if not plan and not fail_silently:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Unknown subscription plan: {plan_id}",
+                detail=f"Неизвестный тариф подписки: {plan_id}",
             )
         return plan
 

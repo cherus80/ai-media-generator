@@ -95,7 +95,7 @@ export const UsersTable: React.FC<UsersTableProps> = ({ onError }) => {
           <div className="flex-1">
             <input
               type="text"
-              placeholder="Поиск по username или Telegram ID..."
+              placeholder="Поиск по имени пользователя или ID Telegram..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -218,7 +218,7 @@ export const UsersTable: React.FC<UsersTableProps> = ({ onError }) => {
                       <div className="text-sm font-medium text-gray-900">
                         {user.username ? `@${user.username}` : user.first_name || 'Без имени'}
                       </div>
-                      <div className="text-xs text-gray-500">ID: {user.telegram_id}</div>
+                      <div className="text-xs text-gray-500">ID Telegram: {user.telegram_id}</div>
                     </div>
                   </td>
                   <td className="px-4 py-4 whitespace-nowrap">

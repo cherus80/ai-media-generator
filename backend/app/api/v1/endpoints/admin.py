@@ -97,8 +97,8 @@ def _normalize_provider(provider: str | None, field_name: str) -> str | None:
     if normalized not in _GENERATION_PROVIDERS:
         raise HTTPException(
             status_code=400,
-            detail=f"Unsupported provider '{provider}' for {field_name}. "
-                   f"Use one of: {', '.join(sorted(_GENERATION_PROVIDERS))}",
+            detail=f"Неподдерживаемый провайдер '{provider}' для поля {field_name}. "
+                   f"Используйте один из: {', '.join(sorted(_GENERATION_PROVIDERS))}",
         )
     return normalized
 
@@ -1001,7 +1001,7 @@ async def get_user_details(
     # Получаем пользователя
     user = await db.scalar(select(User).where(User.id == user_id))
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
 
     # Статистика пользователя
     total_generations = await db.scalar(
@@ -1161,7 +1161,7 @@ async def update_user_credits(
     """
     user = await db.scalar(select(User).where(User.id == user_id))
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
 
     previous_balance = user.balance_credits
     user.balance_credits = request.new_balance
@@ -1178,14 +1178,14 @@ async def update_user_credits(
         request.reason or "not provided",
     )
 
-    reason_suffix = f" Reason: {request.reason}" if request.reason else ""
+    reason_suffix = f" Причина: {request.reason}" if request.reason else ""
 
     return UpdateCreditsResponse(
         success=True,
         user_id=user.id,
         previous_balance=previous_balance,
         new_balance=user.balance_credits,
-        message=f"Balance updated from {previous_balance} to {user.balance_credits}.{reason_suffix}"
+        message=f"Баланс обновлён: {previous_balance} -> {user.balance_credits}.{reason_suffix}"
     )
 
 
@@ -1207,31 +1207,31 @@ async def update_user_block_status(
     """
     user = await db.scalar(select(User).where(User.id == user_id))
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
 
     # Запрещаем само-блокировку
     if request.is_blocked and user.id == admin.id:
         raise HTTPException(
             status_code=400,
-            detail="Cannot block yourself",
+            detail="Нельзя заблокировать самого себя",
         )
 
     # ADMIN не может блокировать/разблокировать администраторов
     if user.role in [UserRole.ADMIN, UserRole.SUPER_ADMIN] and admin.role != UserRole.SUPER_ADMIN:
         raise HTTPException(
             status_code=403,
-            detail="Only super admin can manage admin block status",
+            detail="Только супер-администратор может управлять блокировкой администраторов",
         )
 
     previous_is_blocked = bool(user.is_banned)
     if previous_is_blocked == request.is_blocked:
-        state_text = "blocked" if request.is_blocked else "unblocked"
+        state_text = "заблокирован" if request.is_blocked else "разблокирован"
         return UpdateUserBlockResponse(
             success=True,
             user_id=user.id,
             previous_is_blocked=previous_is_blocked,
             is_blocked=previous_is_blocked,
-            message=f"User is already {state_text}",
+            message=f"Пользователь уже {state_text}",
         )
 
     user.is_banned = request.is_blocked
@@ -1257,7 +1257,7 @@ async def update_user_block_status(
         user_id=user.id,
         previous_is_blocked=previous_is_blocked,
         is_blocked=user.is_banned,
-        message=f"User has been {action}",
+        message=f"Пользователь {'заблокирован' if user.is_banned else 'разблокирован'}",
     )
 
 
@@ -1492,7 +1492,7 @@ async def update_fitting_prompt(
     if zone_key not in PROMPT_ZONES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Unknown zone: {zone}",
+            detail=f"Неизвестная зона: {zone}",
         )
 
     try:
@@ -1540,7 +1540,7 @@ async def make_user_admin(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User with email '{request.email}' not found"
+            detail=f"Пользователь с email '{request.email}' не найден"
         )
 
     # Проверить, не является ли уже админом
@@ -1550,7 +1550,7 @@ async def make_user_admin(
             user_id=user.id,
             email=user.email,
             role=user.role.value,
-            message=f"User {user.email} is already an admin (role: {user.role.value})"
+            message=f"Пользователь {user.email} уже администратор (роль: {user.role.value})"
         )
 
     # Назначить роль ADMIN
@@ -1571,7 +1571,7 @@ async def make_user_admin(
         user_id=user.id,
         email=user.email,
         role=user.role.value,
-        message=f"User {user.email} is now an admin"
+        message=f"Пользователь {user.email} назначен администратором"
     )
 
 
@@ -1599,21 +1599,21 @@ async def delete_user(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"User with ID {user_id} not found"
+            detail=f"Пользователь с ID {user_id} не найден"
         )
 
     # Нельзя удалить себя
     if user.id == admin.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot delete yourself"
+            detail="Нельзя удалить самого себя"
         )
 
     # Нельзя удалить SUPER_ADMIN (если удаляющий не SUPER_ADMIN)
     if user.role == UserRole.SUPER_ADMIN and admin.role != UserRole.SUPER_ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only super admin can delete another super admin"
+            detail="Только супер-администратор может удалить другого супер-администратора"
         )
 
     # Удалить пользователя (cascade удалит связанные данные)
@@ -1632,5 +1632,5 @@ async def delete_user(
     return DeleteUserResponse(
         success=True,
         user_id=user_id,
-        message=f"User with ID {user_id} has been deleted"
+        message=f"Пользователь с ID {user_id} удалён"
     )

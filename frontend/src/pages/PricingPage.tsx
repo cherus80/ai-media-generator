@@ -98,7 +98,7 @@ export const PricingPage: React.FC = () => {
         <div className="bg-white rounded-2xl border border-white/80 shadow-sm p-6 space-y-3">
           <h3 className="text-xl font-semibold text-dark-900">Как получить результат</h3>
           <ul className="text-sm text-dark-700 space-y-1">
-            <li>1) Зарегистрируйтесь и подтвердите e-mail.</li>
+            <li>1) Зарегистрируйтесь и подтвердите эл. почту.</li>
             <li>2) Выберите тариф или пакет ⭐️звезд, оплатите через ЮKassa.</li>
             <li>3) ⭐️Звезды/подписка начисляются автоматически, баланс виден в профиле.</li>
             <li>4) История результатов доступна в разделе “История”. Фото хранятся 24 часа, чаты — 30 дней.</li>

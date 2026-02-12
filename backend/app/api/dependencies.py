@@ -53,7 +53,7 @@ async def get_current_user(
         if not payload or "user_id" not in payload:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication credentials",
+                detail="Неверные учётные данные авторизации",
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
@@ -62,7 +62,7 @@ async def get_current_user(
     except JWTTokenError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid token: {str(e)}",
+            detail=f"Невалидный токен: {str(e)}",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -75,7 +75,7 @@ async def get_current_user(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
+            detail="Пользователь не найден",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -83,7 +83,7 @@ async def get_current_user(
     if user.is_banned:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="User is banned",
+            detail="Пользователь заблокирован",
         )
 
     # Обновляем время последней активности
@@ -112,7 +112,7 @@ async def get_current_active_user(
     if not current_user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="User is not active",
+            detail="Пользователь не активен",
         )
 
     return current_user
@@ -138,7 +138,7 @@ async def get_current_admin(
     if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required. Insufficient permissions.",
+            detail="Требуются права администратора. Недостаточно прав.",
         )
 
     return current_user
@@ -166,7 +166,7 @@ async def get_current_super_admin(
     if current_user.role != UserRole.SUPER_ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Super admin access required. Only the main administrator can perform this action.",
+            detail="Требуются права супер-администратора. Только главный администратор может выполнить это действие.",
         )
 
     return current_user
@@ -209,9 +209,9 @@ async def require_verified_email(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=(
-                "Email verification required. "
-                "Please verify your email address to use this feature. "
-                "Check your inbox for the verification link or request a new one."
+                "Требуется подтверждение электронной почты. "
+                "Подтвердите email, чтобы пользоваться этой функцией. "
+                "Проверьте входящие или запросите новое письмо."
             ),
         )
 

@@ -154,7 +154,7 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({ message }) => {
           <div className="relative rounded-lg overflow-hidden bg-gray-200 max-w-[420px]">
             <img
               src={resolvedImageUrl}
-              alt="Generated result"
+              alt="Сгенерированный результат"
               className="w-full h-auto cursor-pointer hover:opacity-90 transition-opacity object-contain max-h-80"
               onClick={handleZoom}
               loading="lazy"
@@ -258,7 +258,7 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({ message }) => {
           </button>
           <img
             src={message.image_url}
-            alt="Zoomed result"
+            alt="Увеличенный результат"
             className="max-w-full max-h-full object-contain"
             onClick={(e) => e.stopPropagation()}
           />

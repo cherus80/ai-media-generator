@@ -170,7 +170,7 @@ export const UsersManagement: React.FC<UsersManagementProps> = ({
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              placeholder="Email или username..."
+              placeholder="Эл. почта или имя пользователя..."
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
@@ -217,7 +217,7 @@ export const UsersManagement: React.FC<UsersManagementProps> = ({
                     ID
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Email
+                    Эл. почта
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Роль

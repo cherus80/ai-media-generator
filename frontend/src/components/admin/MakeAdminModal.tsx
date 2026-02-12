@@ -97,7 +97,7 @@ export const MakeAdminModal: React.FC<MakeAdminModalProps> = ({
             <form onSubmit={handleSubmit} className="mt-4 space-y-4">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                  Email пользователя
+                  Эл. почта пользователя
                 </label>
                 <input
                   type="email"

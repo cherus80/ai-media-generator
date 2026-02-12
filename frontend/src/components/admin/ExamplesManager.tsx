@@ -361,7 +361,7 @@ export const ExamplesManager: React.FC = () => {
               value={newTags}
               onChange={(e) => setNewTags(e.target.value)}
               className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
-              placeholder="street, вечерний стиль, casual"
+              placeholder="уличный стиль, вечерний стиль, повседневный"
             />
             {parseTags(newTags).length > 0 && (
               <div className="mt-2 flex flex-wrap gap-2">

@@ -754,11 +754,11 @@ export const ProfilePage: React.FC = () => {
             {user.email && (
               <>
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                  <span className="text-gray-600">Email:</span>
+                  <span className="text-gray-600">Эл. почта:</span>
                   <span className="font-medium text-gray-900">{user.email}</span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                  <span className="text-gray-600">Статус email:</span>
+                  <span className="text-gray-600">Статус почты:</span>
                   <div className="flex items-center space-x-2">
                     {user.email_verified ? (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -801,7 +801,7 @@ export const ProfilePage: React.FC = () => {
             )}
             {user.telegram_id && (
               <div className="flex justify-between py-2 border-b border-gray-100">
-                <span className="text-gray-600">Telegram ID:</span>
+                <span className="text-gray-600">ID Telegram:</span>
                 <span className="font-medium text-gray-900">{user.telegram_id}</span>
               </div>
             )}

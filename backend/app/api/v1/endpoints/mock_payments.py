@@ -62,7 +62,7 @@ def check_mock_mode():
     if not settings.PAYMENT_MOCK_MODE:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Mock payment endpoints are only available in PAYMENT_MOCK_MODE",
+            detail="Эндпоинты тестовых платежей доступны только в режиме PAYMENT_MOCK_MODE",
         )
 
 
@@ -118,7 +118,7 @@ async def approve_mock_payment(
     if not payment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Payment {payment_id} not found",
+            detail=f"Платёж {payment_id} не найден",
         )
 
     # Обновляем статус
@@ -133,7 +133,7 @@ async def approve_mock_payment(
         success=True,
         payment_id=payment_id,
         new_status="succeeded",
-        message="Payment approved and webhook sent",
+        message="Платёж подтверждён, webhook отправлен",
     )
 
 
@@ -155,7 +155,7 @@ async def cancel_mock_payment(
     if not payment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Payment {payment_id} not found",
+            detail=f"Платёж {payment_id} не найден",
         )
 
     # Обновляем статус
@@ -170,7 +170,7 @@ async def cancel_mock_payment(
         success=True,
         payment_id=payment_id,
         new_status="canceled",
-        message="Payment canceled and webhook sent",
+        message="Платёж отменён, webhook отправлен",
     )
 
 
@@ -192,7 +192,7 @@ async def send_mock_webhook_endpoint(
     if not payment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Payment {payment_id} not found",
+            detail=f"Платёж {payment_id} не найден",
         )
 
     await send_mock_webhook(payment_id, event)
@@ -203,7 +203,7 @@ async def send_mock_webhook_endpoint(
         success=True,
         payment_id=payment_id,
         new_status=payment["status"],
-        message=f"Webhook sent with event {event}",
+        message=f"Webhook отправлен с событием {event}",
     )
 
 

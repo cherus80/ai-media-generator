@@ -101,7 +101,7 @@ async def login_with_telegram(
     if not settings.TELEGRAM_BOT_TOKEN:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Telegram auth is not configured. Please set TELEGRAM_BOT_TOKEN.",
+            detail="Авторизация через Telegram не настроена. Укажите TELEGRAM_BOT_TOKEN.",
         )
 
     # Валидация initData
@@ -113,7 +113,7 @@ async def login_with_telegram(
     except TelegramInitDataError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid Telegram initData: {str(e)}",
+            detail=f"Некорректные данные Telegram initData: {str(e)}",
         )
 
     created_new_user = False
@@ -128,7 +128,7 @@ async def login_with_telegram(
         if user.is_banned:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="User account is blocked",
+                detail="Аккаунт пользователя заблокирован",
             )
 
         # Обновляем данные существующего пользователя

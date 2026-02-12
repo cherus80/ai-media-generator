@@ -218,7 +218,7 @@ async def create_payment(
                 available_amounts = sorted({pkg.get("credits_amount", 0) for pkg in CREDITS_PACKAGES.values()})
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Invalid credits amount. Available: {available_amounts}",
+                    detail=f"Некорректное количество ⭐️звёзд. Доступные варианты: {available_amounts}",
                 )
 
         # Расчёт стоимости
@@ -293,7 +293,7 @@ async def create_payment(
             logger.error(f"No confirmation_url in YuKassa response: {yukassa_payment}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to get payment confirmation URL",
+                detail="Не удалось получить ссылку подтверждения платежа",
             )
 
         logger.info(
@@ -312,7 +312,7 @@ async def create_payment(
         logger.error(f"YuKassa error: {e}")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Payment service error: {str(e)}",
+            detail=f"Ошибка платёжного сервиса: {str(e)}",
         )
     except ValueError as e:
         logger.error(f"Invalid tariff: {e}")
@@ -352,7 +352,7 @@ async def yukassa_webhook(
             if not x_yookassa_signature:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Missing signature",
+                    detail="Отсутствует подпись",
                 )
             is_valid = yukassa_client.verify_webhook_signature(
                 payload=body_str,
@@ -362,7 +362,7 @@ async def yukassa_webhook(
                 logger.warning("Invalid YuKassa webhook signature")
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Invalid signature",
+                    detail="Некорректная подпись",
                 )
 
         # Парсинг JSON
@@ -467,7 +467,7 @@ async def yukassa_webhook(
     except Exception as e:
         logger.error(f"Webhook processing error: {e}", exc_info=True)
         # Возвращаем 200, чтобы ЮKassa не повторял webhook
-        return {"status": "error", "message": "Internal server error"}
+        return {"status": "error", "message": "Внутренняя ошибка сервера"}
 
 
 @router.get("/history", response_model=PaymentHistoryResponse)
@@ -623,7 +623,7 @@ async def get_payment_status(
     if not payment:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Payment not found",
+            detail="Платёж не найден",
     )
 
     return PaymentStatusResponse(

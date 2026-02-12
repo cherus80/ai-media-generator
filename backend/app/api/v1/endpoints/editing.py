@@ -340,7 +340,7 @@ async def send_message(
             logger.error(f"OpenRouter error: {e}")
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=f"AI service error: {str(e)}"
+                detail=f"Ошибка AI-сервиса: {str(e)}"
             )
 
         # Формируем ответ assistant с промптами
