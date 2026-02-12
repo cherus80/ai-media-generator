@@ -6,7 +6,12 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useExampleGenerationStore } from '../../store/exampleGenerationStore';
 import toast from 'react-hot-toast';
-import { buildImageFilename, downloadImage, resolveAbsoluteUrl } from '../../utils/download';
+import {
+  buildImageFilename,
+  downloadImage,
+  resolveAbsoluteUrl,
+  shareGeneratedImage,
+} from '../../utils/download';
 
 interface ExampleGenerationResultProps {
   onBackToExamples: () => void;
@@ -43,31 +48,27 @@ export const ExampleGenerationResult: React.FC<ExampleGenerationResultProps> = (
   const handleShare = async () => {
     if (!result.image_url) return;
 
-    const shareUrl = resolveAbsoluteUrl(result.image_url);
+    try {
+      const resultType = await shareGeneratedImage({
+        imageUrl: result.image_url,
+        fileBaseName: `example-${result.task_id}`,
+        title: 'Моя генерация по образцу',
+        message: 'Посмотри на мою генерацию по образцу',
+      });
 
-    if (window.Telegram?.WebApp?.openTelegramLink) {
-      const tgLink = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}`;
-      window.Telegram.WebApp.openTelegramLink(tgLink);
-    } else if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Моя генерация по образцу',
-          text: 'Посмотрите на результат генерации по образцу!',
-          url: shareUrl,
-        });
-        toast.success('Успешно поделились!');
-      } catch (error) {
-        if (error) {
-          toast.error('Не удалось поделиться изображением');
-        }
+      if (resultType === 'aborted') {
+        return;
       }
-    } else {
-      try {
-        await navigator.clipboard.writeText(shareUrl);
-        toast.success('Ссылка скопирована в буфер обмена');
-      } catch {
-        toast.error('Не удалось скопировать ссылку');
+
+      if (resultType === 'copied_to_clipboard') {
+        toast.success('Текст, ссылка на приложение и ссылка на изображение скопированы');
+        return;
       }
+
+      toast.success('Успешно поделились!');
+    } catch (error) {
+      console.error('Не удалось поделиться изображением:', error);
+      toast.error('Не удалось поделиться изображением');
     }
   };
 

@@ -7,7 +7,12 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useFittingStore } from '../../store/fittingStore';
 import toast from 'react-hot-toast';
-import { buildImageFilename, downloadImage, resolveAbsoluteUrl } from '../../utils/download';
+import {
+  buildImageFilename,
+  downloadImage,
+  resolveAbsoluteUrl,
+  shareGeneratedImage,
+} from '../../utils/download';
 
 interface FittingResultProps {
   onNewFitting: () => void;
@@ -41,34 +46,27 @@ export const FittingResult: React.FC<FittingResultProps> = ({ onNewFitting }) =>
   const handleShare = async () => {
     if (!result.image_url) return;
 
-    const shareUrl = resolveAbsoluteUrl(result.image_url);
+    try {
+      const resultType = await shareGeneratedImage({
+        imageUrl: result.image_url,
+        fileBaseName: `fitting-${result.task_id}`,
+        title: 'Моя виртуальная примерка',
+        message: 'Посмотри на мою виртуальную примерку',
+      });
 
-    // Telegram WebApp Share
-    if (window.Telegram?.WebApp?.openTelegramLink) {
-      const tgLink = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}`;
-      window.Telegram.WebApp.openTelegramLink(tgLink);
-    } else if (navigator.share) {
-      // Web Share API
-      try {
-        await navigator.share({
-          title: 'Моя примерка',
-          text: 'Посмотрите на мою виртуальную примерку!',
-          url: shareUrl,
-        });
-        toast.success('Успешно поделились!');
-      } catch (error) {
-        if (error) {
-          toast.error('Не удалось поделиться изображением');
-        }
+      if (resultType === 'aborted') {
+        return;
       }
-    } else {
-      // Fallback: copy to clipboard
-      try {
-        await navigator.clipboard.writeText(shareUrl);
-        toast.success('Ссылка скопирована в буфер обмена');
-      } catch {
-        toast.error('Не удалось скопировать ссылку');
+
+      if (resultType === 'copied_to_clipboard') {
+        toast.success('Текст, ссылка на приложение и ссылка на изображение скопированы');
+        return;
       }
+
+      toast.success('Успешно поделились!');
+    } catch (error) {
+      console.error('Не удалось поделиться изображением:', error);
+      toast.error('Не удалось поделиться изображением');
     }
   };
 

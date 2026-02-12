@@ -8,6 +8,8 @@ const PUBLIC_BASE_URL = (
   (typeof window !== 'undefined' ? window.location.origin : '')
 ).replace(/\/$/, '');
 
+const DEFAULT_APP_URL = 'https://ai-generator.mix4.ru';
+
 export const resolveAbsoluteUrl = (url: string): string => {
   if (!url) return '';
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
@@ -103,4 +105,120 @@ export const downloadImage = async (url: string, filename: string): Promise<void
     link.rel = 'noopener noreferrer';
     link.click();
   }
+};
+
+export type ImageShareResult =
+  | 'shared_file'
+  | 'shared_link'
+  | 'telegram_link'
+  | 'copied_to_clipboard'
+  | 'aborted';
+
+interface ShareGeneratedImageParams {
+  imageUrl: string;
+  fileBaseName: string;
+  title: string;
+  message: string;
+}
+
+const getAppUrl = (): string => {
+  if (typeof window !== 'undefined' && window.location.origin) {
+    return window.location.origin;
+  }
+  return DEFAULT_APP_URL;
+};
+
+const isAbortError = (error: unknown): boolean => {
+  if (error instanceof DOMException) {
+    return error.name === 'AbortError';
+  }
+  if (typeof error === 'object' && error !== null && 'name' in error) {
+    return (error as { name?: string }).name === 'AbortError';
+  }
+  return false;
+};
+
+const buildShareMessage = (message: string): string => {
+  const appUrl = getAppUrl();
+  return `${message.trim()}\n${appUrl}`;
+};
+
+const buildShareFile = async (imageUrl: string, fileBaseName: string): Promise<File> => {
+  const targetUrl = resolveAbsoluteUrl(imageUrl);
+  if (!targetUrl) {
+    throw new Error('Пустой URL изображения для шаринга');
+  }
+
+  const response = await fetch(targetUrl, { mode: 'cors', cache: 'no-store' });
+  if (!response.ok) {
+    throw new Error(`Ошибка загрузки изображения: ${response.status}`);
+  }
+
+  const blob = await response.blob();
+  const mimeExtension = blob.type?.split('/')[1]?.split('+')[0] || 'png';
+  const filename = buildImageFilename(targetUrl, fileBaseName, mimeExtension);
+
+  return new File([blob], filename, {
+    type: blob.type || 'image/png',
+  });
+};
+
+export const shareGeneratedImage = async ({
+  imageUrl,
+  fileBaseName,
+  title,
+  message,
+}: ShareGeneratedImageParams): Promise<ImageShareResult> => {
+  const targetImageUrl = resolveAbsoluteUrl(imageUrl);
+  const shareMessage = buildShareMessage(message);
+
+  if (!targetImageUrl) {
+    throw new Error('Пустой URL изображения');
+  }
+
+  if (navigator.share) {
+    if (typeof navigator.canShare === 'function') {
+      try {
+        const file = await buildShareFile(targetImageUrl, fileBaseName);
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title,
+            text: shareMessage,
+            files: [file],
+          });
+          return 'shared_file';
+        }
+      } catch (error) {
+        if (isAbortError(error)) {
+          return 'aborted';
+        }
+        console.error('File sharing is not available, fallback to link sharing:', error);
+      }
+    }
+
+    try {
+      await navigator.share({
+        title,
+        text: shareMessage,
+        url: targetImageUrl,
+      });
+      return 'shared_link';
+    } catch (error) {
+      if (isAbortError(error)) {
+        return 'aborted';
+      }
+      console.error('Link sharing failed, fallback to Telegram or clipboard:', error);
+    }
+  }
+
+  if (window.Telegram?.WebApp?.openTelegramLink) {
+    const tgLink =
+      `https://t.me/share/url?url=${encodeURIComponent(targetImageUrl)}` +
+      `&text=${encodeURIComponent(shareMessage)}`;
+    window.Telegram.WebApp.openTelegramLink(tgLink);
+    return 'telegram_link';
+  }
+
+  await navigator.clipboard.writeText(`${shareMessage}\n${targetImageUrl}`);
+  return 'copied_to_clipboard';
 };

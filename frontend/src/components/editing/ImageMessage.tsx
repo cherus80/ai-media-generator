@@ -6,7 +6,12 @@
 import React from 'react';
 import toast from 'react-hot-toast';
 import type { ChatMessage } from '../../types/editing';
-import { buildImageFilename, downloadImage, resolveAbsoluteUrl } from '../../utils/download';
+import {
+  buildImageFilename,
+  downloadImage,
+  resolveAbsoluteUrl,
+  shareGeneratedImage,
+} from '../../utils/download';
 
 interface ImageMessageProps {
   message: ChatMessage;
@@ -35,72 +40,26 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({ message }) => {
   };
 
   const handleShare = async () => {
-    const shareText = 'Изображение сгенерировано в https://ai-generator.mix4.ru';
-    const shareUrl = resolveAbsoluteUrl(message.image_url!);
-
-    const buildShareFile = async () => {
-      const response = await fetch(shareUrl, { mode: 'cors', cache: 'no-store' });
-      if (!response.ok) {
-        throw new Error(`Ошибка загрузки изображения: ${response.status}`);
-      }
-      const blob = await response.blob();
-      const extension = blob.type?.split('/')[1] || 'png';
-      return new File([blob], `ai-generator-${Date.now()}.${extension}`, {
-        type: blob.type || 'image/png',
-      });
-    };
-
-    if (navigator.share && typeof navigator.canShare === 'function') {
-      try {
-        const file = await buildShareFile();
-        if (navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            title: 'AI Generator',
-            text: shareText,
-            files: [file],
-          });
-          toast.success('Успешно поделились');
-          return;
-        }
-      } catch (error: any) {
-        if (error?.name === 'AbortError') {
-          return;
-        }
-      }
-    }
-
-    const ClipboardCtor = typeof ClipboardItem !== 'undefined' ? ClipboardItem : null;
-    if (navigator.clipboard && 'write' in navigator.clipboard && ClipboardCtor) {
-      try {
-        const file = await buildShareFile();
-        const item = new ClipboardCtor({ [file.type]: file });
-        await navigator.clipboard.write([item]);
-        toast.success('Изображение скопировано в буфер');
-        return;
-      } catch (error) {
-        console.error('Не удалось скопировать изображение в буфер:', error);
-      }
-    }
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'AI Generator',
-          text: shareText,
-        });
-        toast.success('Успешно поделились');
-        return;
-      } catch (error: any) {
-        if (error?.name === 'AbortError') {
-          return;
-        }
-      }
-    }
-
     try {
-      await navigator.clipboard.writeText(shareText);
-      toast.success('Сообщение скопировано в буфер обмена');
-    } catch {
+      const resultType = await shareGeneratedImage({
+        imageUrl: message.image_url!,
+        fileBaseName: `edited-image-${Date.now()}`,
+        title: 'AI Generator',
+        message: 'Посмотри на мое отредактированное фото',
+      });
+
+      if (resultType === 'aborted') {
+        return;
+      }
+
+      if (resultType === 'copied_to_clipboard') {
+        toast.success('Текст, ссылка на приложение и ссылка на изображение скопированы');
+        return;
+      }
+
+      toast.success('Успешно поделились');
+    } catch (error) {
+      console.error('Не удалось поделиться изображением:', error);
       toast.error('Не удалось поделиться изображением');
     }
   };
