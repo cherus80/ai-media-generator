@@ -25,6 +25,14 @@ class TestPydanticSchemas:
 
         assert session.base_image_url == "https://example.com/image.jpg"
 
+    def test_chat_session_create_without_base_image(self):
+        """Тест создания сессии без базового изображения (text-to-image режим)"""
+        from app.schemas.editing import ChatSessionCreate
+
+        session = ChatSessionCreate()
+
+        assert session.base_image_url is None
+
     def test_chat_message_request_valid(self):
         """Тест валидного запроса сообщения"""
         from app.schemas.editing import ChatMessageRequest
@@ -36,6 +44,17 @@ class TestPydanticSchemas:
 
         assert request.session_id == "test-uuid-123"
         assert request.message == "Make the image brighter"
+
+    def test_generate_image_request_allows_missing_session(self):
+        """Тест генерации без session_id (одноразовая text-to-image генерация)"""
+        from app.schemas.editing import GenerateImageRequest
+
+        request = GenerateImageRequest(
+            prompt="Generate a cinematic portrait"
+        )
+
+        assert request.session_id is None
+        assert request.prompt == "Generate a cinematic portrait"
 
     def test_chat_message_response_role_validation(self):
         """Тест валидации роли в ответе"""

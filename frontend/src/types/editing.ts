@@ -20,13 +20,13 @@ export interface ChatAttachment {
 
 // Запрос на создание сессии чата
 export interface ChatSessionCreate {
-  base_image_url: string;
+  base_image_url?: string | null;
 }
 
 // Ответ с созданной сессией
 export interface ChatSessionResponse {
   session_id: string; // UUID
-  base_image_url: string;
+  base_image_url?: string | null;
   created_at: string;
 }
 
@@ -48,7 +48,7 @@ export interface ChatMessageResponse {
 
 // Запрос на генерацию изображения
 export interface GenerateImageRequest {
-  session_id: string;
+  session_id?: string;
   prompt: string;
   attachments?: ChatAttachment[];
   aspect_ratio?: AspectRatio;

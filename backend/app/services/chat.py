@@ -36,7 +36,7 @@ class ChatSessionInactiveError(ChatServiceError):
 async def create_chat_session(
     db: AsyncSession,
     user_id: int,
-    base_image_url: str,
+    base_image_url: Optional[str] = None,
 ) -> ChatHistory:
     """
     Создание новой сессии чата.
@@ -44,7 +44,7 @@ async def create_chat_session(
     Args:
         db: Async database session
         user_id: ID пользователя
-        base_image_url: URL базового изображения для редактирования
+        base_image_url: URL базового изображения для редактирования (опционально)
 
     Returns:
         Созданная ChatHistory instance
@@ -69,7 +69,7 @@ async def create_chat_session(
 
         logger.info(
             f"Created chat session {session_id} for user {user_id} "
-            f"with base image {base_image_url}"
+            f"with base image {base_image_url or 'none'}"
         )
 
         return chat_session

@@ -36,9 +36,9 @@ class ChatAttachment(BaseModel):
 class ChatSessionCreate(BaseModel):
     """Запрос на создание новой сессии чата"""
 
-    base_image_url: str = Field(
-        ...,
-        description="URL базового изображения для редактирования",
+    base_image_url: Optional[str] = Field(
+        default=None,
+        description="URL базового изображения для редактирования (опционально)",
         max_length=500,
     )
 
@@ -50,9 +50,9 @@ class ChatSessionResponse(BaseModel):
         ...,
         description="UUID сессии чата",
     )
-    base_image_url: str = Field(
-        ...,
-        description="URL базового изображения",
+    base_image_url: Optional[str] = Field(
+        None,
+        description="URL базового изображения (если задано)",
     )
     created_at: datetime = Field(
         ...,
@@ -117,9 +117,9 @@ class ChatMessageResponse(BaseModel):
 class GenerateImageRequest(BaseModel):
     """Запрос на генерацию изображения по промпту"""
 
-    session_id: str = Field(
-        ...,
-        description="UUID сессии чата",
+    session_id: Optional[str] = Field(
+        default=None,
+        description="UUID сессии чата (опционально для генерации без истории)",
     )
     prompt: str = Field(
         ...,

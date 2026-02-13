@@ -62,6 +62,7 @@ interface ChatState {
 
   // Actions: инициализация сессии
   uploadAndCreateSession: (file: File) => Promise<void>;
+  createTextSession: () => Promise<void>;
   loadHistory: (sessionId: string) => Promise<void>;
 
   // Actions: работа с чатом
@@ -153,6 +154,10 @@ export const useChatStore = create<ChatState>()(
         base_image_url: uploadResponse.base_image_url,
       });
 
+      if (!uploadResponse.base_image_url) {
+        throw new Error('Сервер не вернул URL загруженного изображения');
+      }
+
       const resolvedUrl = resolveUploadUrl(uploadResponse.base_image_url);
       const finalPreview = shouldUseServerPreview(uploadFile) ? resolvedUrl : preview;
 
@@ -217,7 +222,7 @@ export const useChatStore = create<ChatState>()(
               preview: resolvedBaseUrl,
               file: null,
             }
-          : get().baseImage,
+          : null,
         isLoading: false,
       });
     } catch (error: any) {
@@ -228,6 +233,29 @@ export const useChatStore = create<ChatState>()(
       } else {
         set({ error: errorMessage, isLoading: false });
       }
+      throw error;
+    }
+  },
+
+  // Создание сессии без базового фото (text-to-image режим)
+  createTextSession: async () => {
+    set({ isLoading: true, uploadError: null, error: null });
+
+    try {
+      const sessionResponse = await createChatSession({
+        base_image_url: null,
+      });
+
+      set({
+        sessionId: sessionResponse.session_id,
+        baseImage: null,
+        isSessionActive: true,
+        messages: [],
+        isLoading: false,
+      });
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.detail || error.message || 'Не удалось создать сессию';
+      set({ isLoading: false, error: errorMessage });
       throw error;
     }
   },

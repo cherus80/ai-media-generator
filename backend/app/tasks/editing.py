@@ -75,7 +75,7 @@ def generate_editing_task(
     generation_id: int,
     user_id: int,
     session_id: str,
-    base_image_url: str,
+    base_image_url: str | None,
     prompt: str,
     attachments: list[dict] | None = None,
     primary_provider: str | None = None,
@@ -91,7 +91,7 @@ def generate_editing_task(
         generation_id: ID записи Generation в БД
         user_id: ID пользователя
         session_id: UUID сессии чата
-        base_image_url: URL базового изображения
+        base_image_url: URL базового изображения (опционально для text-to-image)
         prompt: Промпт для редактирования
         attachments: Дополнительные вложения (изображения-референсы)
 
@@ -104,6 +104,7 @@ def generate_editing_task(
         user = None
         service_used = None
         base_image_url_local = base_image_url  # избегаем UnboundLocal при переопределении в блоках ниже
+        base_image_path = None
         attachment_items = attachments or []
         async with async_session() as session:
             try:
@@ -131,66 +132,69 @@ def generate_editing_task(
                     progress=30
                 )
 
-                # Подготовка исходного изображения
-                base_image_id = extract_file_id_from_url(base_image_url_local)
-                base_image_path = get_file_by_id(base_image_id)
-                if not base_image_path:
-                    logger.warning(
-                        "Base image %s not found locally for generation %s, trying to re-download",
-                        base_image_url_local,
-                        generation_id,
-                    )
-                    try:
-                        download_url = to_public_url(base_image_url_local)
-                        raw_bytes, ext, content_type = await download_image_bytes(download_url)
-                        normalized_bytes, normalized_ext = normalize_image_bytes(raw_bytes, ext)
-
-                        file_id, saved_url, _ = await save_upload_file_by_content(
-                            content=normalized_bytes,
-                            user_id=user_id,
-                            filename=f"editing_base_{generation_id}.{normalized_ext}",
-                            content_type=content_type or f"image/{normalized_ext}",
-                        )
-                        base_image_path = get_file_by_id(file_id)
-                        base_image_url_local = saved_url
-
-                        # Синхронизируем base_image_url в чат-сессии, чтобы следующие генерации использовали локальную копию
-                        chat_record = await session.execute(
-                            select(ChatHistory).where(
-                                ChatHistory.session_id == session_id,
-                                ChatHistory.user_id == user_id,
-                            )
-                        )
-                        chat = chat_record.scalar_one_or_none()
-                        if chat:
-                            chat.base_image_url = saved_url
-                            await session.commit()
-
-                        logger.info(
-                            "Re-saved base image for editing generation %s to %s",
-                            generation_id,
+                # Подготовка исходного изображения (опционально)
+                if base_image_url_local:
+                    base_image_id = extract_file_id_from_url(base_image_url_local)
+                    base_image_path = get_file_by_id(base_image_id)
+                    if not base_image_path:
+                        logger.warning(
+                            "Base image %s not found locally for generation %s, trying to re-download",
                             base_image_url_local,
+                            generation_id,
                         )
-                    except Exception as fetch_err:
-                        raise ValueError("Base image not found for editing and re-download failed") from fetch_err
+                        try:
+                            download_url = to_public_url(base_image_url_local)
+                            raw_bytes, ext, content_type = await download_image_bytes(download_url)
+                            normalized_bytes, normalized_ext = normalize_image_bytes(raw_bytes, ext)
 
-                if not base_image_path:
-                    raise ValueError("Base image not found for editing")
+                            file_id, saved_url, _ = await save_upload_file_by_content(
+                                content=normalized_bytes,
+                                user_id=user_id,
+                                filename=f"editing_base_{generation_id}.{normalized_ext}",
+                                content_type=content_type or f"image/{normalized_ext}",
+                            )
+                            base_image_path = get_file_by_id(file_id)
+                            base_image_url_local = saved_url
 
-                # Конвертация iPhone форматов (MPO/HEIC/HEIF) в PNG если необходимо
-                logger.info("Checking if iPhone format conversion is needed...")
-                base_image_path = convert_iphone_format_to_png(base_image_path)
-                base_image_path = ensure_upright_image(base_image_path)
-                logger.info(f"Using base image: {base_image_path.name}")
+                            # Синхронизируем base_image_url в чат-сессии, чтобы следующие генерации использовали локальную копию
+                            chat_record = await session.execute(
+                                select(ChatHistory).where(
+                                    ChatHistory.session_id == session_id,
+                                    ChatHistory.user_id == user_id,
+                                )
+                            )
+                            chat = chat_record.scalar_one_or_none()
+                            if chat:
+                                chat.base_image_url = saved_url
+                                await session.commit()
+
+                            logger.info(
+                                "Re-saved base image for editing generation %s to %s",
+                                generation_id,
+                                base_image_url_local,
+                            )
+                        except Exception as fetch_err:
+                            raise ValueError("Base image not found for editing and re-download failed") from fetch_err
+
+                    if not base_image_path:
+                        raise ValueError("Base image not found for editing")
+
+                    # Конвертация iPhone форматов (MPO/HEIC/HEIF) в PNG если необходимо
+                    logger.info("Checking if iPhone format conversion is needed...")
+                    base_image_path = convert_iphone_format_to_png(base_image_path)
+                    base_image_path = ensure_upright_image(base_image_path)
+                    logger.info(f"Using base image: {base_image_path.name}")
+                else:
+                    logger.info("No base image provided for generation %s (text-to-image mode)", generation_id)
 
                 logger.info(
                     f"Starting image editing for generation {generation_id}, "
                     f"prompt: {prompt[:100]}..."
                 )
 
-                # Определение aspect_ratio: если выбрано auto, берём пропорции base image
+                # Определение aspect_ratio: если base image есть и выбрано auto, берём его пропорции
                 resolved_aspect_ratio = (requested_aspect_ratio or "auto").lower()
-                if resolved_aspect_ratio == "auto":
+                if resolved_aspect_ratio == "auto" and base_image_path is not None:
                     resolved_aspect_ratio = determine_image_size_for_editing(base_image_path)
                     logger.info("Determined aspect ratio for editing: %s", resolved_aspect_ratio)
                 else:
@@ -238,7 +242,11 @@ def generate_editing_task(
                             logger.warning("Failed to convert attachment %s to data URL: %s", att_path, data_err)
 
                 # Публичный URL для kie.ai (требуются HTTP ссылки, не base64)
-                public_base_image_url = to_public_url(base_image_url_local or str(base_image_path))
+                public_base_image_url = (
+                    to_public_url(base_image_url_local)
+                    if base_image_url_local
+                    else None
+                )
 
                 # Обновление прогресса
                 await update_generation_status(
@@ -290,7 +298,12 @@ def generate_editing_task(
                                     progress=actual_progress
                                 )
 
-                            urls = [public_base_image_url, *attachment_public_urls] if attachment_public_urls else [public_base_image_url]
+                            urls: list[str] = []
+                            if public_base_image_url:
+                                urls.append(public_base_image_url)
+                            if attachment_public_urls:
+                                urls.extend(attachment_public_urls)
+                            urls_payload = urls or None
 
                             primary_model = settings.GRS_AI_MODEL
                             fallback_model = settings.GRS_AI_FALLBACK_MODEL
@@ -301,7 +314,7 @@ def generate_editing_task(
                                 try:
                                     result_url = await grs_client.generate_image(
                                         prompt=prompt,
-                                        urls=urls,
+                                        urls=urls_payload,
                                         aspect_ratio=resolved_aspect_ratio,
                                         image_size=settings.GRS_AI_IMAGE_SIZE,
                                         model=primary_model,
@@ -315,7 +328,7 @@ def generate_editing_task(
                                     )
                                     result_url = await grs_client.generate_image(
                                         prompt=prompt,
-                                        urls=urls,
+                                        urls=urls_payload,
                                         aspect_ratio=resolved_aspect_ratio,
                                         image_size=settings.GRS_AI_IMAGE_SIZE,
                                         model=fallback_model,
@@ -357,13 +370,20 @@ def generate_editing_task(
                             async with KieAIClient() as kie_ai_client:
                                 await update_generation_status(session, generation_id, "processing", progress=55)
 
-                                result_url = await kie_ai_client.generate_image_edit(
-                                    base_image_url=public_base_image_url,
-                                    prompt=prompt,
-                                    image_size=resolved_aspect_ratio,
-                                    attachments_urls=attachment_public_urls,
-                                    progress_callback=progress_callback,
-                                )
+                                if public_base_image_url or attachment_public_urls:
+                                    result_url = await kie_ai_client.generate_image_edit(
+                                        base_image_url=public_base_image_url,
+                                        prompt=prompt,
+                                        image_size=resolved_aspect_ratio,
+                                        attachments_urls=attachment_public_urls,
+                                        progress_callback=progress_callback,
+                                    )
+                                else:
+                                    result_url = await kie_ai_client.generate_image_text(
+                                        prompt=prompt,
+                                        image_size=resolved_aspect_ratio,
+                                        progress_callback=progress_callback,
+                                    )
 
                             service_used = "kie_ai"
                             logger.info("kie.ai image editing successful")
@@ -382,6 +402,10 @@ def generate_editing_task(
 
                     elif provider == "openrouter":
                         try:
+                            if base_image_path is None:
+                                generation_errors.append("openrouter: provider requires base image for editing")
+                                logger.warning("Skipping OpenRouter for generation %s without base image", generation_id)
+                                continue
                             if base_image_data is None:
                                 base_image_data = image_to_base64_data_url(base_image_path)
 

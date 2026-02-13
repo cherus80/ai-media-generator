@@ -146,24 +146,54 @@ class KieAIClient:
         task_data = await self._poll_task_until_complete(status_id, progress_callback)
         return self._extract_image_from_result(task_data)
 
+    async def generate_image_text(
+        self,
+        prompt: str,
+        image_size: str = "auto",
+        progress_callback: Optional[callable] = None,
+    ) -> str:
+        logger.info("Starting text-to-image generation: prompt=%s...", prompt[:50])
+
+        if image_size not in self.SUPPORTED_ASPECT_RATIOS:
+            logger.warning("Aspect ratio '%s' unsupported, using 'auto'", image_size)
+            image_size = "auto"
+
+        input_payload = {
+            "aspect_ratio": image_size,
+            "output_format": self.DEFAULT_OUTPUT_FORMAT,
+        }
+
+        task_id, status_id = await self._submit_task(prompt=prompt, input_payload=input_payload)
+        task_data = await self._poll_task_until_complete(status_id, progress_callback)
+        return self._extract_image_from_result(task_data)
+
     async def generate_image_edit(
         self,
-        base_image_url: str,
+        base_image_url: Optional[str],
         prompt: str,
         image_size: str = "auto",
         mask_url: Optional[str] = None,
         progress_callback: Optional[callable] = None,
         attachments_urls: Optional[List[str]] = None,
     ) -> str:
-        logger.info("Starting image edit: base=%s, prompt=%s...", base_image_url, prompt[:50])
+        logger.info("Starting image edit: base=%s, prompt=%s...", base_image_url or "none", prompt[:50])
 
         if image_size not in self.SUPPORTED_ASPECT_RATIOS:
             logger.warning("Aspect ratio '%s' unsupported, using 'auto'", image_size)
             image_size = "auto"
 
-        image_urls: List[str] = [base_image_url]
+        image_urls: List[str] = []
+        if base_image_url:
+            image_urls.append(base_image_url)
         if attachments_urls:
             image_urls.extend(attachments_urls)
+
+        if not image_urls:
+            return await self.generate_image_text(
+                prompt=prompt,
+                image_size=image_size,
+                progress_callback=progress_callback,
+            )
 
         input_payload = {
             "image_input": image_urls,

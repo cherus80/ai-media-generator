@@ -175,7 +175,8 @@ async def upload_attachment(
     status_code=status.HTTP_201_CREATED,
     summary="Создать новую сессию чата",
     description=(
-        "Создаёт новую сессию чата для редактирования изображения.\n\n"
+        "Создаёт новую сессию чата для генерации и редактирования изображений.\n\n"
+        "base_image_url можно не передавать для text-to-image режима.\n\n"
         "Возвращает session_id, который нужно использовать для всех последующих запросов."
     )
 )
@@ -185,10 +186,14 @@ async def create_session(
     db: AsyncSession = Depends(get_db),
 ) -> ChatSessionResponse:
     """
-    Создать новую сессию чата для редактирования изображения.
+    Создать новую сессию чата для генерации и/или редактирования.
     """
     try:
-        base_image_url = normalize_upload_url(request.base_image_url)
+        base_image_url = (
+            normalize_upload_url(request.base_image_url)
+            if request.base_image_url
+            else None
+        )
         chat_session = await create_chat_session(
             db=db,
             user_id=current_user.id,
@@ -390,7 +395,7 @@ async def send_message(
     status_code=status.HTTP_202_ACCEPTED,
     summary="Сгенерировать изображение по промпту",
     description=(
-        "Запускает генерацию отредактированного изображения через OpenRouter API.\n\n"
+        "Запускает генерацию изображения по промпту: можно редактировать фото или генерировать без исходного изображения.\n\n"
         "Стоимость: 1 действие по подписке или 2 ⭐️звезды (списываются после успешной генерации)\n\n"
         "Требуется подтверждённый email для доступа.\n\n"
         "Процесс:\n"
@@ -408,7 +413,7 @@ async def generate_image(
     db: AsyncSession = Depends(get_db),
 ) -> GenerateImageResponse:
     """
-    Сгенерировать отредактированное изображение по промпту.
+    Сгенерировать изображение по промпту (с базовым фото или без него).
     """
     billing_v5_enabled = settings.BILLING_V5_ENABLED
     generation_cost = settings.BILLING_GENERATION_COST_CREDITS if billing_v5_enabled else 2
@@ -436,31 +441,35 @@ async def generate_image(
             )
 
     try:
-        # Проверка существования сессии
-        chat_session = await get_chat_session(
-            db=db,
-            session_id=request.session_id,
-            user_id=current_user.id,
-            require_active=True,
-        )
+        chat_session = None
+        session_id_for_task = request.session_id or str(uuid4())
+        if request.session_id:
+            # Проверка существования сессии, если она передана
+            chat_session = await get_chat_session(
+                db=db,
+                session_id=request.session_id,
+                user_id=current_user.id,
+                require_active=True,
+            )
 
         safe_attachments = _normalize_attachments(request.attachments)
         attachments_payload: list[dict] = []
         if safe_attachments:
             attachments_payload = [att.model_dump() for att in safe_attachments]
 
-        # Добавляем сообщение пользователя в историю (для сохранения истории генераций)
-        try:
-            await add_message(
-                db=db,
-                session_id=request.session_id,
-                user_id=current_user.id,
-                role="user",
-                content=request.prompt,
-                attachments=attachments_payload or None,
-            )
-        except Exception as e:
-            logger.warning("Failed to add user prompt to chat history: %s", e)
+        if request.session_id:
+            # Добавляем сообщение пользователя в историю (для сохранения истории генераций)
+            try:
+                await add_message(
+                    db=db,
+                    session_id=request.session_id,
+                    user_id=current_user.id,
+                    role="user",
+                    content=request.prompt,
+                    attachments=attachments_payload or None,
+                )
+            except Exception as e:
+                logger.warning("Failed to add user prompt to chat history: %s", e)
 
         # Создание записи Generation
         # credits_spent будет установлено в Celery task после успешной генерации
@@ -488,10 +497,10 @@ async def generate_image(
             args=[
                 generation.id,
                 current_user.id,
-                request.session_id,
-                chat_session.base_image_url,
+                session_id_for_task,
+                chat_session.base_image_url if chat_session else None,
                 request.prompt,
-                attachments_payload,
+                attachments_payload or None,
             ],
             kwargs={
                 "primary_provider": primary_provider,
@@ -519,7 +528,7 @@ async def generate_image(
     except ChatSessionNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Сессия чата {request.session_id} не найдена"
+            detail=f"Сессия чата {request.session_id} не найдена",
         )
     except ChatSessionInactiveError:
         raise HTTPException(

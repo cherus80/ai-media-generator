@@ -32,6 +32,7 @@ export const EditingPage: React.FC = () => {
     isSendingMessage,
     isGenerating,
     uploadAndCreateSession,
+    createTextSession,
     loadHistory,
     sendMessage,
     generateImage,
@@ -49,6 +50,7 @@ export const EditingPage: React.FC = () => {
   const promptAssistantModel =
     import.meta.env.VITE_PROMPT_ASSISTANT_MODEL || 'AI-ассистент';
   const [isUploadingImage, setIsUploadingImage] = React.useState(false);
+  const [isStartingTextMode, setIsStartingTextMode] = React.useState(false);
   const [showResetConfirm, setShowResetConfirm] = React.useState(false);
   const [pendingPrompt, setPendingPrompt] = React.useState<string | null>(null);
   const [pendingAttachments, setPendingAttachments] = React.useState<ChatAttachment[]>([]);
@@ -124,6 +126,21 @@ export const EditingPage: React.FC = () => {
       toast.error(err.message || 'Ошибка загрузки изображения');
     } finally {
       setIsUploadingImage(false);
+    }
+  };
+
+  const handleStartTextMode = async () => {
+    setIsStartingTextMode(true);
+    clearError();
+    clearUploadError();
+
+    try {
+      await createTextSession();
+      toast.success('Режим генерации по тексту активирован. Опишите желаемый результат.');
+    } catch (err: any) {
+      toast.error(err.message || 'Не удалось начать режим без фото');
+    } finally {
+      setIsStartingTextMode(false);
     }
   };
 
@@ -330,13 +347,13 @@ export const EditingPage: React.FC = () => {
     }
   };
 
-  const hasActiveSession = sessionId && baseImage;
+  const hasActiveSession = Boolean(sessionId);
 
   return (
     <AuthGuard>
       <Layout
-        title="AI Редактор"
-        subtitle="Умный ассистент для фото"
+        title="Генерация и редактирование фото"
+        subtitle="По фото или с нуля по тексту"
         gradient="from-pink-500 to-orange-500"
         icon={
           <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -398,7 +415,7 @@ export const EditingPage: React.FC = () => {
                   transition={{ delay: 0.2 }}
                   className="text-3xl font-bold gradient-text mb-3"
                 >
-                  Загрузите изображение
+                  Загрузите изображение или начните с текста
                 </motion.h2>
                 <motion.p
                   initial={{ opacity: 0, y: 20 }}
@@ -406,7 +423,7 @@ export const EditingPage: React.FC = () => {
                   transition={{ delay: 0.3 }}
                   className="text-dark-600 text-lg"
                 >
-                  Выберите фотографию, которую хотите отредактировать с помощью AI
+                  Редактируйте существующее фото или генерируйте новое по текстовому описанию
                 </motion.p>
               </div>
 
@@ -421,18 +438,30 @@ export const EditingPage: React.FC = () => {
                       Промпт из примера уже добавлен
                     </p>
                     <p className="text-dark-600">
-                      Загрузите фото, чтобы перейти к редактированию. При необходимости промпт можно изменить.
+                      Загрузите фото или начните без фото. При необходимости промпт можно изменить.
                     </p>
                   </div>
                 )}
                 <FileUpload
                   onFileSelect={handleFileSelect}
-                  isLoading={isUploadingImage}
+                  isLoading={isUploadingImage || isStartingTextMode}
                   error={uploadError}
                   maxSize={40 * 1024 * 1024}
-                  label="Базовое изображение"
+                  label="Базовое изображение (необязательно)"
                   hint="JPEG / PNG / WebP / HEIC, до 40MB (если файл больше 9MB — сожмём автоматически)."
                 />
+                <div className="mt-4">
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={handleStartTextMode}
+                    isLoading={isStartingTextMode}
+                    disabled={isUploadingImage || isStartingTextMode}
+                    fullWidth
+                  >
+                    Начать без фото (генерация по тексту)
+                  </Button>
+                </div>
               </motion.div>
 
               {/* Info cards */}
@@ -454,7 +483,7 @@ export const EditingPage: React.FC = () => {
                     <div className="flex-1">
                       <h3 className="text-base font-bold text-dark-900 mb-2">AI-ассистент</h3>
                       <p className="text-sm text-dark-600">
-                        Опишите изменения и при желании прикрепите референсы. Можно отправить промпт как есть или улучшить его через AI (рекомендуем {promptAssistantModel}, списывает 1 ⭐️звезду).
+                        Опишите задачу и при желании прикрепите референсы. Можно генерировать по тексту с нуля или редактировать загруженное фото. Промпт можно отправить как есть или улучшить через AI (рекомендуем {promptAssistantModel}, списывает 1 ⭐️звезду).
                       </p>
                     </div>
                   </div>
@@ -512,7 +541,7 @@ export const EditingPage: React.FC = () => {
               <ChatInput
                 onSend={handlePromptSubmit}
                 disabled={isSendingMessage || isGenerating || decisionLoadingTarget !== null}
-                placeholder="Опишите изменение..."
+                placeholder="Опишите задачу для генерации или редактирования..."
                 prefillMessage={prefillMessage}
                 aspectRatio={aspectRatio}
                 onAspectRatioChange={setAspectRatio}

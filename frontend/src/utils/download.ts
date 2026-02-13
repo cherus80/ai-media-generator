@@ -144,13 +144,25 @@ const buildShareMessage = (message: string): string => {
 };
 
 const buildTelegramShareLink = (imageUrl: string, message: string): string => {
-  const appUrl = getAppUrl();
-  // В Telegram важен порядок ссылок: сначала ссылка на изображение в тексте,
-  // чтобы превью/медиа формировалось по нему, а ссылка на приложение оставалась вторичной.
-  const telegramText = `${message.trim()}\n${imageUrl}`;
+  const telegramText = buildShareMessage(message);
+  // Для корректного предпросмотра изображения в Telegram URL изображения передаём в `url`.
+  // Тогда в одном сообщении отображается картинка + подпись из `text`.
   return (
-    `https://t.me/share/url?url=${encodeURIComponent(appUrl)}` +
+    `https://t.me/share/url?url=${encodeURIComponent(imageUrl)}` +
     `&text=${encodeURIComponent(telegramText)}`
+  );
+};
+
+const isTelegramRuntime = (): boolean => {
+  const webApp = window.Telegram?.WebApp;
+  if (!webApp) {
+    return false;
+  }
+  return Boolean(
+    webApp.initData ||
+      webApp.initDataUnsafe ||
+      webApp.openTelegramLink ||
+      webApp.openLink
   );
 };
 
@@ -187,14 +199,19 @@ export const shareGeneratedImage = async ({
     throw new Error('Пустой URL изображения');
   }
 
-  if (window.Telegram?.WebApp?.openTelegramLink) {
-    try {
-      const tgLink = buildTelegramShareLink(targetImageUrl, message);
-      window.Telegram.WebApp.openTelegramLink(tgLink);
+  if (isTelegramRuntime()) {
+    const tgLink = buildTelegramShareLink(targetImageUrl, message);
+    const webApp = window.Telegram?.WebApp;
+    if (webApp?.openTelegramLink) {
+      webApp.openTelegramLink(tgLink);
       return 'telegram_link';
-    } catch (error) {
-      console.error('Telegram share link failed, fallback to Web Share API:', error);
     }
+    if (webApp?.openLink) {
+      webApp.openLink(tgLink);
+      return 'telegram_link';
+    }
+    window.open(tgLink, '_blank', 'noopener,noreferrer');
+    return 'telegram_link';
   }
 
   if (navigator.share) {
@@ -232,11 +249,13 @@ export const shareGeneratedImage = async ({
     }
   }
 
-  if (window.Telegram?.WebApp?.openTelegramLink) {
-    const tgLink =
-      `https://t.me/share/url?url=${encodeURIComponent(targetImageUrl)}` +
-      `&text=${encodeURIComponent(shareMessage)}`;
-    window.Telegram.WebApp.openTelegramLink(tgLink);
+  if (window.Telegram?.WebApp?.openTelegramLink || window.Telegram?.WebApp?.openLink) {
+    const tgLink = buildTelegramShareLink(targetImageUrl, message);
+    if (window.Telegram?.WebApp?.openTelegramLink) {
+      window.Telegram.WebApp.openTelegramLink(tgLink);
+    } else {
+      window.Telegram?.WebApp?.openLink?.(tgLink);
+    }
     return 'telegram_link';
   }
 
