@@ -51,6 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Legacy endpoint `POST /api/v1/auth/telegram` теперь отклоняет вход для заблокированных пользователей (`403 User account is blocked`), чтобы бан применялся ко всем каналам авторизации.
 - В API-клиенте фронтенда добавлена обработка `403` с признаками блокировки (`blocked`/`banned`): сессия очищается и пользователь переходит на повторный вход.
 - Унифицирован шаринг результатов генерации: в примерке, редакторе фото и генерации по образцу приоритетно отправляется файл изображения (через Web Share API), а в fallback добавляется текст и ссылка на приложение.
+- Исправлен Telegram-шаринг результатов: для Telegram Mini App используется отдельный `t.me/share/url` flow с приоритетом изображения в сообщении, чтобы подпись не отрывалась в отдельный пост и не тянулось лишнее превью приложения.
 - Исправлен `backend/app/api/v1/endpoints/auth.py`: устранена синтаксическая ошибка импорта, восстановлена компиляция backend и корректная маркировка legacy Telegram-пользователей (`auth_provider=telegram`).
 - Прод-конфиг фронтенда дополнен недостающими переменными OAuth (`VITE_YANDEX_CLIENT_ID`, `VITE_YANDEX_REDIRECT_URI`, `VITE_TELEGRAM_BOT_NAME`) в `Dockerfile.prod`, `docker-compose.prod.yml` и `.env.example`.
 - Обновлён CSP в `Caddyfile` и `nginx/ai-image-bot.conf`: добавлены разрешения `telegram.org`/`oauth.telegram.org` для Telegram Login Widget (скрипт и iframe больше не блокируются).

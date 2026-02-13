@@ -143,6 +143,17 @@ const buildShareMessage = (message: string): string => {
   return `${message.trim()}\n${appUrl}`;
 };
 
+const buildTelegramShareLink = (imageUrl: string, message: string): string => {
+  const appUrl = getAppUrl();
+  // В Telegram важен порядок ссылок: сначала ссылка на изображение в тексте,
+  // чтобы превью/медиа формировалось по нему, а ссылка на приложение оставалась вторичной.
+  const telegramText = `${message.trim()}\n${imageUrl}`;
+  return (
+    `https://t.me/share/url?url=${encodeURIComponent(appUrl)}` +
+    `&text=${encodeURIComponent(telegramText)}`
+  );
+};
+
 const buildShareFile = async (imageUrl: string, fileBaseName: string): Promise<File> => {
   const targetUrl = resolveAbsoluteUrl(imageUrl);
   if (!targetUrl) {
@@ -174,6 +185,16 @@ export const shareGeneratedImage = async ({
 
   if (!targetImageUrl) {
     throw new Error('Пустой URL изображения');
+  }
+
+  if (window.Telegram?.WebApp?.openTelegramLink) {
+    try {
+      const tgLink = buildTelegramShareLink(targetImageUrl, message);
+      window.Telegram.WebApp.openTelegramLink(tgLink);
+      return 'telegram_link';
+    } catch (error) {
+      console.error('Telegram share link failed, fallback to Web Share API:', error);
+    }
   }
 
   if (navigator.share) {
