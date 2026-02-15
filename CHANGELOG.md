@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Добавлена A/B-аналитика SEO-вариантов карточек примеров: в БД созданы `generation_example_variant_stats` и поле `generation_examples.seo_variant_index`; считаются просмотры SEO-деталки (`source=seo_detail`) и переходы в генерацию по варианту.
+- Добавлен event log `generation_example_variant_events` и admin endpoint `GET /api/v1/admin/examples/variant-report` с фильтрами `source/date_from/date_to` для отчёта по A/B-конверсии.
 - В `POST /api/v1/admin/examples/seo-suggestions` добавлена генерация 3 SEO-вариантов (`variants`) с `selected_index`; в админке примеров реализован селектор A/B/C для переключения вариантов slug/description/SEO-полей перед сохранением.
 - Добавлен endpoint `POST /api/v1/admin/examples/seo-suggestions`: генерация SEO-полей и FAQ для карточек примеров через OpenRouter (`OPENROUTER_PROMPT_MODEL`) с автоматическим fallback на локальный шаблон при недоступности модели.
 - В админке примеров добавлены SEO-поля (`slug`, описание, `SEO title`, `SEO description`) и кнопки автозаполнения SEO-контента при создании/редактировании карточки.

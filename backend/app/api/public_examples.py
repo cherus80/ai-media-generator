@@ -19,7 +19,7 @@ from sqlalchemy.orm import selectinload
 from app.core.config import settings
 from app.db.session import get_db
 from app.models import GenerationExample, GenerationExampleSlug, GenerationExampleTag
-from app.services.example_analytics import increment_variant_metric, normalize_source, normalize_variant_index
+from app.services.example_analytics import normalize_source, normalize_variant_index, track_variant_event
 
 router = APIRouter()
 
@@ -264,12 +264,12 @@ async def public_example_detail(
     tag_names = [tag.tag for tag in item.tags]
 
     try:
-        await increment_variant_metric(
+        await track_variant_event(
             db,
             example_id=item.id,
             source=normalize_source("seo_detail"),
             seo_variant_index=variant_index,
-            metric="views",
+            event_type="view",
         )
     except Exception:
         pass

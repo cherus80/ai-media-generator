@@ -7,11 +7,13 @@ import {
   deleteExample,
   uploadExampleImage,
   getExampleSeoSuggestions,
+  getExampleVariantReport,
 } from '../../api/admin';
 import { getExampleTags } from '../../api/content';
 import { FileUpload } from '../common/FileUpload';
 import type {
   GenerationExampleAdminItem,
+  GenerationExampleVariantReportResponse,
   GenerationExampleSeoSuggestionVariant,
 } from '../../types/content';
 import { getUploadErrorMessage } from '../../utils/uploadErrors';
@@ -61,6 +63,13 @@ const truncate = (value: string, max: number): string => {
     return normalized;
   }
   return normalized.slice(0, max - 1).trimEnd() + '…';
+};
+
+const toDateInputValue = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 const extractTitleFromPrompt = (prompt: string): string => {
@@ -296,6 +305,15 @@ export const ExamplesManager: React.FC = () => {
   const [newSelectedVariantIndex, setNewSelectedVariantIndex] = useState(0);
   const [itemSeoVariants, setItemSeoVariants] = useState<Record<number, GenerationExampleSeoSuggestionVariant[]>>({});
   const [itemSelectedVariantIndex, setItemSelectedVariantIndex] = useState<Record<number, number>>({});
+  const [reportSource, setReportSource] = useState('all');
+  const [reportDateFrom, setReportDateFrom] = useState(() => {
+    const date = new Date();
+    date.setDate(date.getDate() - 30);
+    return toDateInputValue(date);
+  });
+  const [reportDateTo, setReportDateTo] = useState(() => toDateInputValue(new Date()));
+  const [reportLoading, setReportLoading] = useState(false);
+  const [variantReport, setVariantReport] = useState<GenerationExampleVariantReportResponse | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -341,6 +359,31 @@ export const ExamplesManager: React.FC = () => {
 
   useEffect(() => {
     loadTags();
+  }, []);
+
+  const loadVariantReport = async () => {
+    if (reportDateFrom && reportDateTo && reportDateFrom > reportDateTo) {
+      toast.error('Дата "с" не может быть больше даты "по"');
+      return;
+    }
+    setReportLoading(true);
+    try {
+      const report = await getExampleVariantReport({
+        source: reportSource !== 'all' ? reportSource : undefined,
+        date_from: reportDateFrom || undefined,
+        date_to: reportDateTo || undefined,
+        limit: 200,
+      });
+      setVariantReport(report);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || 'Не удалось загрузить A/B отчет');
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadVariantReport();
   }, []);
 
   const handleUpload = async (file: File, target: number | 'new') => {
@@ -422,6 +465,7 @@ export const ExamplesManager: React.FC = () => {
       setNewPublished(true);
       setNewSeoVariants([]);
       setNewSelectedVariantIndex(0);
+      loadVariantReport().catch(() => undefined);
       toast.success('Пример добавлен');
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || 'Не удалось добавить пример');
@@ -467,6 +511,7 @@ export const ExamplesManager: React.FC = () => {
         ...prev,
         [item.id]: updated.seo_variant_index ?? selectedVariantIndex,
       }));
+      loadVariantReport().catch(() => undefined);
       toast.success('Сохранено');
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || 'Не удалось сохранить');
@@ -493,6 +538,7 @@ export const ExamplesManager: React.FC = () => {
         delete next[item.id];
         return next;
       });
+      loadVariantReport().catch(() => undefined);
       toast.success('Пример удален');
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || 'Не удалось удалить');
@@ -848,6 +894,109 @@ export const ExamplesManager: React.FC = () => {
           </div>
         </div>
       )}
+
+      <div className="bg-white rounded-xl shadow p-6 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">A/B отчет SEO-вариантов</h3>
+            <p className="text-sm text-gray-600">
+              Фильтры по источнику и периоду, метрики просмотров карточки и переходов в генерацию.
+            </p>
+          </div>
+          <button
+            onClick={loadVariantReport}
+            disabled={reportLoading}
+            className="px-4 py-2 rounded-lg bg-slate-800 text-white text-sm font-semibold hover:bg-slate-900 disabled:opacity-60"
+          >
+            {reportLoading ? 'Загрузка...' : 'Обновить отчет'}
+          </button>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-4">
+          <div>
+            <label className="text-xs font-semibold text-gray-600">Источник</label>
+            <select
+              value={reportSource}
+              onChange={(e) => setReportSource(e.target.value)}
+              className="mt-1 w-full border rounded-lg px-3 py-2 text-sm bg-white"
+            >
+              <option value="all">Все источники</option>
+              <option value="seo_detail">SEO детальная</option>
+              <option value="app_home">Приложение: главная</option>
+              <option value="app_examples">Приложение: каталог</option>
+              <option value="unknown">Unknown</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-600">Дата с</label>
+            <input
+              type="date"
+              value={reportDateFrom}
+              onChange={(e) => setReportDateFrom(e.target.value)}
+              className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-600">Дата по</label>
+            <input
+              type="date"
+              value={reportDateTo}
+              onChange={(e) => setReportDateTo(e.target.value)}
+              className="mt-1 w-full border rounded-lg px-3 py-2 text-sm"
+            />
+          </div>
+          <div className="rounded-lg border bg-slate-50 px-3 py-2">
+            <p className="text-xs text-slate-500">Сводка</p>
+            <p className="text-sm font-semibold text-slate-800">
+              Просмотры: {variantReport?.total_views ?? 0} · Переходы: {variantReport?.total_starts ?? 0}
+            </p>
+            <p className="text-xs text-slate-600">
+              CR: {((variantReport?.average_conversion_rate ?? 0) * 100).toFixed(1)}%
+            </p>
+          </div>
+        </div>
+
+        {!reportLoading && (!variantReport || variantReport.items.length === 0) && (
+          <div className="text-sm text-slate-500 rounded-lg border border-dashed border-slate-200 p-4">
+            Нет данных за выбранный период.
+          </div>
+        )}
+
+        {variantReport && variantReport.items.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-gray-500 uppercase border-b">
+                  <th className="py-2 pr-3">Пример</th>
+                  <th className="py-2 pr-3">Source</th>
+                  <th className="py-2 pr-3">Вариант</th>
+                  <th className="py-2 pr-3">Просмотры</th>
+                  <th className="py-2 pr-3">Переходы</th>
+                  <th className="py-2 pr-3">CR</th>
+                </tr>
+              </thead>
+              <tbody>
+                {variantReport.items.map((row) => (
+                  <tr
+                    key={`report-${row.example_id}-${row.source}-${row.seo_variant_index}`}
+                    className="border-b last:border-0"
+                  >
+                    <td className="py-2 pr-3 text-gray-800">
+                      <div className="font-medium">{row.title || 'Без названия'}</div>
+                      <div className="text-xs text-gray-500">/{row.slug}</div>
+                    </td>
+                    <td className="py-2 pr-3 text-gray-700">{row.source}</td>
+                    <td className="py-2 pr-3 text-gray-700">#{row.seo_variant_index + 1}</td>
+                    <td className="py-2 pr-3 text-gray-700">{row.views_count}</td>
+                    <td className="py-2 pr-3 text-gray-700">{row.starts_count}</td>
+                    <td className="py-2 pr-3 text-gray-700">{(row.conversion_rate * 100).toFixed(1)}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       {loading ? (
         <div className="bg-white rounded-xl shadow p-6 animate-pulse space-y-3">

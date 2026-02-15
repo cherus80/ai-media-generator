@@ -41,6 +41,7 @@ import type {
   GenerationExampleUpdateRequest,
   GenerationExampleSeoSuggestionRequest,
   GenerationExampleSeoSuggestionResponse,
+  GenerationExampleVariantReportResponse,
 } from '../types/content';
 
 // ============================================================================
@@ -341,6 +342,19 @@ export const deleteInstruction = async (instructionId: number): Promise<void> =>
 
 export const getAdminExamples = async (): Promise<GenerationExampleAdminListResponse> => {
   const response = await apiClient.get<GenerationExampleAdminListResponse>('/api/v1/admin/examples');
+  return response.data;
+};
+
+export const getExampleVariantReport = async (params?: {
+  source?: string;
+  date_from?: string;
+  date_to?: string;
+  limit?: number;
+}): Promise<GenerationExampleVariantReportResponse> => {
+  const response = await apiClient.get<GenerationExampleVariantReportResponse>(
+    '/api/v1/admin/examples/variant-report',
+    { params: params || {} }
+  );
   return response.data;
 };
 

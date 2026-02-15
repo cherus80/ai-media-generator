@@ -168,6 +168,28 @@ class GenerationExampleSeoSuggestionResponse(BaseModel):
     variants: list[GenerationExampleSeoSuggestionVariant] = Field(default_factory=list)
 
 
+class GenerationExampleVariantReportItem(BaseModel):
+    example_id: int
+    slug: str
+    title: Optional[str] = None
+    source: str
+    seo_variant_index: int
+    views_count: int = 0
+    starts_count: int = 0
+    conversion_rate: float = 0.0
+
+
+class GenerationExampleVariantReportResponse(BaseModel):
+    items: list[GenerationExampleVariantReportItem]
+    total: int
+    source: Optional[str] = None
+    date_from: Optional[str] = None
+    date_to: Optional[str] = None
+    total_views: int = 0
+    total_starts: int = 0
+    average_conversion_rate: float = 0.0
+
+
 class GenerationExampleUseRequest(BaseModel):
     seo_variant_index: Optional[int] = Field(default=None, ge=0, le=99)
     source: Optional[str] = Field(default=None, max_length=40)

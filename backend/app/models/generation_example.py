@@ -53,6 +53,12 @@ class GenerationExample(Base, TimestampMixin):
         cascade="all, delete-orphan",
         lazy="selectin",
     )
+    variant_events = relationship(
+        "GenerationExampleVariantEvent",
+        back_populates="example",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<GenerationExample id={self.id} uses={self.uses_count}>"
@@ -130,4 +136,29 @@ class GenerationExampleVariantStat(Base, TimestampMixin):
             "<GenerationExampleVariantStat "
             f"example_id={self.example_id} source={self.source!r} variant={self.seo_variant_index} "
             f"views={self.views_count} starts={self.starts_count}>"
+        )
+
+
+class GenerationExampleVariantEvent(Base, TimestampMixin):
+    """
+    Событие аналитики по варианту SEO-карточки.
+    """
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    example_id: Mapped[int] = mapped_column(
+        ForeignKey("generation_examples.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    source: Mapped[str] = mapped_column(String(40), nullable=False, server_default="unknown", index=True)
+    seo_variant_index: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0", index=True)
+    event_type: Mapped[str] = mapped_column(String(16), nullable=False, index=True)
+
+    example = relationship("GenerationExample", back_populates="variant_events", lazy="joined")
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return (
+            "<GenerationExampleVariantEvent "
+            f"example_id={self.example_id} source={self.source!r} variant={self.seo_variant_index} "
+            f"event_type={self.event_type!r}>"
         )

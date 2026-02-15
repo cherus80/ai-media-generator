@@ -2,6 +2,7 @@
 Админские endpoints для инструкций и примеров генераций.
 """
 
+from datetime import date, datetime, time, timezone
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query, status, File, UploadFile
@@ -23,11 +24,17 @@ from app.schemas.content import (
     GenerationExampleUpdateRequest,
     GenerationExampleSeoSuggestionRequest,
     GenerationExampleSeoSuggestionResponse,
+    GenerationExampleVariantReportItem,
+    GenerationExampleVariantReportResponse,
     GenerationExampleVariantStatItem,
 )
 from app.services.file_storage import save_raw_upload_file, save_upload_file
 from app.services.file_validator import validate_video_file, validate_image_file
-from app.services.example_analytics import load_variant_stats_map
+from app.services.example_analytics import (
+    get_variant_report_rows,
+    load_variant_stats_map,
+    normalize_source,
+)
 from app.services.example_seo import generate_example_seo_suggestions
 from app.utils.slug import generate_unique_slug
 
@@ -349,6 +356,51 @@ async def list_examples(
             for item in items
         ],
         total=len(items),
+    )
+
+
+@router.get("/examples/variant-report", response_model=GenerationExampleVariantReportResponse)
+async def get_example_variant_report(
+    _admin: AdminOrService,
+    db: DBSession,
+    source: Optional[str] = Query(default=None, max_length=40),
+    date_from: Optional[date] = Query(default=None),
+    date_to: Optional[date] = Query(default=None),
+    limit: int = Query(default=200, ge=1, le=500),
+) -> GenerationExampleVariantReportResponse:
+    if date_from and date_to and date_from > date_to:
+        raise HTTPException(status_code=400, detail="date_from не может быть больше date_to")
+
+    normalized_source: str | None
+    if source and source.strip().lower() not in {"all", "*"}:
+        normalized_source = normalize_source(source)
+    else:
+        normalized_source = None
+
+    from_dt = datetime.combine(date_from, time.min, tzinfo=timezone.utc) if date_from else None
+    to_dt = datetime.combine(date_to, time.min, tzinfo=timezone.utc) if date_to else None
+
+    rows = await get_variant_report_rows(
+        db,
+        source=normalized_source,
+        date_from=from_dt,
+        date_to=to_dt,
+        limit=limit,
+    )
+    items = [GenerationExampleVariantReportItem(**row) for row in rows]
+    total_views = sum(item.views_count for item in items)
+    total_starts = sum(item.starts_count for item in items)
+    average_conversion_rate = float(total_starts / total_views) if total_views > 0 else 0.0
+
+    return GenerationExampleVariantReportResponse(
+        items=items,
+        total=len(items),
+        source=normalized_source,
+        date_from=date_from.isoformat() if date_from else None,
+        date_to=date_to.isoformat() if date_to else None,
+        total_views=total_views,
+        total_starts=total_starts,
+        average_conversion_rate=round(average_conversion_rate, 4),
     )
 
 

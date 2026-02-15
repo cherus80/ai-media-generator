@@ -22,9 +22,9 @@ from app.schemas.content import (
     ExampleTagItem,
 )
 from app.services.example_analytics import (
-    increment_variant_metric,
     normalize_source,
     normalize_variant_index,
+    track_variant_event,
 )
 
 router = APIRouter()
@@ -180,12 +180,12 @@ async def increment_example_use(
         fallback=row[1],
     )
     effective_source = normalize_source(payload.source if payload else None)
-    await increment_variant_metric(
+    await track_variant_event(
         db,
         example_id=example_id,
         source=effective_source,
         seo_variant_index=effective_variant,
-        metric="starts",
+        event_type="start",
     )
 
     await db.commit()

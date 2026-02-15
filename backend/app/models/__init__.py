@@ -20,6 +20,7 @@ from app.models.generation_example import (
     GenerationExampleTag,
     GenerationExampleSlug,
     GenerationExampleVariantStat,
+    GenerationExampleVariantEvent,
 )
 from app.models.notification import Notification
 
@@ -47,5 +48,6 @@ __all__ = [
     "GenerationExampleTag",
     "GenerationExampleSlug",
     "GenerationExampleVariantStat",
+    "GenerationExampleVariantEvent",
     "Notification",
 ]

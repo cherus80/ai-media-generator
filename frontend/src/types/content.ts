@@ -157,6 +157,28 @@ export interface GenerationExampleVariantStatItem {
   conversion_rate: number;
 }
 
+export interface GenerationExampleVariantReportItem {
+  example_id: number;
+  slug: string;
+  title?: string | null;
+  source: string;
+  seo_variant_index: number;
+  views_count: number;
+  starts_count: number;
+  conversion_rate: number;
+}
+
+export interface GenerationExampleVariantReportResponse {
+  items: GenerationExampleVariantReportItem[];
+  total: number;
+  source?: string | null;
+  date_from?: string | null;
+  date_to?: string | null;
+  total_views: number;
+  total_starts: number;
+  average_conversion_rate: number;
+}
+
 export interface GenerationExampleUseRequest {
   seo_variant_index?: number;
   source?: string;
