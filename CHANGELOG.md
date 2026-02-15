@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- В админке примеров добавлены SEO-поля (`slug`, описание, `SEO title`, `SEO description`) и кнопки автозаполнения SEO-контента при создании/редактировании карточки.
 - SEO-витрина примеров: публичный каталог `/examples`, отдельные страницы `/examples/<slug>`, динамический `sitemap.xml`, OG/Twitter meta-теги и backend-render для корректного индексирования и превью в соцсетях.
 - Для примеров генераций добавлены `slug` с историей (301-редиректы со старых slug), а также SEO-поля (`description`, `seo_title`, `seo_description`) и endpoint `GET /api/v1/content/examples/by-slug/{slug}`.
 - Для автоматизации карточек примеров добавлен admin service-token доступ через заголовок `X-Admin-Api-Key` (настройка `ADMIN_SERVICE_TOKENS`) в CRUD/загрузке примеров.
@@ -32,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Telegram-оповещения об ошибках backend/Celery (опционально, с лимитом по частоте).
 
 ### Changed
+- Публичная страница `/examples/<slug>` расширена SEO-контентом: блок "Как подготовить фото", FAQ, блок "Похожие примеры" и JSON-LD (`WebPage` + `FAQPage`).
 - Режим "Редактирование фото" переименован в "Генерация и редактирование фото" в ключевых пользовательских экранах (`Home`, `Editing`, `About`, `Landing`), включая обновлённые описания сценариев (с фото и без фото).
 - Backend-задача `generate_editing_task` теперь корректно обрабатывает text-only генерацию: `base_image_url` стал опциональным, для GrsAI/KieAI передаются входы по факту наличия изображений, а OpenRouter пропускается без базового фото.
 - Для ошибки блокировки аккаунта на странице входа добавлен специальный текст про подозрение на мультиаккаунтинг с кликабельной ссылкой `MAX` для обжалования.

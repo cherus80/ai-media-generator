@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import datetime
 from html import escape
 from urllib.parse import quote
@@ -17,7 +18,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.config import settings
 from app.db.session import get_db
-from app.models import GenerationExample, GenerationExampleSlug
+from app.models import GenerationExample, GenerationExampleSlug, GenerationExampleTag
 
 router = APIRouter()
 
@@ -49,7 +50,17 @@ def _render_layout(
     canonical: str,
     og_image: str,
     body: str,
+    json_ld: dict | None = None,
 ) -> str:
+    json_ld_block = ""
+    if json_ld:
+        json_payload = json.dumps(json_ld, ensure_ascii=False).replace("</", "<\\/")
+        json_ld_block = (
+            '<script type="application/ld+json">'
+            + json_payload
+            + "</script>"
+        )
+
     return f"""<!doctype html>
 <html lang="ru">
 <head>
@@ -68,6 +79,7 @@ def _render_layout(
   <meta name="twitter:title" content="{escape(title)}" />
   <meta name="twitter:description" content="{escape(description)}" />
   <meta name="twitter:image" content="{escape(og_image)}" />
+  {json_ld_block}
   <style>
     :root {{ color-scheme: light; }}
     body {{
@@ -119,6 +131,13 @@ def _render_layout(
       font-size: 12px;
       font-weight: 600;
     }}
+    .section {{ margin-top: 24px; }}
+    .section-title {{ font-size: 20px; font-weight: 800; margin: 0 0 12px; }}
+    .faq-list {{ display: grid; gap: 10px; }}
+    .faq-item {{ background: #fff; border-radius: 12px; border: 1px solid rgba(15, 23, 42, 0.08); padding: 12px; }}
+    .faq-item h3 {{ margin: 0 0 6px; font-size: 16px; }}
+    .faq-item p {{ margin: 0; color: #334155; line-height: 1.45; font-size: 14px; }}
+    .tips-list {{ margin: 0; padding-left: 18px; color: #334155; line-height: 1.5; font-size: 14px; }}
   </style>
 </head>
 <body>
@@ -181,6 +200,13 @@ async def public_examples_catalog(
         canonical=canonical,
         og_image=_app_url("/logo.png"),
         body=body,
+        json_ld={
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            "name": "Примеры генераций AI",
+            "url": canonical,
+            "inLanguage": "ru-RU",
+        },
     )
     return HTMLResponse(content=page)
 
@@ -233,6 +259,72 @@ async def public_example_detail(
     image_url = _resolve_public_image(item.image_url)
     tags_html = "".join(f'<span class="tag">{escape(tag.tag)}</span>' for tag in item.tags[:10])
     cta_href = f"/app/examples/generate?example={quote(item.slug)}"
+    tag_names = [tag.tag for tag in item.tags]
+
+    if tag_names:
+        similar_stmt = (
+            sa.select(GenerationExample)
+            .join(GenerationExampleTag, GenerationExampleTag.example_id == GenerationExample.id)
+            .where(
+                GenerationExample.is_published.is_(True),
+                GenerationExample.id != item.id,
+                GenerationExampleTag.tag.in_(tag_names),
+            )
+            .group_by(GenerationExample.id)
+            .order_by(
+                sa.func.count(sa.distinct(GenerationExampleTag.tag)).desc(),
+                GenerationExample.uses_count.desc(),
+                GenerationExample.created_at.desc(),
+            )
+            .limit(4)
+            .options(selectinload(GenerationExample.tags))
+        )
+    else:
+        similar_stmt = (
+            sa.select(GenerationExample)
+            .where(
+                GenerationExample.is_published.is_(True),
+                GenerationExample.id != item.id,
+            )
+            .order_by(GenerationExample.uses_count.desc(), GenerationExample.created_at.desc())
+            .limit(4)
+            .options(selectinload(GenerationExample.tags))
+        )
+    similar_result = await db.execute(similar_stmt)
+    similar_items = similar_result.scalars().all()
+
+    faq_items = [
+        {
+            "question": "Нужно ли входить в аккаунт перед генерацией?",
+            "answer": "Да. Карточка доступна публично, но запуск генерации возможен только после входа в аккаунт.",
+        },
+        {
+            "question": "Что делать, если закончились бесплатные генерации?",
+            "answer": "Можно продолжить работу после пополнения ⭐️звезд или при активной подписке с доступными генерациями.",
+        },
+        {
+            "question": "Можно ли изменить запрос перед запуском?",
+            "answer": "Да. После открытия генерации по примеру промпт можно отредактировать под свои фото.",
+        },
+    ]
+    faq_html = "".join(
+        f'<article class="faq-item"><h3>{escape(item["question"])}</h3><p>{escape(item["answer"])}</p></article>'
+        for item in faq_items
+    )
+
+    similar_html = "".join(
+        f"""
+<article class="card">
+  <a href="/examples/{quote(similar.slug)}"><img src="{escape(_resolve_public_image(similar.image_url))}" alt="{escape(similar.title or 'Похожий пример')}" loading="lazy" /></a>
+  <div class="card-body">
+    <h3 style="font-size:18px;margin:0;line-height:1.25;"><a href="/examples/{quote(similar.slug)}" style="text-decoration:none;color:#0f172a;">{escape(similar.title or 'Пример генерации')}</a></h3>
+    <p class="desc">{escape(similar.description or _truncate(similar.prompt, 110))}</p>
+    <a class="cta" href="/examples/{quote(similar.slug)}">Открыть</a>
+  </div>
+</article>
+""".strip()
+        for similar in similar_items
+    )
 
     body = f"""
 <header class="header">
@@ -249,13 +341,60 @@ async def public_example_detail(
     <a class="cta" href="{escape(cta_href)}">Сгенерировать по этому примеру</a>
   </div>
 </article>
+<section class="section">
+  <h2 class="section-title">Как подготовить фото</h2>
+  <ul class="tips-list">
+    <li>Используйте четкое фото при хорошем освещении.</li>
+    <li>Избегайте сильного размытия и закрытого лица, если оно важно для результата.</li>
+    <li>При необходимости загрузите несколько референсов для более точной генерации.</li>
+  </ul>
+</section>
+<section class="section">
+  <h2 class="section-title">Частые вопросы</h2>
+  <div class="faq-list">
+    {faq_html}
+  </div>
+</section>
+<section class="section">
+  <h2 class="section-title">Похожие примеры</h2>
+  <div class="grid">
+    {similar_html if similar_html else '<p class="desc">Пока нет похожих примеров.</p>'}
+  </div>
+</section>
 """
+    json_ld = {
+        "@context": "https://schema.org",
+        "@graph": [
+            {
+                "@type": "WebPage",
+                "name": page_title,
+                "url": canonical,
+                "description": page_description,
+                "inLanguage": "ru-RU",
+            },
+            {
+                "@type": "FAQPage",
+                "mainEntity": [
+                    {
+                        "@type": "Question",
+                        "name": row["question"],
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": row["answer"],
+                        },
+                    }
+                    for row in faq_items
+                ],
+            },
+        ],
+    }
     page = _render_layout(
         title=page_title,
         description=page_description,
         canonical=canonical,
         og_image=image_url,
         body=body,
+        json_ld=json_ld,
     )
     return HTMLResponse(content=page)
 
