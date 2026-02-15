@@ -3,13 +3,15 @@
  */
 
 import { useState } from 'react';
+import { rememberAuthNextPath } from '../../utils/safeRedirect';
 
 interface YandexSignInButtonProps {
     className?: string;
     disabled?: boolean;
+    nextPath?: string;
 }
 
-export function YandexSignInButton({ className, disabled = false }: YandexSignInButtonProps) {
+export function YandexSignInButton({ className, disabled = false, nextPath }: YandexSignInButtonProps) {
     const [isLoading, setIsLoading] = useState(false);
     const clientId = import.meta.env.VITE_YANDEX_CLIENT_ID;
     const redirectUri = import.meta.env.VITE_YANDEX_REDIRECT_URI || `${window.location.origin}/yandex/callback`;
@@ -17,6 +19,7 @@ export function YandexSignInButton({ className, disabled = false }: YandexSignIn
     const handleClick = () => {
         if (disabled || !clientId) return;
         setIsLoading(true);
+        rememberAuthNextPath(nextPath, '/app');
 
         // Redirect to Yandex OAuth
         const url = `https://oauth.yandex.ru/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}`;

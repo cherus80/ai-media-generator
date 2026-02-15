@@ -6,6 +6,7 @@
 
 import { useState } from 'react';
 import { startVKPKCEAuth } from '../../utils/pkce';
+import { rememberAuthNextPath } from '../../utils/safeRedirect';
 
 interface VKSignInButtonProps {
   onSuccess?: () => void;
@@ -13,9 +14,10 @@ interface VKSignInButtonProps {
   className?: string;
   disabled?: boolean;
   consentVersion?: string;
+  nextPath?: string;
 }
 
-export function VKSignInButton({ onSuccess, onError, className, disabled = false }: VKSignInButtonProps) {
+export function VKSignInButton({ onSuccess, onError, className, disabled = false, nextPath }: VKSignInButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const appId = import.meta.env.VITE_VK_APP_ID;
   const redirectUri = import.meta.env.VITE_VK_REDIRECT_URI || `${window.location.origin}/vk/callback`;
@@ -28,6 +30,7 @@ export function VKSignInButton({ onSuccess, onError, className, disabled = false
     }
     setIsLoading(true);
     try {
+      rememberAuthNextPath(nextPath, '/app');
       // Уведомляем об успешном запуске флоу (до редиректа)
       onSuccess?.();
       await startVKPKCEAuth({

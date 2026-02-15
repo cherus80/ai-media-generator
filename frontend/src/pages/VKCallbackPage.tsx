@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { PD_CONSENT_VERSION } from '../constants/pdConsent';
+import { consumeRememberedAuthNextPath } from '../utils/safeRedirect';
 
 type PKCECache = {
   code_verifier: string;
@@ -84,7 +85,7 @@ export function VKCallbackPage() {
           consent_version: PD_CONSENT_VERSION,
         });
         clearPkceFromStorage(state);
-        navigate('/app', { replace: true });
+        navigate(consumeRememberedAuthNextPath('/app'), { replace: true });
       } catch (err: any) {
         console.error('VK PKCE callback error', err);
         const errMsg = err?.response?.data?.detail || err?.message || 'Не удалось завершить вход';

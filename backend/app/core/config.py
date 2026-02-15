@@ -90,8 +90,8 @@ class Settings(BaseSettings):
         description="Модель OpenRouter для улучшения промптов (GPT-4.1 Mini, по умолчанию)",
     )
     OPENROUTER_SEO_MODELS: Optional[str] = Field(
-        default="openai/gpt-4.1-mini,openai/gpt-4o-mini",
-        description="Список моделей OpenRouter для SEO по приоритету через запятую",
+        default="openai/gpt-4.1-mini",
+        description="Модель OpenRouter для SEO (используется первый элемент, если указано несколько)",
     )
 
     # GrsAI Nano Banana Pro API (Primary service for image generation)

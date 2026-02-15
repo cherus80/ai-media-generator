@@ -473,21 +473,15 @@ def _normalize_llm_result(
     )
 
 
-def _resolve_seo_models(prompt_model: str | None) -> list[str]:
-    candidates: list[str] = []
+def _resolve_seo_model(prompt_model: str | None) -> str | None:
     raw_models = (settings.OPENROUTER_SEO_MODELS or "").strip()
     if raw_models:
-        candidates.extend(model.strip() for model in raw_models.split(",") if model.strip())
-    if prompt_model:
-        candidates.insert(0, prompt_model.strip())
-
-    deduplicated: list[str] = []
-    seen: set[str] = set()
-    for model in candidates:
-        if model and model not in seen:
-            deduplicated.append(model)
-            seen.add(model)
-    return deduplicated[:4]
+        first = next((model.strip() for model in raw_models.split(",") if model.strip()), None)
+        if first:
+            return first
+    if prompt_model and prompt_model.strip():
+        return prompt_model.strip()
+    return None
 
 
 async def generate_example_seo_suggestions(
@@ -524,8 +518,8 @@ async def generate_example_seo_suggestions(
         return fallback.model_copy(
             update={"warning": "OpenRouter недоступен: применён локальный SEO-шаблон."}
         )
-    models = _resolve_seo_models(client.prompt_model)
-    if not models:
+    model_name = _resolve_seo_model(client.prompt_model)
+    if not model_name:
         return fallback.model_copy(
             update={"warning": "Не удалось определить OpenRouter-модель: применён локальный SEO-шаблон."}
         )
@@ -560,53 +554,61 @@ async def generate_example_seo_suggestions(
         },
     }
 
-    model_errors: list[str] = []
-    for model_name in models:
-        try:
-            response = await client.client.post(
-                f"{client.base_url}{client.CHAT_ENDPOINT}",
-                json={
-                    "model": model_name,
-                    "messages": [
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
-                    ],
-                    "max_tokens": 900,
-                    "temperature": 0.25,
-                    "response_format": {"type": "json_object"},
-                },
+    try:
+        response = await client.client.post(
+            f"{client.base_url}{client.CHAT_ENDPOINT}",
+            json={
+                "model": model_name,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
+                ],
+                "max_tokens": 900,
+                "temperature": 0.25,
+                "response_format": {"type": "json_object"},
+            },
+        )
+
+        if response.status_code != 200:
+            logger.warning(
+                "SEO suggestions OpenRouter error status=%s model=%s",
+                response.status_code,
+                model_name,
+            )
+            return fallback.model_copy(
+                update={
+                    "warning": _truncate(
+                        f"OpenRouter вернул ошибку {response.status_code}: применён локальный SEO-шаблон.",
+                        300,
+                    )
+                }
             )
 
-            if response.status_code != 200:
-                logger.warning(
-                    "SEO suggestions OpenRouter error status=%s model=%s",
-                    response.status_code,
-                    model_name,
+        data = response.json()
+        content = data.get("choices", [{}])[0].get("message", {}).get("content")
+        if not content:
+            return fallback.model_copy(
+                update={"warning": "OpenRouter вернул пустой ответ: применён локальный SEO-шаблон."}
+            )
+        raw = json.loads(content) if isinstance(content, str) else content
+        if not isinstance(raw, dict):
+            return fallback.model_copy(
+                update={"warning": "OpenRouter вернул невалидный JSON: применён локальный SEO-шаблон."}
+            )
+
+        return _normalize_llm_result(
+            raw,
+            fallback,
+            source="openrouter",
+            model=model_name,
+        )
+    except Exception as exc:
+        logger.warning("SEO suggestions OpenRouter request failed model=%s error=%s", model_name, exc)
+        return fallback.model_copy(
+            update={
+                "warning": _truncate(
+                    f"OpenRouter недоступен ({type(exc).__name__}): применён локальный SEO-шаблон.",
+                    300,
                 )
-                model_errors.append(f"{model_name}:{response.status_code}")
-                continue
-
-            data = response.json()
-            content = data.get("choices", [{}])[0].get("message", {}).get("content")
-            if not content:
-                model_errors.append(f"{model_name}:empty")
-                continue
-            raw = json.loads(content) if isinstance(content, str) else content
-            if not isinstance(raw, dict):
-                model_errors.append(f"{model_name}:invalid_json")
-                continue
-
-            return _normalize_llm_result(
-                raw,
-                fallback,
-                source="openrouter",
-                model=model_name,
-            )
-        except Exception as exc:
-            logger.warning("SEO suggestions model fallback model=%s error=%s", model_name, exc)
-            model_errors.append(f"{model_name}:{type(exc).__name__}")
-
-    warning = "OpenRouter недоступен: применён локальный SEO-шаблон."
-    if model_errors:
-        warning = f"{warning} Попытки: {', '.join(model_errors[:3])}."
-    return fallback.model_copy(update={"warning": _truncate(warning, 300)})
+            }
+        )

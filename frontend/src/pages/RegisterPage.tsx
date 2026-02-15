@@ -7,7 +7,7 @@ import { validateRegisterForm, checkPasswordStrength, getPasswordStrengthLabel, 
 import { getStoredReferralCode, storeReferralCode } from '../utils/referralStorage';
 import { registerPendingReferral } from '../utils/referralRegistration';
 import { PD_CONSENT_VERSION } from '../constants/pdConsent';
-import { resolveSafeNextPath } from '../utils/safeRedirect';
+import { rememberAuthNextPath, resolveSafeNextPath } from '../utils/safeRedirect';
 
 export function RegisterPage() {
   const navigate = useNavigate();
@@ -60,6 +60,10 @@ export function RegisterPage() {
     }
   }, [pdConsentVersionAccepted]);
 
+  useEffect(() => {
+    rememberAuthNextPath(nextPath, '/app');
+  }, [nextPath]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     clearError();
@@ -96,20 +100,7 @@ export function RegisterPage() {
     }
   };
 
-  const handleGoogleSuccess = async () => {
-    const nextUser = useAuthStore.getState().user;
-    if (
-      nextUser?.email &&
-      !nextUser.email_verified &&
-      nextUser.auth_provider === 'email'
-    ) {
-      navigate('/verify-required', { replace: true });
-    } else {
-      navigate(nextPath, { replace: true });
-    }
-  };
-
-  const handleVKSuccess = async () => {
+  const handleAuthSuccess = async () => {
     const nextUser = useAuthStore.getState().user;
     if (
       nextUser?.email &&
@@ -152,7 +143,7 @@ export function RegisterPage() {
           {/* OAuth Buttons */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <GoogleSignInButton
-              onSuccess={handleGoogleSuccess}
+              onSuccess={handleAuthSuccess}
               onError={(err) => console.error(err)}
               text="signup_with"
               size="large"
@@ -161,10 +152,10 @@ export function RegisterPage() {
               consentVersion={PD_CONSENT_VERSION}
             />
             <VKSignInButton
-              onSuccess={handleVKSuccess}
               onError={(err) => console.error(err)}
               className={oauthButtonClass}
               disabled={!pdConsent}
+              nextPath={nextPath}
             />
           </div>
           {!pdConsent && (

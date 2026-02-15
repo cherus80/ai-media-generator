@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../store/authStore';
 import { PD_CONSENT_VERSION } from '../constants/pdConsent';
+import { consumeRememberedAuthNextPath } from '../utils/safeRedirect';
 
 export function YandexCallbackPage() {
   const location = useLocation();
@@ -33,7 +34,7 @@ export function YandexCallbackPage() {
           code,
           pdConsentVersionAccepted || PD_CONSENT_VERSION
         );
-        navigate('/app', { replace: true });
+        navigate(consumeRememberedAuthNextPath('/app'), { replace: true });
       } catch (err: any) {
         const errMsg =
           err?.response?.data?.detail || err?.message || 'Не удалось завершить вход через Яндекс ID';

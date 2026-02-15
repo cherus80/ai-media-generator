@@ -8,7 +8,7 @@ import { TelegramSignInButton } from '../components/auth/TelegramSignInButton';
 import { validateLoginForm } from '../utils/passwordValidation';
 import { PD_CONSENT_VERSION } from '../constants/pdConsent';
 import { MAX_SUPPORT_URL } from '../constants/supportLinks';
-import { resolveSafeNextPath } from '../utils/safeRedirect';
+import { rememberAuthNextPath, resolveSafeNextPath } from '../utils/safeRedirect';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -34,6 +34,10 @@ export function LoginPage() {
       setPdConsent(true);
     }
   }, [pdConsentVersionAccepted]);
+
+  useEffect(() => {
+    rememberAuthNextPath(nextPath, '/app');
+  }, [nextPath]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,20 +71,7 @@ export function LoginPage() {
     }
   };
 
-  const handleGoogleSuccess = () => {
-    const nextUser = useAuthStore.getState().user;
-    if (
-      nextUser?.email &&
-      !nextUser.email_verified &&
-      nextUser.auth_provider === 'email'
-    ) {
-      navigate('/verify-required', { replace: true });
-    } else {
-      navigate(nextPath, { replace: true });
-    }
-  };
-
-  const handleVKSuccess = () => {
+  const handleAuthSuccess = () => {
     const nextUser = useAuthStore.getState().user;
     if (
       nextUser?.email &&
@@ -113,7 +104,7 @@ export function LoginPage() {
           {/* OAuth Buttons */}
           <div className="grid grid-cols-2 max-[420px]:grid-cols-1 gap-3">
             <GoogleSignInButton
-              onSuccess={handleGoogleSuccess}
+              onSuccess={handleAuthSuccess}
               onError={(err) => console.error(err)}
               text="signin_with"
               size="large"
@@ -122,17 +113,18 @@ export function LoginPage() {
               consentVersion={PD_CONSENT_VERSION}
             />
             <VKSignInButton
-              onSuccess={handleVKSuccess}
               onError={(err) => console.error(err)}
               className={oauthButtonClass}
               disabled={!pdConsent}
+              nextPath={nextPath}
             />
             <YandexSignInButton
               className={oauthButtonClass}
               disabled={!pdConsent}
+              nextPath={nextPath}
             />
             <TelegramSignInButton
-              onSuccess={handleVKSuccess} // Re-using same success handler as it just navigates
+              onSuccess={handleAuthSuccess}
               onError={(err) => console.error(err)}
               className={oauthButtonClass}
               disabled={!pdConsent}
