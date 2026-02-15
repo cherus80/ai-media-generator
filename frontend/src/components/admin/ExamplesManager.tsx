@@ -109,8 +109,58 @@ const russianRatio = (value: string): number => {
 const isMostlyRussian = (value: string, minRatio = 0.65): boolean =>
   Boolean(value) && hasCyrillic(value) && russianRatio(value) >= minRatio;
 
+const containsAny = (text: string, keywords: string[]): boolean =>
+  keywords.some((keyword) => text.includes(keyword));
+
+const extractPromptHighlightsRu = (prompt: string, maxItems = 4): string[] => {
+  const lowered = (prompt || '').toLowerCase();
+  const rules: Array<{ keys: string[]; label: string }> = [
+    { keys: ['keyhole', 'замочная скважина'], label: 'фон в форме keyhole' },
+    { keys: ['bow', 'arrow', 'лук', 'стрела'], label: 'поза с луком и стрелой' },
+    { keys: ['full-length', 'full length', 'в полный рост'], label: 'кадр в полный рост' },
+    { keys: ['symmetrical', 'symmetry', 'симметр'], label: 'строгая симметричная композиция' },
+    { keys: ['couture', '3d roses', 'rose dress', 'платье с розами'], label: 'кутюрный образ с объёмными розами' },
+    { keys: ['studio lighting', 'studio', 'студийный свет'], label: 'профессиональный студийный свет' },
+    { keys: ['fashion editorial', 'luxury fashion', 'editorial', 'fashion'], label: 'стиль luxury fashion editorial' },
+    { keys: ['minimalist', 'минималист'], label: 'минималистичная сценография' },
+    { keys: ['red', 'scarlet', 'crimson', 'красн'], label: 'насыщенная красная палитра' },
+  ];
+
+  const highlights = rules
+    .filter((rule) => containsAny(lowered, rule.keys))
+    .map((rule) => rule.label);
+
+  const unique: string[] = [];
+  highlights.forEach((item) => {
+    if (!unique.includes(item)) {
+      unique.push(item);
+    }
+  });
+  return unique.slice(0, maxItems);
+};
+
 const inferRuThemeFromPrompt = (prompt: string): string => {
   const lowered = (prompt || '').toLowerCase();
+  const isFashion = containsAny(lowered, ['fashion', 'editorial', 'couture', 'outfit', 'стиль']);
+  const isStudio = containsAny(lowered, ['studio', 'lighting', 'студ']);
+  const hasBow = containsAny(lowered, ['bow', 'arrow', 'лук', 'стрела']);
+  const hasKeyhole = containsAny(lowered, ['keyhole', 'замочная скважина']);
+  const hasRed = containsAny(lowered, ['red', 'scarlet', 'crimson', 'красн']);
+  const hasCouture = containsAny(lowered, ['couture', '3d roses', 'rose dress', 'роз']);
+
+  if (isStudio && isFashion && hasBow) {
+    return 'Студийная fashion-съёмка с луком';
+  }
+  if (isStudio && isFashion && hasKeyhole) {
+    return 'Fashion-съёмка в keyhole-сцене';
+  }
+  if (isFashion && hasCouture && hasRed) {
+    return 'Кутюрный красный fashion-образ';
+  }
+  if (isStudio && hasRed) {
+    return 'Красная студийная фотосцена';
+  }
+
   const rules: Array<{ keys: string[]; title: string }> = [
     { keys: ['christmas', 'new year', 'santa', 'holiday'], title: 'Праздничный зимний портрет' },
     { keys: ['winter', 'snow', 'snowy'], title: 'Зимний портрет' },
@@ -172,12 +222,19 @@ const buildSeoDraft = (params: {
   slug: string;
 }) => {
   const baseTitle = extractTitleFromPrompt(params.prompt);
+  const highlights = extractPromptHighlightsRu(params.prompt, 3);
+  const highlightsText = highlights.join(', ');
   const firstRuTag = params.tags.find((tag) => isMostlyRussian(tag, 0.5));
   const firstTag = firstRuTag ? `, ${firstRuTag}` : '';
-  const generatedDescription = `Пример "${baseTitle}" для AI генерации${firstTag}. Шаблон уже настроен: загрузите свои фото и получите результат в этом стиле.`;
+  const generatedDescription = `Пример "${baseTitle}" для AI генерации${firstTag}. ${
+    highlightsText
+      ? `Ключевые детали: ${highlightsText}.`
+      : 'Сценарий уже оптимизирован для быстрого старта и качественного результата.'
+  } Загрузите свои фото и получите результат в этом стиле.`;
   const generatedSeoTitle = truncate(`${baseTitle} | Пример генерации AI`, 120);
   const generatedSeoDescription = truncate(
-    params.description.trim() || generatedDescription,
+    params.seoDescription.trim() ||
+      `Готовый пример "${baseTitle}": загрузите исходник и получите релевантный результат в выбранном стиле.`,
     200
   );
   const generatedSlug = params.slug.trim() || toSlug(baseTitle);
@@ -200,6 +257,8 @@ const buildLocalSeoVariants = (params: {
   slug: string;
 }): GenerationExampleSeoSuggestionVariant[] => {
   const base = buildSeoDraft(params);
+  const highlights = extractPromptHighlightsRu(params.prompt, 3);
+  const highlightsText = highlights.join(', ');
   const [titleA, titleB, titleC] = buildTitleVariantsFromPrompt(params.prompt);
   const baseSlug = base.slug || 'example';
   const variants: GenerationExampleSeoSuggestionVariant[] = [
@@ -215,7 +274,9 @@ const buildLocalSeoVariants = (params: {
       slug: `${baseSlug}-variant-2`,
       title: titleB,
       description: truncate(
-        `Карточка "${titleB}" подготовлена для публикации в соцсетях и быстрого старта генерации по фото.`,
+        `Карточка "${titleB}" подготовлена для публикации в соцсетях и быстрых креативов по фото.${
+          highlightsText ? ` Ключевые детали: ${highlightsText}.` : ''
+        }`,
         400
       ),
       seo_title: truncate(`${titleB} | Генерация по промпту`, 120),
@@ -229,7 +290,9 @@ const buildLocalSeoVariants = (params: {
       slug: `${baseSlug}-variant-3`,
       title: titleC,
       description: truncate(
-        `Вариант "${titleC}" ориентирован на коммерческий контент и быструю подготовку визуалов.`,
+        `Вариант "${titleC}" ориентирован на коммерческие визуалы и рекламные публикации.${
+          highlightsText ? ` Ключевые детали: ${highlightsText}.` : ''
+        }`,
         400
       ),
       seo_title: truncate(`${titleC} | AI пример для генерации`, 120),
@@ -754,7 +817,17 @@ export const ExamplesManager: React.FC = () => {
             ];
       const variants = normalizeSeoVariants(responseVariants, fallbackVariants);
       applyNewVariant(variants, draft.selected_index ?? 0);
-      toast.success('SEO-поля сгенерированы');
+      if (draft.source === 'openrouter') {
+        toast.success(
+          draft.model
+            ? `SEO-поля сгенерированы (${draft.model})`
+            : 'SEO-поля сгенерированы через OpenRouter'
+        );
+      } else {
+        toast(draft.warning || 'OpenRouter недоступен, применен локальный SEO-шаблон', {
+          icon: 'ℹ️',
+        });
+      }
     } catch {
       applyNewVariant(fallbackVariants, 0);
       toast('OpenRouter недоступен, применен локальный SEO-шаблон', { icon: 'ℹ️' });
@@ -804,7 +877,17 @@ export const ExamplesManager: React.FC = () => {
             ];
       const variants = normalizeSeoVariants(responseVariants, fallbackVariants);
       applyItemVariant(item.id, variants, draft.selected_index ?? 0);
-      toast.success('SEO-поля сгенерированы');
+      if (draft.source === 'openrouter') {
+        toast.success(
+          draft.model
+            ? `SEO-поля сгенерированы (${draft.model})`
+            : 'SEO-поля сгенерированы через OpenRouter'
+        );
+      } else {
+        toast(draft.warning || 'OpenRouter недоступен, применен локальный SEO-шаблон', {
+          icon: 'ℹ️',
+        });
+      }
     } catch {
       applyItemVariant(item.id, fallbackVariants, 0);
       toast('OpenRouter недоступен, применен локальный SEO-шаблон', { icon: 'ℹ️' });

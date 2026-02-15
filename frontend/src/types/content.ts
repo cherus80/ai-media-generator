@@ -142,6 +142,9 @@ export interface GenerationExampleSeoSuggestionResponse {
   faq: GenerationExampleSeoFaqItem[];
   selected_index: number;
   variants: GenerationExampleSeoSuggestionVariant[];
+  source: string;
+  model?: string | null;
+  warning?: string | null;
 }
 
 export interface GenerationExampleUseResponse {

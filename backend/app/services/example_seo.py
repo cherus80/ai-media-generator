@@ -52,8 +52,56 @@ def _is_mostly_russian(value: str, min_ratio: float = 0.65) -> bool:
     return _has_cyrillic(value) and _language_ratio_ru(value) >= min_ratio
 
 
+def _contains_any(text: str, keywords: tuple[str, ...]) -> bool:
+    return any(keyword in text for keyword in keywords)
+
+
+def _extract_prompt_highlights_ru(prompt: str, max_items: int = 4) -> list[str]:
+    lowered = (prompt or "").lower()
+    highlight_rules: list[tuple[tuple[str, ...], str]] = [
+        (("keyhole", "замочная скважина"), "фон в форме keyhole"),
+        (("bow", "arrow", "лук", "стрела"), "поза с луком и стрелой"),
+        (("full-length", "full length", "в полный рост"), "кадр в полный рост"),
+        (("symmetrical", "symmetry", "симметр"), "строгая симметричная композиция"),
+        (("couture", "3d roses", "rose dress", "платье с розами"), "кутюрный образ с объёмными розами"),
+        (("studio lighting", "studio", "студийный свет"), "профессиональный студийный свет"),
+        (("fashion editorial", "luxury fashion", "editorial", "fashion"), "стиль luxury fashion editorial"),
+        (("minimalist", "минималист"), "минималистичная сценография"),
+        (("red", "scarlet", "crimson", "красн"), "насыщенная красная палитра"),
+    ]
+
+    highlights: list[str] = []
+    for keywords, label in highlight_rules:
+        if _contains_any(lowered, keywords):
+            highlights.append(label)
+
+    unique: list[str] = []
+    seen: set[str] = set()
+    for item in highlights:
+        if item not in seen:
+            unique.append(item)
+            seen.add(item)
+    return unique[:max_items]
+
+
 def _infer_ru_theme_from_prompt(prompt: str) -> str:
     lowered = (prompt or "").lower()
+    is_fashion = _contains_any(lowered, ("fashion", "editorial", "couture", "outfit", "стиль"))
+    is_studio = _contains_any(lowered, ("studio", "lighting", "студ"))
+    has_bow = _contains_any(lowered, ("bow", "arrow", "лук", "стрела"))
+    has_keyhole = _contains_any(lowered, ("keyhole", "замочная скважина"))
+    has_red = _contains_any(lowered, ("red", "scarlet", "crimson", "красн"))
+    has_couture = _contains_any(lowered, ("couture", "3d roses", "rose dress", "роз"))
+
+    if is_studio and is_fashion and has_bow:
+        return "Студийная fashion-съёмка с луком"
+    if is_studio and is_fashion and has_keyhole:
+        return "Fashion-съёмка в keyhole-сцене"
+    if is_fashion and has_couture and has_red:
+        return "Кутюрный красный fashion-образ"
+    if is_studio and has_red:
+        return "Красная студийная фотосцена"
+
     rules: list[tuple[tuple[str, ...], str]] = [
         (("christmas", "new year", "santa", "holiday"), "Праздничный зимний портрет"),
         (("winter", "snow", "snowy"), "Зимний портрет"),
@@ -65,7 +113,7 @@ def _infer_ru_theme_from_prompt(prompt: str) -> str:
         (("cinematic", "movie"), "Кинематографичный портрет"),
     ]
     for keywords, title in rules:
-        if any(keyword in lowered for keyword in keywords):
+        if _contains_any(lowered, keywords):
             return title
     return "AI генерация по фото"
 
@@ -95,6 +143,29 @@ def _prefer_russian(candidate: str, fallback: str) -> str:
     if _is_mostly_russian(safe_fallback, min_ratio=0.5):
         return safe_fallback
     return "Пример генерации AI"
+
+
+def _looks_generic_title(value: str) -> bool:
+    lowered = " ".join((value or "").lower().split())
+    if not lowered:
+        return True
+    generic_patterns = (
+        "пример генерации",
+        "ai генерац",
+        "готовый пример",
+        "шаблон",
+        "контент для соцсетей",
+    )
+    if any(pattern in lowered for pattern in generic_patterns):
+        return True
+    return len(lowered.split()) < 2
+
+
+def _prefer_title(candidate: str, fallback: str) -> str:
+    selected = _prefer_russian(candidate, fallback)
+    if _looks_generic_title(selected) and not _looks_generic_title(fallback):
+        return _truncate(_sanitize_seo_text(fallback), 200)
+    return selected
 
 
 def _extract_title_from_prompt(prompt: str) -> str:
@@ -226,21 +297,29 @@ def _build_fallback_variants(
     prompt_text = _normalize_prompt(payload.prompt)
     tags = _normalize_tags(payload.tags)
     first_tag = next((tag for tag in tags if _is_mostly_russian(tag, min_ratio=0.5)), "AI генерации")
+    highlights = _extract_prompt_highlights_ru(prompt_text, max_items=3)
+    highlights_text = ", ".join(highlights)
     title_variants = _build_title_variants_from_prompt(prompt_text)
     base_slug = slugify((payload.slug or "").strip() or title_variants[0], fallback="example")
+    title_context = f"для {first_tag}"
+    scene_context = (
+        f" Ключевые детали: {highlights_text}."
+        if highlights_text
+        else " Сценарий уже оптимизирован для быстрого старта и качественного результата."
+    )
 
     variants = [
         _build_variant(
             slug=base_slug,
             title=title_variants[0],
             description=_truncate(
-                f'Пример "{title_variants[0]}" для {first_tag}. '
-                "Шаблон уже настроен: загрузите свои фото и запустите генерацию по этому образцу.",
+                f'Пример "{title_variants[0]}" {title_context}.'
+                f"{scene_context} Загрузите свои фото и запустите генерацию по этому образцу.",
                 400,
             ),
             seo_title=_truncate(f"{title_variants[0]} | Пример генерации AI", 120),
             seo_description=_truncate(
-                f'Готовый пример "{title_variants[0]}": используйте свой исходник и получите результат по заданному промпту.',
+                f'Готовый пример "{title_variants[0]}": загрузите исходник и получите релевантный результат в выбранном стиле.',
                 200,
             ),
         ),
@@ -248,12 +327,13 @@ def _build_fallback_variants(
             slug=f"{base_slug}-variant-2",
             title=title_variants[1],
             description=_truncate(
-                f'Карточка "{title_variants[1]}" подготовлена для соцсетей и быстрого старта генерации по фото.',
+                f'Карточка "{title_variants[1]}" подготовлена для соцсетей и быстрых креативов по фото.'
+                f"{scene_context}",
                 400,
             ),
             seo_title=_truncate(f"{title_variants[1]} | Генерация по промпту", 120),
             seo_description=_truncate(
-                f'Сценарий "{title_variants[1]}" для релевантной генерации: загрузите фото и примените идею карточки.',
+                f'Сценарий "{title_variants[1]}" для релевантной генерации: примените идею карточки к своему фото.',
                 200,
             ),
         ),
@@ -261,7 +341,8 @@ def _build_fallback_variants(
             slug=f"{base_slug}-variant-3",
             title=title_variants[2],
             description=_truncate(
-                f'Вариант "{title_variants[2]}" ориентирован на коммерческий контент и быструю подготовку визуалов.',
+                f'Вариант "{title_variants[2]}" ориентирован на коммерческие визуалы и рекламные публикации.'
+                f"{scene_context}",
                 400,
             ),
             seo_title=_truncate(f"{title_variants[2]} | AI пример для генерации", 120),
@@ -277,6 +358,9 @@ def _build_fallback_variants(
 def _build_response(
     variants: list[GenerationExampleSeoSuggestionVariant],
     selected_index: int = 0,
+    source: str = "fallback",
+    model: str | None = None,
+    warning: str | None = None,
 ) -> GenerationExampleSeoSuggestionResponse:
     safe_variants = variants or _build_fallback_variants(
         GenerationExampleSeoSuggestionRequest(prompt="Пример генерации AI")
@@ -293,12 +377,18 @@ def _build_response(
         faq=selected.faq,
         selected_index=safe_index,
         variants=safe_variants,
+        source=_truncate(source or "fallback", 32),
+        model=_truncate(model, 120) if model else None,
+        warning=_truncate(warning, 300) if warning else None,
     )
 
 
 def _normalize_llm_result(
     raw: dict[str, Any],
     fallback: GenerationExampleSeoSuggestionResponse,
+    *,
+    source: str = "openrouter",
+    model: str | None = None,
 ) -> GenerationExampleSeoSuggestionResponse:
     fallback_variants = fallback.variants or [
         GenerationExampleSeoSuggestionVariant(
@@ -322,7 +412,7 @@ def _normalize_llm_result(
             normalized.append(
                 _build_variant(
                     slug=str(item.get("slug") or fallback_variant.slug),
-                    title=_prefer_russian(
+                    title=_prefer_title(
                         str(item.get("title") or fallback_variant.title),
                         fallback_variant.title,
                     ),
@@ -345,7 +435,7 @@ def _normalize_llm_result(
         normalized.append(
             _build_variant(
                 slug=str(raw.get("slug") or fallback.slug),
-                title=_prefer_russian(str(raw.get("title") or fallback.title), fallback.title),
+                title=_prefer_title(str(raw.get("title") or fallback.title), fallback.title),
                 description=_prefer_russian(
                     str(raw.get("description") or fallback.description),
                     fallback.description,
@@ -375,7 +465,29 @@ def _normalize_llm_result(
     except (TypeError, ValueError):
         selected_index = fallback.selected_index
 
-    return _build_response(normalized[:3], selected_index=selected_index)
+    return _build_response(
+        normalized[:3],
+        selected_index=selected_index,
+        source=source,
+        model=model,
+    )
+
+
+def _resolve_seo_models(prompt_model: str | None) -> list[str]:
+    candidates: list[str] = []
+    raw_models = (settings.OPENROUTER_SEO_MODELS or "").strip()
+    if raw_models:
+        candidates.extend(model.strip() for model in raw_models.split(",") if model.strip())
+    if prompt_model:
+        candidates.insert(0, prompt_model.strip())
+
+    deduplicated: list[str] = []
+    seen: set[str] = set()
+    for model in candidates:
+        if model and model not in seen:
+            deduplicated.append(model)
+            seen.add(model)
+    return deduplicated[:4]
 
 
 async def generate_example_seo_suggestions(
@@ -394,64 +506,107 @@ async def generate_example_seo_suggestions(
         seo_title=payload.seo_title,
         seo_description=payload.seo_description,
     )
-    fallback = _build_response(_build_fallback_variants(fallback_payload), selected_index=0)
+    fallback = _build_response(
+        _build_fallback_variants(fallback_payload),
+        selected_index=0,
+        source="fallback",
+    )
 
     if not settings.OPENROUTER_API_KEY:
-        return fallback
+        return fallback.model_copy(
+            update={"warning": "OpenRouter не настроен: применён локальный SEO-шаблон."}
+        )
 
     try:
         client = get_openrouter_client()
-        system_prompt = (
-            "Ты SEO-редактор карточек AI генераций. Верни только JSON. "
-            "Формат: {\"variants\":[{slug,title,description,seo_title,seo_description,faq}],\"recommended_index\":0}. "
-            "В variants должно быть ровно 3 варианта. faq — массив из 3 объектов {question,answer}. "
-            "Основа для контента — поле prompt. Остальные поля только как вспомогательный контекст. "
-            "title в каждом варианте обязателен и должен отличаться. "
-            "Если prompt не на русском, сначала переведи смысл на русский и только затем формируй SEO-тексты. "
-            "Запрещённые формулировки: 'исходный промпт', 'адаптация на русский язык', 'собран по промпту'. "
-            "Нельзя оставлять английские фразы в title/description/seo_title/seo_description/faq. "
-            "Все текстовые поля строго на русском языке (кириллица), кроме slug. "
-            "Ограничения: title<=200, description<=400, seo_title<=120, seo_description<=200."
-        )
-        user_payload = {
-            "prompt": prompt_text,
-            "tags": _normalize_tags(payload.tags),
-            "context": {
-                "title_hint_ru": payload.title if _is_mostly_russian(payload.title or "", min_ratio=0.5) else None,
-                "description_hint_ru": payload.description if _is_mostly_russian(payload.description or "", min_ratio=0.5) else None,
-                "seo_title_hint_ru": payload.seo_title if _is_mostly_russian(payload.seo_title or "", min_ratio=0.5) else None,
-                "seo_description_hint_ru": payload.seo_description if _is_mostly_russian(payload.seo_description or "", min_ratio=0.5) else None,
-                "slug_hint": payload.slug,
-            },
-        }
-
-        response = await client.client.post(
-            f"{client.base_url}{client.CHAT_ENDPOINT}",
-            json={
-                "model": client.prompt_model,
-                "messages": [
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
-                ],
-                "max_tokens": 900,
-                "temperature": 0.3,
-                "response_format": {"type": "json_object"},
-            },
-        )
-
-        if response.status_code != 200:
-            logger.warning("SEO suggestions OpenRouter error status: %s", response.status_code)
-            return fallback
-
-        data = response.json()
-        content = data.get("choices", [{}])[0].get("message", {}).get("content")
-        if not content:
-            return fallback
-        raw = json.loads(content) if isinstance(content, str) else content
-        if not isinstance(raw, dict):
-            return fallback
-
-        return _normalize_llm_result(raw, fallback)
     except Exception as exc:
-        logger.warning("SEO suggestions fallback due to error: %s", exc)
-        return fallback
+        logger.warning("SEO suggestions OpenRouter client init failed: %s", exc)
+        return fallback.model_copy(
+            update={"warning": "OpenRouter недоступен: применён локальный SEO-шаблон."}
+        )
+    models = _resolve_seo_models(client.prompt_model)
+    if not models:
+        return fallback.model_copy(
+            update={"warning": "Не удалось определить OpenRouter-модель: применён локальный SEO-шаблон."}
+        )
+
+    highlights = _extract_prompt_highlights_ru(prompt_text, max_items=5)
+    system_prompt = (
+        "Ты SEO-редактор карточек AI генераций. Верни только JSON. "
+        "Формат: {\"variants\":[{slug,title,description,seo_title,seo_description,faq}],\"recommended_index\":0}. "
+        "В variants должно быть ровно 3 варианта. faq — массив из 3 объектов {question,answer}. "
+        "Основа для контента — поле prompt. Остальные поля только как вспомогательный контекст. "
+        "Каждый title должен быть предметным, отличаться от других и отражать сцену/стиль/действие, "
+        "а не быть абстрактным шаблоном. "
+        "Если prompt не на русском, сначала переведи смысл на русский и затем создай естественные RU-тексты. "
+        "Запрещённые формулировки: 'исходный промпт', 'адаптация на русский язык', 'собран по промпту'. "
+        "Нельзя оставлять английские фразы в title/description/seo_title/seo_description/faq. "
+        "Не используй title вида 'Пример генерации', 'Портрет с сохранением черт лица', если этого нет в задаче. "
+        "В description и seo_description упомяни 2-3 конкретные детали из prompt. "
+        "Все текстовые поля строго на русском языке (кириллица), кроме slug. "
+        "Ограничения: title<=200, description<=400, seo_title<=120, seo_description<=200."
+    )
+    user_payload = {
+        "prompt": prompt_text,
+        "tags": _normalize_tags(payload.tags),
+        "hints_ru": {
+            "prompt_highlights": highlights,
+            "theme_hint": _infer_ru_theme_from_prompt(prompt_text),
+            "title_hint_ru": payload.title if _is_mostly_russian(payload.title or "", min_ratio=0.5) else None,
+            "description_hint_ru": payload.description if _is_mostly_russian(payload.description or "", min_ratio=0.5) else None,
+            "seo_title_hint_ru": payload.seo_title if _is_mostly_russian(payload.seo_title or "", min_ratio=0.5) else None,
+            "seo_description_hint_ru": payload.seo_description if _is_mostly_russian(payload.seo_description or "", min_ratio=0.5) else None,
+            "slug_hint": payload.slug,
+        },
+    }
+
+    model_errors: list[str] = []
+    for model_name in models:
+        try:
+            response = await client.client.post(
+                f"{client.base_url}{client.CHAT_ENDPOINT}",
+                json={
+                    "model": model_name,
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
+                    ],
+                    "max_tokens": 900,
+                    "temperature": 0.25,
+                    "response_format": {"type": "json_object"},
+                },
+            )
+
+            if response.status_code != 200:
+                logger.warning(
+                    "SEO suggestions OpenRouter error status=%s model=%s",
+                    response.status_code,
+                    model_name,
+                )
+                model_errors.append(f"{model_name}:{response.status_code}")
+                continue
+
+            data = response.json()
+            content = data.get("choices", [{}])[0].get("message", {}).get("content")
+            if not content:
+                model_errors.append(f"{model_name}:empty")
+                continue
+            raw = json.loads(content) if isinstance(content, str) else content
+            if not isinstance(raw, dict):
+                model_errors.append(f"{model_name}:invalid_json")
+                continue
+
+            return _normalize_llm_result(
+                raw,
+                fallback,
+                source="openrouter",
+                model=model_name,
+            )
+        except Exception as exc:
+            logger.warning("SEO suggestions model fallback model=%s error=%s", model_name, exc)
+            model_errors.append(f"{model_name}:{type(exc).__name__}")
+
+    warning = "OpenRouter недоступен: применён локальный SEO-шаблон."
+    if model_errors:
+        warning = f"{warning} Попытки: {', '.join(model_errors[:3])}."
+    return fallback.model_copy(update={"warning": _truncate(warning, 300)})

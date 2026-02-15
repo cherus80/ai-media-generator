@@ -166,6 +166,9 @@ class GenerationExampleSeoSuggestionResponse(BaseModel):
     faq: list[GenerationExampleSeoFaqItem] = Field(default_factory=list)
     selected_index: int = Field(default=0, ge=0)
     variants: list[GenerationExampleSeoSuggestionVariant] = Field(default_factory=list)
+    source: str = Field(default="fallback", max_length=32)
+    model: Optional[str] = Field(default=None, max_length=120)
+    warning: Optional[str] = Field(default=None, max_length=300)
 
 
 class GenerationExampleVariantReportItem(BaseModel):
