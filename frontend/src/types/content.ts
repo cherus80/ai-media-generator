@@ -53,6 +53,7 @@ export interface InstructionUploadResponse {
 export interface GenerationExampleItem {
   id: number;
   slug: string;
+  seo_variant_index: number;
   title?: string | null;
   description?: string | null;
   prompt: string;
@@ -69,6 +70,7 @@ export interface GenerationExampleListResponse {
 }
 
 export interface GenerationExampleAdminItem extends GenerationExampleItem {
+  variant_stats?: GenerationExampleVariantStatItem[];
   is_published: boolean;
   created_at: string;
   updated_at: string;
@@ -83,6 +85,7 @@ export interface GenerationExampleAdminListResponse {
 
 export interface GenerationExampleCreateRequest {
   slug?: string | null;
+  seo_variant_index?: number;
   title?: string | null;
   description?: string | null;
   prompt: string;
@@ -95,6 +98,7 @@ export interface GenerationExampleCreateRequest {
 
 export interface GenerationExampleUpdateRequest {
   slug?: string | null;
+  seo_variant_index?: number | null;
   title?: string | null;
   description?: string | null;
   prompt?: string;
@@ -143,6 +147,19 @@ export interface GenerationExampleSeoSuggestionResponse {
 export interface GenerationExampleUseResponse {
   success: boolean;
   uses_count: number;
+}
+
+export interface GenerationExampleVariantStatItem {
+  source: string;
+  seo_variant_index: number;
+  views_count: number;
+  starts_count: number;
+  conversion_rate: number;
+}
+
+export interface GenerationExampleUseRequest {
+  seo_variant_index?: number;
+  source?: string;
 }
 
 export interface ExampleTagItem {

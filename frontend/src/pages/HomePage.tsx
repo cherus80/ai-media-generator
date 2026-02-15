@@ -11,7 +11,7 @@ import { Badge } from '../components/ui/Badge';
 import { AuthGuard } from '../components/auth/AuthGuard';
 import { Layout } from '../components/common/Layout';
 import { useAuthStore } from '../store/authStore';
-import { getGenerationExamples, incrementExampleUse } from '../api/content';
+import { getGenerationExamples } from '../api/content';
 import type { GenerationExampleItem } from '../types/content';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
@@ -174,8 +174,9 @@ export const HomePage: React.FC = () => {
                       </h3>
                       <button
                         onClick={() => {
-                          incrementExampleUse(example.id).catch(() => undefined);
-                          navigate(`/app/examples/generate?example=${encodeURIComponent(example.slug)}`);
+                          navigate(
+                            `/app/examples/generate?example=${encodeURIComponent(example.slug)}&source=app_home&v=${example.seo_variant_index ?? 0}`
+                          );
                         }}
                         className="mt-auto px-4 py-2 rounded-lg bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-semibold text-sm hover:shadow-lg transition"
                       >

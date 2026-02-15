@@ -69,6 +69,7 @@ class InstructionUploadResponse(BaseModel):
 class GenerationExamplePublicItem(BaseModel):
     id: int
     slug: str
+    seo_variant_index: int = Field(default=0, ge=0)
     title: Optional[str] = None
     description: Optional[str] = None
     prompt: str
@@ -84,7 +85,16 @@ class GenerationExamplePublicListResponse(BaseModel):
     total: int
 
 
+class GenerationExampleVariantStatItem(BaseModel):
+    source: str
+    seo_variant_index: int
+    views_count: int = 0
+    starts_count: int = 0
+    conversion_rate: float = 0.0
+
+
 class GenerationExampleAdminItem(GenerationExamplePublicItem):
+    variant_stats: list[GenerationExampleVariantStatItem] = Field(default_factory=list)
     is_published: bool
     created_at: datetime
     updated_at: datetime
@@ -99,6 +109,7 @@ class GenerationExampleAdminListResponse(BaseModel):
 
 class GenerationExampleCreateRequest(BaseModel):
     slug: Optional[str] = Field(default=None, min_length=1, max_length=240)
+    seo_variant_index: int = Field(default=0, ge=0, le=99)
     title: Optional[str] = Field(default=None, max_length=200)
     description: Optional[str] = None
     prompt: str = Field(..., min_length=1)
@@ -111,6 +122,7 @@ class GenerationExampleCreateRequest(BaseModel):
 
 class GenerationExampleUpdateRequest(BaseModel):
     slug: Optional[str] = Field(default=None, min_length=1, max_length=240)
+    seo_variant_index: Optional[int] = Field(default=None, ge=0, le=99)
     title: Optional[str] = Field(default=None, max_length=200)
     description: Optional[str] = None
     prompt: Optional[str] = Field(default=None, min_length=1)
@@ -154,6 +166,11 @@ class GenerationExampleSeoSuggestionResponse(BaseModel):
     faq: list[GenerationExampleSeoFaqItem] = Field(default_factory=list)
     selected_index: int = Field(default=0, ge=0)
     variants: list[GenerationExampleSeoSuggestionVariant] = Field(default_factory=list)
+
+
+class GenerationExampleUseRequest(BaseModel):
+    seo_variant_index: Optional[int] = Field(default=None, ge=0, le=99)
+    source: Optional[str] = Field(default=None, max_length=40)
 
 
 class GenerationExampleUseResponse(BaseModel):

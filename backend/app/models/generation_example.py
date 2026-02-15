@@ -21,6 +21,7 @@ class GenerationExample(Base, TimestampMixin):
     image_url: Mapped[str] = mapped_column(String(500), nullable=False)
     seo_title: Mapped[str | None] = mapped_column(String(120), nullable=True)
     seo_description: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    seo_variant_index: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     uses_count: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     is_published: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
     created_by_user_id: Mapped[int | None] = mapped_column(
@@ -42,6 +43,12 @@ class GenerationExample(Base, TimestampMixin):
     )
     slug_history = relationship(
         "GenerationExampleSlug",
+        back_populates="example",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+    variant_stats = relationship(
+        "GenerationExampleVariantStat",
         back_populates="example",
         cascade="all, delete-orphan",
         lazy="selectin",
@@ -89,3 +96,38 @@ class GenerationExampleSlug(Base, TimestampMixin):
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<GenerationExampleSlug example_id={self.example_id} slug={self.slug!r}>"
+
+
+class GenerationExampleVariantStat(Base, TimestampMixin):
+    """
+    Агрегированные метрики по варианту SEO-карточки.
+    """
+
+    __table_args__ = (
+        UniqueConstraint(
+            "example_id",
+            "source",
+            "seo_variant_index",
+            name="uq_generation_example_variant_stats_example_source_variant",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    example_id: Mapped[int] = mapped_column(
+        ForeignKey("generation_examples.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    source: Mapped[str] = mapped_column(String(40), nullable=False, server_default="unknown", index=True)
+    seo_variant_index: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0", index=True)
+    views_count: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    starts_count: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+
+    example = relationship("GenerationExample", back_populates="variant_stats", lazy="joined")
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return (
+            "<GenerationExampleVariantStat "
+            f"example_id={self.example_id} source={self.source!r} variant={self.seo_variant_index} "
+            f"views={self.views_count} starts={self.starts_count}>"
+        )

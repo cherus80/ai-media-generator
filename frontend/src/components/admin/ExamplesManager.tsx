@@ -301,22 +301,23 @@ export const ExamplesManager: React.FC = () => {
     setLoading(true);
     try {
       const response = await getAdminExamples();
-      setItems(
-        response.items.map((item) => ({
-          ...item,
-          draftSlug: item.slug || '',
-          draftTitle: item.title || '',
-          draftDescription: item.description || '',
-          draftPrompt: item.prompt,
-          draftImageUrl: item.image_url,
-          draftSeoTitle: item.seo_title || '',
-          draftSeoDescription: item.seo_description || '',
-          draftTags: item.tags || [],
-          draftPublished: item.is_published,
-        }))
-      );
+      const mappedItems = response.items.map((item) => ({
+        ...item,
+        draftSlug: item.slug || '',
+        draftTitle: item.title || '',
+        draftDescription: item.description || '',
+        draftPrompt: item.prompt,
+        draftImageUrl: item.image_url,
+        draftSeoTitle: item.seo_title || '',
+        draftSeoDescription: item.seo_description || '',
+        draftTags: item.tags || [],
+        draftPublished: item.is_published,
+      }));
+      setItems(mappedItems);
       setItemSeoVariants({});
-      setItemSelectedVariantIndex({});
+      setItemSelectedVariantIndex(
+        Object.fromEntries(mappedItems.map((item) => [item.id, item.seo_variant_index ?? 0]))
+      );
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || 'Не удалось загрузить примеры');
     } finally {
@@ -379,6 +380,7 @@ export const ExamplesManager: React.FC = () => {
       const parsedTags = normalizeTagList([...selectedExistingTags, ...parseTags(newTags)]);
       const created = await createExample({
         slug: newSlug.trim() || null,
+        seo_variant_index: newSelectedVariantIndex,
         title: newTitle.trim() || null,
         description: newDescription.trim() || null,
         prompt: newPrompt.trim(),
@@ -404,6 +406,10 @@ export const ExamplesManager: React.FC = () => {
         },
         ...prev,
       ]);
+      setItemSelectedVariantIndex((prev) => ({
+        ...prev,
+        [created.id]: created.seo_variant_index ?? newSelectedVariantIndex,
+      }));
       setNewSlug('');
       setNewTitle('');
       setNewDescription('');
@@ -424,9 +430,11 @@ export const ExamplesManager: React.FC = () => {
 
   const handleSave = async (item: DraftExample) => {
     setSavingId(item.id);
+    const selectedVariantIndex = itemSelectedVariantIndex[item.id] ?? item.seo_variant_index ?? 0;
     try {
       const updated = await updateExample(item.id, {
         slug: item.draftSlug.trim() || null,
+        seo_variant_index: selectedVariantIndex,
         title: item.draftTitle.trim() || null,
         description: item.draftDescription.trim() || null,
         prompt: item.draftPrompt.trim(),
@@ -455,6 +463,10 @@ export const ExamplesManager: React.FC = () => {
             : row
         )
       );
+      setItemSelectedVariantIndex((prev) => ({
+        ...prev,
+        [item.id]: updated.seo_variant_index ?? selectedVariantIndex,
+      }));
       toast.success('Сохранено');
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || 'Не удалось сохранить');
@@ -497,6 +509,7 @@ export const ExamplesManager: React.FC = () => {
     item.draftImageUrl.trim() !== item.image_url ||
     item.draftSeoTitle.trim() !== (item.seo_title || '') ||
     item.draftSeoDescription.trim() !== (item.seo_description || '') ||
+    (itemSelectedVariantIndex[item.id] ?? item.seo_variant_index ?? 0) !== (item.seo_variant_index ?? 0) ||
     item.draftTags.join(',') !== item.tags.join(',') ||
     item.draftPublished !== item.is_published;
 
@@ -850,7 +863,12 @@ export const ExamplesManager: React.FC = () => {
           )}
           {items.map((item) => {
             const seoVariants = itemSeoVariants[item.id] || [];
-            const selectedSeoVariant = itemSelectedVariantIndex[item.id] ?? 0;
+            const selectedSeoVariant = itemSelectedVariantIndex[item.id] ?? item.seo_variant_index ?? 0;
+            const currentVariantStats = (item.variant_stats || []).find(
+              (stat) =>
+                stat.source === 'seo_detail' &&
+                stat.seo_variant_index === selectedSeoVariant
+            );
 
             return (
               <div key={item.id} className="bg-white rounded-xl shadow p-6 space-y-4">
@@ -1073,6 +1091,14 @@ export const ExamplesManager: React.FC = () => {
                     <span className="text-xs text-gray-500">
                       Использований: {item.uses_count}
                     </span>
+                    <span className="text-xs text-gray-500">
+                      SEO вариант: #{selectedSeoVariant + 1}
+                    </span>
+                    {currentVariantStats && (
+                      <span className="text-xs text-indigo-700">
+                        SEO: просмотры {currentVariantStats.views_count}, переходы {currentVariantStats.starts_count}, CR {(currentVariantStats.conversion_rate * 100).toFixed(1)}%
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-gray-500">
                     Обновлено: {new Date(item.updated_at).toLocaleString()}

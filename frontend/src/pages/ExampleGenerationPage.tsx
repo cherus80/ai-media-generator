@@ -12,17 +12,23 @@ import type { ChatAttachment } from '../types/editing';
 import type { AspectRatio } from '../types/generation';
 import { InsufficientBalanceModal } from '../components/payment/InsufficientBalanceModal';
 import { getGenerationErrorMessage, isInsufficientBalanceError } from '../utils/billingErrors';
-import { getGenerationExampleBySlug } from '../api/content';
+import { getGenerationExampleBySlug, incrementExampleUse } from '../api/content';
 
 export const ExampleGenerationPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const rawPrompt = searchParams.get('prompt') || '';
   const exampleSlug = (searchParams.get('example') || '').trim();
+  const sourceParam = (searchParams.get('source') || '').trim();
+  const variantRaw = (searchParams.get('v') || searchParams.get('variant') || '').trim();
+  const parsedVariant = Number.parseInt(variantRaw, 10);
+  const variantIndex = Number.isFinite(parsedVariant) && parsedVariant >= 0 ? parsedVariant : undefined;
+  const trackingSource = sourceParam || 'unknown';
   const fallbackPrompt = useMemo(() => rawPrompt.trim(), [rawPrompt]);
   const [prompt, setPrompt] = React.useState(fallbackPrompt);
   const [loadingExample, setLoadingExample] = React.useState(false);
   const [exampleError, setExampleError] = React.useState<string | null>(null);
+  const [exampleId, setExampleId] = React.useState<number | null>(null);
   const [aspectRatio, setAspectRatio] = React.useState<AspectRatio>('auto');
   const { user } = useAuthStore();
   const [balanceWarning, setBalanceWarning] = React.useState<{
@@ -61,6 +67,7 @@ export const ExampleGenerationPage: React.FC = () => {
     const loadPrompt = async () => {
       if (!exampleSlug) {
         setPrompt(fallbackPrompt);
+        setExampleId(null);
         setExampleError(null);
         setLoadingExample(false);
         return;
@@ -71,10 +78,12 @@ export const ExampleGenerationPage: React.FC = () => {
       try {
         const example = await getGenerationExampleBySlug(exampleSlug);
         if (!cancelled) {
+          setExampleId(example.id);
           setPrompt(example.prompt.trim());
         }
       } catch {
         if (!cancelled) {
+          setExampleId(null);
           setPrompt('');
           setExampleError('Пример не найден или временно недоступен.');
         }
@@ -90,6 +99,16 @@ export const ExampleGenerationPage: React.FC = () => {
       cancelled = true;
     };
   }, [exampleSlug, fallbackPrompt]);
+
+  useEffect(() => {
+    if (!exampleId) {
+      return;
+    }
+    incrementExampleUse(exampleId, {
+      source: trackingSource,
+      seo_variant_index: variantIndex,
+    }).catch(() => undefined);
+  }, [exampleId, trackingSource, variantIndex]);
 
   const handleSend = async (message: string, attachments?: ChatAttachment[]) => {
     try {

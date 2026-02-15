@@ -23,9 +23,11 @@ from app.schemas.content import (
     GenerationExampleUpdateRequest,
     GenerationExampleSeoSuggestionRequest,
     GenerationExampleSeoSuggestionResponse,
+    GenerationExampleVariantStatItem,
 )
 from app.services.file_storage import save_raw_upload_file, save_upload_file
 from app.services.file_validator import validate_video_file, validate_image_file
+from app.services.example_analytics import load_variant_stats_map
 from app.services.example_seo import generate_example_seo_suggestions
 from app.utils.slug import generate_unique_slug
 
@@ -51,6 +53,42 @@ def _clean_optional_text(value: Optional[str]) -> Optional[str]:
         return None
     cleaned = value.strip()
     return cleaned or None
+
+
+def _build_variant_stat_item(source: str, seo_variant_index: int, views_count: int, starts_count: int) -> GenerationExampleVariantStatItem:
+    conversion_rate = float(starts_count / views_count) if views_count > 0 else 0.0
+    return GenerationExampleVariantStatItem(
+        source=source,
+        seo_variant_index=seo_variant_index,
+        views_count=views_count,
+        starts_count=starts_count,
+        conversion_rate=round(conversion_rate, 4),
+    )
+
+
+def _build_admin_example_item(
+    item: GenerationExample,
+    variant_stats: list[GenerationExampleVariantStatItem] | None = None,
+) -> GenerationExampleAdminItem:
+    return GenerationExampleAdminItem(
+        id=item.id,
+        slug=item.slug,
+        seo_variant_index=item.seo_variant_index,
+        title=item.title,
+        description=item.description,
+        prompt=item.prompt,
+        image_url=item.image_url,
+        seo_title=item.seo_title,
+        seo_description=item.seo_description,
+        uses_count=item.uses_count,
+        tags=[tag.tag for tag in item.tags],
+        variant_stats=variant_stats or [],
+        is_published=item.is_published,
+        created_at=item.created_at,
+        updated_at=item.updated_at,
+        created_by_user_id=item.created_by_user_id,
+        updated_by_user_id=item.updated_by_user_id,
+    )
 
 
 @router.get("/instructions", response_model=InstructionAdminListResponse)
@@ -291,25 +329,22 @@ async def list_examples(
     )
     result = await db.execute(stmt)
     items = result.scalars().all()
+    example_ids = [item.id for item in items]
+    stats_map = await load_variant_stats_map(db, example_ids)
 
     return GenerationExampleAdminListResponse(
         items=[
-            GenerationExampleAdminItem(
-                id=item.id,
-                slug=item.slug,
-                title=item.title,
-                description=item.description,
-                prompt=item.prompt,
-                image_url=item.image_url,
-                seo_title=item.seo_title,
-                seo_description=item.seo_description,
-                uses_count=item.uses_count,
-                tags=[tag.tag for tag in item.tags],
-                is_published=item.is_published,
-                created_at=item.created_at,
-                updated_at=item.updated_at,
-                created_by_user_id=item.created_by_user_id,
-                updated_by_user_id=item.updated_by_user_id,
+            _build_admin_example_item(
+                item,
+                variant_stats=[
+                    _build_variant_stat_item(
+                        source=stat.source,
+                        seo_variant_index=stat.seo_variant_index,
+                        views_count=stat.views_count,
+                        starts_count=stat.starts_count,
+                    )
+                    for stat in stats_map.get(item.id, [])
+                ],
             )
             for item in items
         ],
@@ -338,6 +373,7 @@ async def create_example(
     )
     item = GenerationExample(
         slug=slug,
+        seo_variant_index=payload.seo_variant_index,
         title=_clean_optional_text(payload.title),
         description=_clean_optional_text(payload.description),
         prompt=payload.prompt.strip(),
@@ -355,23 +391,7 @@ async def create_example(
     db.add(item)
     await db.commit()
     await db.refresh(item)
-    return GenerationExampleAdminItem(
-        id=item.id,
-        slug=item.slug,
-        title=item.title,
-        description=item.description,
-        prompt=item.prompt,
-        image_url=item.image_url,
-        seo_title=item.seo_title,
-        seo_description=item.seo_description,
-        uses_count=item.uses_count,
-        tags=[tag.tag for tag in item.tags],
-        is_published=item.is_published,
-        created_at=item.created_at,
-        updated_at=item.updated_at,
-        created_by_user_id=item.created_by_user_id,
-        updated_by_user_id=item.updated_by_user_id,
-    )
+    return _build_admin_example_item(item)
 
 
 @router.put("/examples/{example_id}", response_model=GenerationExampleAdminItem)
@@ -395,6 +415,8 @@ async def update_example(
 
     if payload.title is not None:
         item.title = _clean_optional_text(payload.title)
+    if payload.seo_variant_index is not None:
+        item.seo_variant_index = payload.seo_variant_index
     if payload.description is not None:
         item.description = _clean_optional_text(payload.description)
     if payload.prompt is not None:
@@ -443,23 +465,7 @@ async def update_example(
 
     await db.commit()
     await db.refresh(item)
-    return GenerationExampleAdminItem(
-        id=item.id,
-        slug=item.slug,
-        title=item.title,
-        description=item.description,
-        prompt=item.prompt,
-        image_url=item.image_url,
-        seo_title=item.seo_title,
-        seo_description=item.seo_description,
-        uses_count=item.uses_count,
-        tags=[tag.tag for tag in item.tags],
-        is_published=item.is_published,
-        created_at=item.created_at,
-        updated_at=item.updated_at,
-        created_by_user_id=item.created_by_user_id,
-        updated_by_user_id=item.updated_by_user_id,
-    )
+    return _build_admin_example_item(item)
 
 
 @router.delete("/examples/{example_id}", status_code=status.HTTP_204_NO_CONTENT)

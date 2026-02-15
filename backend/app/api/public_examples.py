@@ -19,6 +19,7 @@ from sqlalchemy.orm import selectinload
 from app.core.config import settings
 from app.db.session import get_db
 from app.models import GenerationExample, GenerationExampleSlug, GenerationExampleTag
+from app.services.example_analytics import increment_variant_metric, normalize_source, normalize_variant_index
 
 router = APIRouter()
 
@@ -258,8 +259,20 @@ async def public_example_detail(
     canonical = _app_url(f"/examples/{quote(item.slug)}")
     image_url = _resolve_public_image(item.image_url)
     tags_html = "".join(f'<span class="tag">{escape(tag.tag)}</span>' for tag in item.tags[:10])
-    cta_href = f"/app/examples/generate?example={quote(item.slug)}"
+    variant_index = normalize_variant_index(item.seo_variant_index)
+    cta_href = f"/app/examples/generate?example={quote(item.slug)}&source=seo_detail&v={variant_index}"
     tag_names = [tag.tag for tag in item.tags]
+
+    try:
+        await increment_variant_metric(
+            db,
+            example_id=item.id,
+            source=normalize_source("seo_detail"),
+            seo_variant_index=variant_index,
+            metric="views",
+        )
+    except Exception:
+        pass
 
     if tag_names:
         similar_stmt = (

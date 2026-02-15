@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthGuard } from '../components/auth/AuthGuard';
 import { Layout } from '../components/common/Layout';
-import { getGenerationExamples, getExampleTags, incrementExampleUse } from '../api/content';
+import { getGenerationExamples, getExampleTags } from '../api/content';
 import type { GenerationExampleItem, ExampleTagItem } from '../types/content';
 import { useSeo } from '../hooks/useSeo';
 
@@ -76,9 +76,10 @@ export const ExamplesPage: React.FC = () => {
     loadTags();
   }, []);
 
-  const handleUseExample = async (example: GenerationExampleItem) => {
-    incrementExampleUse(example.id).catch(() => undefined);
-    navigate(`/app/examples/generate?example=${encodeURIComponent(example.slug)}`);
+  const handleUseExample = (example: GenerationExampleItem) => {
+    navigate(
+      `/app/examples/generate?example=${encodeURIComponent(example.slug)}&source=app_examples&v=${example.seo_variant_index ?? 0}`
+    );
   };
 
   const toggleTag = (tag: string) => {

@@ -16,9 +16,15 @@ from app.schemas.content import (
     InstructionType,
     GenerationExamplePublicListResponse,
     GenerationExamplePublicItem,
+    GenerationExampleUseRequest,
     GenerationExampleUseResponse,
     ExampleTagListResponse,
     ExampleTagItem,
+)
+from app.services.example_analytics import (
+    increment_variant_metric,
+    normalize_source,
+    normalize_variant_index,
 )
 
 router = APIRouter()
@@ -93,6 +99,7 @@ async def list_examples(
             GenerationExamplePublicItem(
                 id=item.id,
                 slug=item.slug,
+                seo_variant_index=item.seo_variant_index,
                 title=item.title,
                 description=item.description,
                 prompt=item.prompt,
@@ -133,6 +140,7 @@ async def get_example_by_slug(
     return GenerationExamplePublicItem(
         id=item.id,
         slug=item.slug,
+        seo_variant_index=item.seo_variant_index,
         title=item.title,
         description=item.description,
         prompt=item.prompt,
@@ -148,6 +156,7 @@ async def get_example_by_slug(
 async def increment_example_use(
     example_id: int,
     db: DBSession,
+    payload: GenerationExampleUseRequest | None = None,
 ) -> GenerationExampleUseResponse:
     """
     Увеличить счётчик использования примера.
@@ -159,12 +168,26 @@ async def increment_example_use(
             GenerationExample.is_published.is_(True),
         )
         .values(uses_count=GenerationExample.uses_count + 1)
-        .returning(GenerationExample.uses_count)
+        .returning(GenerationExample.uses_count, GenerationExample.seo_variant_index)
     )
     result = await db.execute(stmt)
     row = result.first()
     if not row:
         raise HTTPException(status_code=404, detail="Пример не найден")
+
+    effective_variant = normalize_variant_index(
+        payload.seo_variant_index if payload else None,
+        fallback=row[1],
+    )
+    effective_source = normalize_source(payload.source if payload else None)
+    await increment_variant_metric(
+        db,
+        example_id=example_id,
+        source=effective_source,
+        seo_variant_index=effective_variant,
+        metric="starts",
+    )
+
     await db.commit()
     return GenerationExampleUseResponse(success=True, uses_count=row[0])
 
