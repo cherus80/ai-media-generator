@@ -275,8 +275,8 @@ async def public_example_detail(
         pass
 
     if tag_names:
-        similar_stmt = (
-            sa.select(GenerationExample)
+        similar_ids_stmt = (
+            sa.select(GenerationExample.id)
             .join(GenerationExampleTag, GenerationExampleTag.example_id == GenerationExample.id)
             .where(
                 GenerationExample.is_published.is_(True),
@@ -290,8 +290,21 @@ async def public_example_detail(
                 GenerationExample.created_at.desc(),
             )
             .limit(4)
-            .options(selectinload(GenerationExample.tags))
         )
+        similar_ids_result = await db.execute(similar_ids_stmt)
+        similar_ids = [row[0] for row in similar_ids_result.all()]
+
+        if similar_ids:
+            similar_stmt = (
+                sa.select(GenerationExample)
+                .where(GenerationExample.id.in_(similar_ids))
+                .options(selectinload(GenerationExample.tags))
+            )
+            similar_result = await db.execute(similar_stmt)
+            similar_map = {example.id: example for example in similar_result.scalars().all()}
+            similar_items = [similar_map[example_id] for example_id in similar_ids if example_id in similar_map]
+        else:
+            similar_items = []
     else:
         similar_stmt = (
             sa.select(GenerationExample)
@@ -303,8 +316,8 @@ async def public_example_detail(
             .limit(4)
             .options(selectinload(GenerationExample.tags))
         )
-    similar_result = await db.execute(similar_stmt)
-    similar_items = similar_result.scalars().all()
+        similar_result = await db.execute(similar_stmt)
+        similar_items = similar_result.scalars().all()
 
     faq_items = [
         {
