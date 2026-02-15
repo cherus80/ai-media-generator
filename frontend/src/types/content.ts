@@ -52,9 +52,13 @@ export interface InstructionUploadResponse {
 
 export interface GenerationExampleItem {
   id: number;
+  slug: string;
   title?: string | null;
+  description?: string | null;
   prompt: string;
   image_url: string;
+  seo_title?: string | null;
+  seo_description?: string | null;
   uses_count: number;
   tags: string[];
 }
@@ -78,17 +82,25 @@ export interface GenerationExampleAdminListResponse {
 }
 
 export interface GenerationExampleCreateRequest {
+  slug?: string | null;
   title?: string | null;
+  description?: string | null;
   prompt: string;
   image_url: string;
+  seo_title?: string | null;
+  seo_description?: string | null;
   tags?: string[];
   is_published?: boolean;
 }
 
 export interface GenerationExampleUpdateRequest {
+  slug?: string | null;
   title?: string | null;
+  description?: string | null;
   prompt?: string;
   image_url?: string;
+  seo_title?: string | null;
+  seo_description?: string | null;
   tags?: string[];
   is_published?: boolean;
 }

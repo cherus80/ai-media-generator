@@ -7,9 +7,10 @@ API Dependencies — зависимости для FastAPI endpoints.
 - Получение DB сессии
 """
 
-from typing import Annotated
+from hmac import compare_digest
+from typing import Annotated, Optional
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,6 +22,7 @@ from app.utils.jwt import JWTTokenError, verify_token
 
 # HTTP Bearer схема для Authorization header
 security = HTTPBearer()
+optional_security = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(
@@ -172,6 +174,51 @@ async def get_current_super_admin(
     return current_user
 
 
+def validate_admin_service_token(token: str) -> bool:
+    """
+    Проверяет service token для автоматизации админского API.
+    """
+    allowed_tokens = settings.admin_service_tokens
+    if not token or not allowed_tokens:
+        return False
+    return any(compare_digest(token, allowed) for allowed in allowed_tokens)
+
+
+async def require_admin_or_service_token(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    credentials: Annotated[Optional[HTTPAuthorizationCredentials], Depends(optional_security)] = None,
+    x_admin_api_key: Annotated[Optional[str], Header(alias="X-Admin-Api-Key")] = None,
+) -> Optional[User]:
+    """
+    Разрешает доступ либо по JWT администратора, либо по service token.
+
+    Возвращает объект User для JWT-админа, либо None для service-token запроса.
+    """
+    if x_admin_api_key:
+        if validate_admin_service_token(x_admin_api_key):
+            return None
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Невалидный admin service token",
+        )
+
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Требуется авторизация администратора или X-Admin-Api-Key",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    current_user = await get_current_user(credentials, db)
+    if current_user.role not in [UserRole.ADMIN, UserRole.SUPER_ADMIN]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Требуются права администратора. Недостаточно прав.",
+        )
+
+    return current_user
+
+
 async def require_verified_email(
     current_user: Annotated[User, Depends(get_current_active_user)],
 ) -> User:
@@ -224,4 +271,5 @@ ActiveUser = Annotated[User, Depends(get_current_active_user)]
 VerifiedUser = Annotated[User, Depends(require_verified_email)]
 AdminUser = Annotated[User, Depends(get_current_admin)]
 SuperAdminUser = Annotated[User, Depends(get_current_super_admin)]
+AdminOrService = Annotated[Optional[User], Depends(require_admin_or_service_token)]
 DBSession = Annotated[AsyncSession, Depends(get_db)]

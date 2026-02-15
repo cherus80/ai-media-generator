@@ -12,12 +12,17 @@ import type { ChatAttachment } from '../types/editing';
 import type { AspectRatio } from '../types/generation';
 import { InsufficientBalanceModal } from '../components/payment/InsufficientBalanceModal';
 import { getGenerationErrorMessage, isInsufficientBalanceError } from '../utils/billingErrors';
+import { getGenerationExampleBySlug } from '../api/content';
 
 export const ExampleGenerationPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const rawPrompt = searchParams.get('prompt') || '';
-  const prompt = useMemo(() => rawPrompt.trim(), [rawPrompt]);
+  const exampleSlug = (searchParams.get('example') || '').trim();
+  const fallbackPrompt = useMemo(() => rawPrompt.trim(), [rawPrompt]);
+  const [prompt, setPrompt] = React.useState(fallbackPrompt);
+  const [loadingExample, setLoadingExample] = React.useState(false);
+  const [exampleError, setExampleError] = React.useState<string | null>(null);
   const [aspectRatio, setAspectRatio] = React.useState<AspectRatio>('auto');
   const { user } = useAuthStore();
   const [balanceWarning, setBalanceWarning] = React.useState<{
@@ -49,6 +54,42 @@ export const ExampleGenerationPage: React.FC = () => {
       reset();
     };
   }, [reset]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadPrompt = async () => {
+      if (!exampleSlug) {
+        setPrompt(fallbackPrompt);
+        setExampleError(null);
+        setLoadingExample(false);
+        return;
+      }
+
+      setLoadingExample(true);
+      setExampleError(null);
+      try {
+        const example = await getGenerationExampleBySlug(exampleSlug);
+        if (!cancelled) {
+          setPrompt(example.prompt.trim());
+        }
+      } catch {
+        if (!cancelled) {
+          setPrompt('');
+          setExampleError('Пример не найден или временно недоступен.');
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingExample(false);
+        }
+      }
+    };
+
+    loadPrompt();
+    return () => {
+      cancelled = true;
+    };
+  }, [exampleSlug, fallbackPrompt]);
 
   const handleSend = async (message: string, attachments?: ChatAttachment[]) => {
     try {
@@ -100,7 +141,17 @@ export const ExampleGenerationPage: React.FC = () => {
         <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50 px-4 py-8">
           {stage === 'input' && (
             <div className="max-w-4xl mx-auto pt-6">
-              {!prompt && (
+              {loadingExample && (
+                <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
+                  Загружаем данные примера...
+                </div>
+              )}
+              {!loadingExample && exampleError && (
+                <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+                  {exampleError}
+                </div>
+              )}
+              {!loadingExample && !exampleError && !prompt && (
                 <div className="mb-6 rounded-2xl border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
                   Промпт образца не найден. Выберите образец и повторите попытку.
                 </div>
@@ -110,7 +161,7 @@ export const ExampleGenerationPage: React.FC = () => {
               </div>
               <ChatInput
                 onSend={handleSend}
-                disabled={isGenerating || !prompt}
+                disabled={isGenerating || !prompt || loadingExample}
                 placeholder="Опишите желаемый результат..."
                 prefillMessage={prompt}
                 requireAttachments

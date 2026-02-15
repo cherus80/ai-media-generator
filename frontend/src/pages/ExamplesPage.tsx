@@ -28,6 +28,7 @@ export const ExamplesPage: React.FC = () => {
     description: 'Библиотека лучших примеров генераций. Выберите стиль и запустите генерацию по образцу.',
     canonical: `${baseUrl}/app/examples`,
     image: `${baseUrl}/logo.png`,
+    noIndex: true,
   });
 
   useEffect(() => {
@@ -77,8 +78,7 @@ export const ExamplesPage: React.FC = () => {
 
   const handleUseExample = async (example: GenerationExampleItem) => {
     incrementExampleUse(example.id).catch(() => undefined);
-    const prompt = encodeURIComponent(example.prompt);
-    navigate(`/app/examples/generate?prompt=${prompt}`);
+    navigate(`/app/examples/generate?example=${encodeURIComponent(example.slug)}`);
   };
 
   const toggleTag = (tag: string) => {

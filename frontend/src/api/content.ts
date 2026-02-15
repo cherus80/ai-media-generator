@@ -9,6 +9,7 @@ import type {
   GenerationExampleListResponse,
   GenerationExampleUseResponse,
   ExampleTagListResponse,
+  GenerationExampleItem,
 } from '../types/content';
 
 export const getInstructions = async (type?: InstructionType): Promise<InstructionListResponse> => {
@@ -43,6 +44,11 @@ export const incrementExampleUse = async (exampleId: number): Promise<Generation
   const response = await apiClient.post<GenerationExampleUseResponse>(
     `/api/v1/content/examples/${exampleId}/use`
   );
+  return response.data;
+};
+
+export const getGenerationExampleBySlug = async (slug: string): Promise<GenerationExampleItem> => {
+  const response = await apiClient.get<GenerationExampleItem>(`/api/v1/content/examples/by-slug/${encodeURIComponent(slug)}`);
   return response.data;
 };
 

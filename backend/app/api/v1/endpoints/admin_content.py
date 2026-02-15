@@ -8,8 +8,8 @@ from fastapi import APIRouter, HTTPException, Query, status, File, UploadFile
 import sqlalchemy as sa
 from sqlalchemy.orm import selectinload
 
-from app.api.dependencies import AdminUser, DBSession
-from app.models import Instruction, GenerationExample, GenerationExampleTag
+from app.api.dependencies import AdminUser, AdminOrService, DBSession
+from app.models import Instruction, GenerationExample, GenerationExampleTag, GenerationExampleSlug
 from app.schemas.content import (
     InstructionAdminListResponse,
     InstructionAdminItem,
@@ -24,6 +24,7 @@ from app.schemas.content import (
 )
 from app.services.file_storage import save_raw_upload_file, save_upload_file
 from app.services.file_validator import validate_video_file, validate_image_file
+from app.utils.slug import generate_unique_slug
 
 router = APIRouter()
 
@@ -40,6 +41,13 @@ def _normalize_tags(tags: list[str] | None) -> list[str]:
         normalized.append(cleaned)
         seen.add(cleaned)
     return normalized
+
+
+def _clean_optional_text(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    cleaned = value.strip()
+    return cleaned or None
 
 
 @router.get("/instructions", response_model=InstructionAdminListResponse)
@@ -147,7 +155,7 @@ async def upload_instruction_image(
     status_code=status.HTTP_201_CREATED,
 )
 async def upload_example_image(
-    admin: AdminUser,
+    admin: AdminOrService,
     file: UploadFile = File(..., description="Изображение (JPEG/PNG/WebP/HEIC)"),
 ) -> InstructionUploadResponse:
     await validate_image_file(file)
@@ -155,7 +163,7 @@ async def upload_example_image(
     try:
         file_id, file_url, file_size = await save_upload_file(
             file,
-            user_id=admin.id,
+            user_id=admin.id if admin else 0,
             convert_to_webp=True,
         )
     except Exception as exc:
@@ -267,7 +275,7 @@ async def delete_instruction(
 
 @router.get("/examples", response_model=GenerationExampleAdminListResponse)
 async def list_examples(
-    admin: AdminUser,
+    admin: AdminOrService,
     db: DBSession,
 ) -> GenerationExampleAdminListResponse:
     stmt = (
@@ -285,9 +293,13 @@ async def list_examples(
         items=[
             GenerationExampleAdminItem(
                 id=item.id,
+                slug=item.slug,
                 title=item.title,
+                description=item.description,
                 prompt=item.prompt,
                 image_url=item.image_url,
+                seo_title=item.seo_title,
+                seo_description=item.seo_description,
                 uses_count=item.uses_count,
                 tags=[tag.tag for tag in item.tags],
                 is_published=item.is_published,
@@ -305,28 +317,42 @@ async def list_examples(
 @router.post("/examples", response_model=GenerationExampleAdminItem, status_code=status.HTTP_201_CREATED)
 async def create_example(
     payload: GenerationExampleCreateRequest,
-    admin: AdminUser,
+    admin: AdminOrService,
     db: DBSession,
 ) -> GenerationExampleAdminItem:
+    slug = await generate_unique_slug(
+        db,
+        payload.slug or payload.title,
+        fallback_prefix="example",
+    )
     item = GenerationExample(
-        title=payload.title.strip() if payload.title else None,
+        slug=slug,
+        title=_clean_optional_text(payload.title),
+        description=_clean_optional_text(payload.description),
         prompt=payload.prompt.strip(),
         image_url=payload.image_url.strip(),
+        seo_title=_clean_optional_text(payload.seo_title),
+        seo_description=_clean_optional_text(payload.seo_description),
         is_published=payload.is_published,
-        created_by_user_id=admin.id,
-        updated_by_user_id=admin.id,
+        created_by_user_id=admin.id if admin else None,
+        updated_by_user_id=admin.id if admin else None,
     )
     normalized_tags = _normalize_tags(payload.tags)
     if normalized_tags:
         item.tags = [GenerationExampleTag(tag=tag) for tag in normalized_tags]
+    item.slug_history = [GenerationExampleSlug(slug=slug)]
     db.add(item)
     await db.commit()
     await db.refresh(item)
     return GenerationExampleAdminItem(
         id=item.id,
+        slug=item.slug,
         title=item.title,
+        description=item.description,
         prompt=item.prompt,
         image_url=item.image_url,
+        seo_title=item.seo_title,
+        seo_description=item.seo_description,
         uses_count=item.uses_count,
         tags=[tag.tag for tag in item.tags],
         is_published=item.is_published,
@@ -341,20 +367,33 @@ async def create_example(
 async def update_example(
     example_id: int,
     payload: GenerationExampleUpdateRequest,
-    admin: AdminUser,
+    admin: AdminOrService,
     db: DBSession,
 ) -> GenerationExampleAdminItem:
-    result = await db.execute(sa.select(GenerationExample).where(GenerationExample.id == example_id))
+    result = await db.execute(
+        sa.select(GenerationExample)
+        .options(
+            selectinload(GenerationExample.tags),
+            selectinload(GenerationExample.slug_history),
+        )
+        .where(GenerationExample.id == example_id)
+    )
     item = result.scalar_one_or_none()
     if not item:
         raise HTTPException(status_code=404, detail="Пример не найден")
 
     if payload.title is not None:
-        item.title = payload.title.strip() if payload.title else None
+        item.title = _clean_optional_text(payload.title)
+    if payload.description is not None:
+        item.description = _clean_optional_text(payload.description)
     if payload.prompt is not None:
         item.prompt = payload.prompt.strip()
     if payload.image_url is not None:
         item.image_url = payload.image_url.strip()
+    if payload.seo_title is not None:
+        item.seo_title = _clean_optional_text(payload.seo_title)
+    if payload.seo_description is not None:
+        item.seo_description = _clean_optional_text(payload.seo_description)
     if payload.tags is not None:
         normalized_tags = _normalize_tags(payload.tags)
         existing_tags = {tag.tag for tag in item.tags}
@@ -369,15 +408,39 @@ async def update_example(
                 item.tags.append(GenerationExampleTag(tag=tag))
     if payload.is_published is not None:
         item.is_published = payload.is_published
-    item.updated_by_user_id = admin.id
+
+    should_update_slug = payload.slug is not None or payload.title is not None
+    if should_update_slug:
+        slug_source = payload.slug or item.title or f"example-{item.id}"
+        new_slug = await generate_unique_slug(
+            db,
+            slug_source,
+            fallback_prefix=f"example-{item.id}",
+            exclude_example_id=item.id,
+        )
+        if new_slug != item.slug:
+            current_slug = item.slug
+            existing_history = {slug_row.slug for slug_row in item.slug_history}
+            if current_slug not in existing_history:
+                item.slug_history.append(GenerationExampleSlug(slug=current_slug))
+            item.slug = new_slug
+            existing_history.add(current_slug)
+            if new_slug not in existing_history:
+                item.slug_history.append(GenerationExampleSlug(slug=new_slug))
+
+    item.updated_by_user_id = admin.id if admin else item.updated_by_user_id
 
     await db.commit()
     await db.refresh(item)
     return GenerationExampleAdminItem(
         id=item.id,
+        slug=item.slug,
         title=item.title,
+        description=item.description,
         prompt=item.prompt,
         image_url=item.image_url,
+        seo_title=item.seo_title,
+        seo_description=item.seo_description,
         uses_count=item.uses_count,
         tags=[tag.tag for tag in item.tags],
         is_published=item.is_published,
@@ -391,7 +454,7 @@ async def update_example(
 @router.delete("/examples/{example_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_example(
     example_id: int,
-    admin: AdminUser,
+    admin: AdminOrService,
     db: DBSession,
 ) -> None:
     result = await db.execute(sa.select(GenerationExample).where(GenerationExample.id == example_id))

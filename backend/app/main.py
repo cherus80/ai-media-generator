@@ -28,6 +28,7 @@ from app.utils.rate_limit import (
     resolve_identity,
     rate_limiter_ready,
 )
+from app.api import public_examples
 
 
 @asynccontextmanager
@@ -380,6 +381,9 @@ app.include_router(
     prefix=f"{settings.API_V1_PREFIX}/billing",
     tags=["billing"],
 )
+
+# Публичные SEO-страницы (каталог примеров, карточки, sitemap)
+app.include_router(public_examples.router, tags=["public"])
 
 # Mock Payment Emulator (только для разработки)
 if settings.PAYMENT_MOCK_MODE:

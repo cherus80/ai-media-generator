@@ -306,6 +306,10 @@ class Settings(BaseSettings):
         default="",
         description="Список email через запятую, которым автоматически присваивается роль ADMIN",
     )
+    ADMIN_SERVICE_TOKENS: str = Field(
+        default="",
+        description="Service tokens для админской автоматизации через X-Admin-Api-Key",
+    )
     ALLOWED_EMAIL_DOMAINS: str = Field(
         default="",
         description="Список разрешённых доменов через запятую для регистрации (пусто — разрешены все)",
@@ -416,6 +420,11 @@ class Settings(BaseSettings):
     def admin_email_list(self) -> list[str]:
         """Список админских email в нижнем регистре."""
         return [email.strip().lower() for email in self.ADMIN_EMAIL_WHITELIST.split(",") if email.strip()]
+
+    @property
+    def admin_service_tokens(self) -> list[str]:
+        """Список service tokens для админской автоматизации."""
+        return [token.strip() for token in self.ADMIN_SERVICE_TOKENS.split(",") if token.strip()]
 
     @property
     def allowed_email_domains(self) -> list[str]:

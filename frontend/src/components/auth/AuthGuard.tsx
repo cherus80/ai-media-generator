@@ -83,5 +83,6 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({ children, fallback }) => {
   }
 
   // Fallback - redirect to login (только после гидратации)
-  return <Navigate to="/login" replace />;
+  const nextPath = `${location.pathname}${location.search}${location.hash}`;
+  return <Navigate to={`/login?next=${encodeURIComponent(nextPath)}`} replace />;
 };

@@ -92,15 +92,55 @@ async def list_examples(
         items=[
             GenerationExamplePublicItem(
                 id=item.id,
+                slug=item.slug,
                 title=item.title,
+                description=item.description,
                 prompt=item.prompt,
                 image_url=item.image_url,
+                seo_title=item.seo_title,
+                seo_description=item.seo_description,
                 uses_count=item.uses_count,
                 tags=[tag.tag for tag in item.tags],
             )
             for item in items
         ],
         total=len(items),
+    )
+
+
+@router.get("/examples/by-slug/{slug}", response_model=GenerationExamplePublicItem)
+async def get_example_by_slug(
+    slug: str,
+    db: DBSession,
+) -> GenerationExamplePublicItem:
+    """
+    Получить опубликованный пример по slug.
+    """
+    stmt = (
+        sa.select(GenerationExample)
+        .where(
+            GenerationExample.slug == slug,
+            GenerationExample.is_published.is_(True),
+        )
+        .options(selectinload(GenerationExample.tags))
+        .limit(1)
+    )
+    result = await db.execute(stmt)
+    item = result.scalar_one_or_none()
+    if not item:
+        raise HTTPException(status_code=404, detail="Пример не найден")
+
+    return GenerationExamplePublicItem(
+        id=item.id,
+        slug=item.slug,
+        title=item.title,
+        description=item.description,
+        prompt=item.prompt,
+        image_url=item.image_url,
+        seo_title=item.seo_title,
+        seo_description=item.seo_description,
+        uses_count=item.uses_count,
+        tags=[tag.tag for tag in item.tags],
     )
 
 

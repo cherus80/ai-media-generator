@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- SEO-витрина примеров: публичный каталог `/examples`, отдельные страницы `/examples/<slug>`, динамический `sitemap.xml`, OG/Twitter meta-теги и backend-render для корректного индексирования и превью в соцсетях.
+- Для примеров генераций добавлены `slug` с историей (301-редиректы со старых slug), а также SEO-поля (`description`, `seo_title`, `seo_description`) и endpoint `GET /api/v1/content/examples/by-slug/{slug}`.
+- Для автоматизации карточек примеров добавлен admin service-token доступ через заголовок `X-Admin-Api-Key` (настройка `ADMIN_SERVICE_TOKENS`) в CRUD/загрузке примеров.
 - В функции генерации/редактирования добавлен режим text-to-image без загрузки базового фото: можно создать сессию без `base_image_url`, вести чат с ассистентом и запускать генерацию только по тексту (или по тексту + референсам).
 - Anti-multiaccounting в админке: в таблицу пользователей добавлены поля последнего входа (`IP`, `устройство`, `raw user-agent`, `last_login_at`) и автоматическая риск-оценка (`suspicion_score`, причины, подсветка подозрительных аккаунтов).
 - Добавлена миграция `20260212_user_login_meta` с полями `users.last_login_at`, `users.last_login_ip`, `users.last_login_user_agent`, `users.last_login_device` и индексами по `last_login_at/last_login_ip`.

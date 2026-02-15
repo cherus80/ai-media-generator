@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth, useAuthStore } from '../store/authStore';
 import { GoogleSignInButton } from '../components/auth/GoogleSignInButton';
 import { VKSignInButton } from '../components/auth/VKSignInButton';
@@ -8,10 +8,13 @@ import { TelegramSignInButton } from '../components/auth/TelegramSignInButton';
 import { validateLoginForm } from '../utils/passwordValidation';
 import { PD_CONSENT_VERSION } from '../constants/pdConsent';
 import { MAX_SUPPORT_URL } from '../constants/supportLinks';
+import { resolveSafeNextPath } from '../utils/safeRedirect';
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { loginWithEmail, isLoading, error, clearError } = useAuth();
+  const nextPath = resolveSafeNextPath(searchParams.get('next'), '/app');
 
   const [formData, setFormData] = useState({
     email: '',
@@ -57,7 +60,7 @@ export function LoginPage() {
       ) {
         navigate('/verify-required', { replace: true });
       } else {
-        navigate('/app');
+        navigate(nextPath, { replace: true });
       }
     } catch (err) {
       // Error is set in store
@@ -73,7 +76,7 @@ export function LoginPage() {
     ) {
       navigate('/verify-required', { replace: true });
     } else {
-      navigate('/app');
+      navigate(nextPath, { replace: true });
     }
   };
 
@@ -86,7 +89,7 @@ export function LoginPage() {
     ) {
       navigate('/verify-required', { replace: true });
     } else {
-      navigate('/app');
+      navigate(nextPath, { replace: true });
     }
   };
 
@@ -97,7 +100,10 @@ export function LoginPage() {
           <h2 className="text-3xl font-extrabold text-dark-900">Войдите в свой аккаунт</h2>
           <p className="text-sm text-dark-600">
             Или{' '}
-            <Link to="/register" className="font-semibold text-primary-700 hover:text-primary-800">
+            <Link
+              to={`/register?next=${encodeURIComponent(nextPath)}`}
+              className="font-semibold text-primary-700 hover:text-primary-800"
+            >
               создайте новый аккаунт
             </Link>
           </p>

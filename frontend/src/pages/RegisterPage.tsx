@@ -7,11 +7,13 @@ import { validateRegisterForm, checkPasswordStrength, getPasswordStrengthLabel, 
 import { getStoredReferralCode, storeReferralCode } from '../utils/referralStorage';
 import { registerPendingReferral } from '../utils/referralRegistration';
 import { PD_CONSENT_VERSION } from '../constants/pdConsent';
+import { resolveSafeNextPath } from '../utils/safeRedirect';
 
 export function RegisterPage() {
   const navigate = useNavigate();
   const { registerWithEmail, isLoading, error, clearError, isAuthenticated } = useAuth();
   const [searchParams] = useSearchParams();
+  const nextPath = resolveSafeNextPath(searchParams.get('next'), '/app');
 
   const [formData, setFormData] = useState({
     email: '',
@@ -87,7 +89,7 @@ export function RegisterPage() {
       ) {
         navigate('/verify-required', { replace: true });
       } else {
-        navigate('/app');
+        navigate(nextPath, { replace: true });
       }
     } catch (err) {
       // Error handled in store
@@ -103,7 +105,7 @@ export function RegisterPage() {
     ) {
       navigate('/verify-required', { replace: true });
     } else {
-      navigate('/app');
+      navigate(nextPath, { replace: true });
     }
   };
 
@@ -116,7 +118,7 @@ export function RegisterPage() {
     ) {
       navigate('/verify-required', { replace: true });
     } else {
-      navigate('/app');
+      navigate(nextPath, { replace: true });
     }
   };
 
@@ -127,7 +129,7 @@ export function RegisterPage() {
           <h2 className="text-center text-3xl font-bold text-gray-900">Создайте свой аккаунт</h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Уже есть аккаунт?{' '}
-            <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
+            <Link to={`/login?next=${encodeURIComponent(nextPath)}`} className="font-medium text-blue-600 hover:text-blue-500">
               Войти
             </Link>
           </p>
