@@ -338,10 +338,10 @@ export interface UpdateFittingPromptRequest {
 }
 
 // ============================================================================
-// Fallback (GrsAI / kie.ai / OpenRouter)
+// Fallback (GrsAI / kie.ai)
 // ============================================================================
 
-export type GenerationProvider = 'grsai' | 'kie_ai' | 'openrouter';
+export type GenerationProvider = 'grsai' | 'kie_ai';
 
 export interface FallbackSettings {
   primary_provider: GenerationProvider;

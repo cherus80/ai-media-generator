@@ -19,9 +19,41 @@ import type {
 import { getUploadErrorMessage } from '../../utils/uploadErrors';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
+const PUBLIC_SITE_BASE_URL = (
+  import.meta.env.VITE_PUBLIC_SITE_URL ||
+  API_BASE_URL ||
+  (typeof window !== 'undefined' ? window.location.origin : 'https://ai-generator.mix4.ru')
+).replace(/\/$/, '');
 
 const resolveImageUrl = (url: string) =>
   url.startsWith('http') ? url : `${API_BASE_URL}${url.startsWith('/') ? url : `/${url}`}`;
+
+const getPublicExampleUrl = (slug: string): string =>
+  `${PUBLIC_SITE_BASE_URL}/examples/${encodeURIComponent(slug)}`;
+
+const copyTextToClipboard = async (value: string): Promise<void> => {
+  if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+
+  if (typeof document === 'undefined') {
+    throw new Error('Clipboard API unavailable');
+  }
+
+  const textarea = document.createElement('textarea');
+  textarea.value = value;
+  textarea.setAttribute('readonly', '');
+  textarea.style.position = 'absolute';
+  textarea.style.left = '-9999px';
+  document.body.appendChild(textarea);
+  textarea.select();
+  const copied = document.execCommand('copy');
+  document.body.removeChild(textarea);
+  if (!copied) {
+    throw new Error('Copy command failed');
+  }
+};
 
 interface DraftExample extends GenerationExampleAdminItem {
   draftSlug: string;
@@ -65,6 +97,35 @@ const truncate = (value: string, max: number): string => {
   return normalized.slice(0, max - 1).trimEnd() + '…';
 };
 
+const hasCyrillic = (value: string): boolean => /[А-Яа-яЁё]/.test(value || '');
+
+const russianRatio = (value: string): number => {
+  const cyr = (value.match(/[А-Яа-яЁё]/g) || []).length;
+  const lat = (value.match(/[A-Za-z]/g) || []).length;
+  const letters = cyr + lat;
+  return letters === 0 ? 1 : cyr / letters;
+};
+
+const isMostlyRussian = (value: string, minRatio = 0.65): boolean =>
+  Boolean(value) && hasCyrillic(value) && russianRatio(value) >= minRatio;
+
+const inferRuThemeFromPrompt = (prompt: string): string => {
+  const lowered = (prompt || '').toLowerCase();
+  const rules: Array<{ keys: string[]; title: string }> = [
+    { keys: ['christmas', 'new year', 'santa', 'holiday'], title: 'Праздничный зимний портрет' },
+    { keys: ['winter', 'snow', 'snowy'], title: 'Зимний портрет' },
+    { keys: ['selfie', 'phone', 'camera angle'], title: 'Портрет с эффектом селфи' },
+    { keys: ['face', 'identity', 'preserve'], title: 'Портрет с сохранением черт лица' },
+    { keys: ['fashion', 'style', 'outfit'], title: 'Модный образ' },
+    { keys: ['outdoor', 'street'], title: 'Уличная фотосцена' },
+    { keys: ['studio', 'lighting'], title: 'Студийный портрет' },
+    { keys: ['cinematic', 'movie'], title: 'Кинематографичный портрет' },
+  ];
+
+  const found = rules.find((rule) => rule.keys.some((key) => lowered.includes(key)));
+  return found?.title || 'AI генерация по фото';
+};
+
 const toDateInputValue = (date: Date): string => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -80,8 +141,25 @@ const extractTitleFromPrompt = (prompt: string): string => {
   if (!cleaned) {
     return 'Пример генерации';
   }
+  if (!isMostlyRussian(cleaned, 0.55)) {
+    return inferRuThemeFromPrompt(cleaned);
+  }
   const words = cleaned.split(' ').slice(0, 7).join(' ');
   return words.charAt(0).toUpperCase() + words.slice(1);
+};
+
+const buildTitleVariantsFromPrompt = (prompt: string): [string, string, string] => {
+  const baseTitle = extractTitleFromPrompt(prompt);
+  const variants = [
+    baseTitle,
+    truncate(`${baseTitle} — сценарий AI-генерации`, 200),
+    truncate(`${baseTitle} — пример генерации по фото`, 200),
+  ];
+  const unique = variants.map((item, index) => {
+    const normalized = item.trim() || `Пример генерации ${index + 1}`;
+    return normalized.length <= 200 ? normalized : truncate(normalized, 200);
+  });
+  return [unique[0], unique[1], unique[2]];
 };
 
 const buildSeoDraft = (params: {
@@ -93,12 +171,13 @@ const buildSeoDraft = (params: {
   seoDescription: string;
   slug: string;
 }) => {
-  const baseTitle = params.title.trim() || extractTitleFromPrompt(params.prompt);
-  const firstTag = params.tags[0] ? `, ${params.tags[0]}` : '';
-  const generatedDescription = `Пример "${baseTitle}" для AI генерации${firstTag}. Загрузите свои фото и получите результат по этому сценарию.`;
+  const baseTitle = extractTitleFromPrompt(params.prompt);
+  const firstRuTag = params.tags.find((tag) => isMostlyRussian(tag, 0.5));
+  const firstTag = firstRuTag ? `, ${firstRuTag}` : '';
+  const generatedDescription = `Пример "${baseTitle}" для AI генерации${firstTag}. Шаблон уже настроен: загрузите свои фото и получите результат в этом стиле.`;
   const generatedSeoTitle = truncate(`${baseTitle} | Пример генерации AI`, 120);
   const generatedSeoDescription = truncate(
-    params.description.trim() || params.prompt.trim() || generatedDescription,
+    params.description.trim() || generatedDescription,
     200
   );
   const generatedSlug = params.slug.trim() || toSlug(baseTitle);
@@ -121,12 +200,12 @@ const buildLocalSeoVariants = (params: {
   slug: string;
 }): GenerationExampleSeoSuggestionVariant[] => {
   const base = buildSeoDraft(params);
-  const baseTitle = params.title.trim() || extractTitleFromPrompt(params.prompt);
+  const [titleA, titleB, titleC] = buildTitleVariantsFromPrompt(params.prompt);
   const baseSlug = base.slug || 'example';
   const variants: GenerationExampleSeoSuggestionVariant[] = [
     {
       slug: baseSlug,
-      title: baseTitle,
+      title: titleA,
       description: base.description,
       seo_title: base.seoTitle,
       seo_description: base.seoDescription,
@@ -134,28 +213,28 @@ const buildLocalSeoVariants = (params: {
     },
     {
       slug: `${baseSlug}-variant-2`,
-      title: baseTitle,
+      title: titleB,
       description: truncate(
-        `${base.description} Подходит для публикации в соцсетях и быстрого старта генерации по образцу.`,
+        `Карточка "${titleB}" подготовлена для публикации в соцсетях и быстрого старта генерации по фото.`,
         400
       ),
-      seo_title: truncate(`${baseTitle} — сценарий генерации по фото`, 120),
+      seo_title: truncate(`${titleB} | Генерация по промпту`, 120),
       seo_description: truncate(
-        `Готовый SEO-сценарий: ${baseTitle}. Загрузите фото, скорректируйте запрос и получите результат.`,
+        `Сценарий "${titleB}" для релевантной генерации: загрузите фото и примените идею карточки.`,
         200
       ),
       faq: [],
     },
     {
       slug: `${baseSlug}-variant-3`,
-      title: baseTitle,
+      title: titleC,
       description: truncate(
-        `${base.description} Вариант ориентирован на коммерческий контент и маркетплейсы.`,
+        `Вариант "${titleC}" ориентирован на коммерческий контент и быструю подготовку визуалов.`,
         400
       ),
-      seo_title: truncate(`${baseTitle}: AI пример для генерации`, 120),
+      seo_title: truncate(`${titleC} | AI пример для генерации`, 120),
       seo_description: truncate(
-        `Карточка "${baseTitle}" с подготовленным описанием, FAQ и CTA для запуска генерации.`,
+        `Карточка "${titleC}" с SEO-описанием и CTA для запуска генерации по вашему фото.`,
         200
       ),
       faq: [],
@@ -466,7 +545,11 @@ export const ExamplesManager: React.FC = () => {
       setNewSeoVariants([]);
       setNewSelectedVariantIndex(0);
       loadVariantReport().catch(() => undefined);
-      toast.success('Пример добавлен');
+      toast.success(
+        created.is_published
+          ? 'Пример добавлен и опубликован'
+          : 'Пример добавлен как черновик (не виден пользователям)'
+      );
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || 'Не удалось добавить пример');
     }
@@ -512,7 +595,11 @@ export const ExamplesManager: React.FC = () => {
         [item.id]: updated.seo_variant_index ?? selectedVariantIndex,
       }));
       loadVariantReport().catch(() => undefined);
-      toast.success('Сохранено');
+      toast.success(
+        updated.is_published
+          ? 'Сохранено и опубликовано'
+          : 'Сохранено как черновик (не виден пользователям)'
+      );
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || 'Не удалось сохранить');
     } finally {
@@ -590,6 +677,7 @@ export const ExamplesManager: React.FC = () => {
     setNewSeoVariants(variants);
     setNewSelectedVariantIndex(safeIndex);
     setNewSlug(selectedVariant.slug);
+    setNewTitle(selectedVariant.title);
     setNewDescription(selectedVariant.description);
     setNewSeoTitle(selectedVariant.seo_title);
     setNewSeoDescription(selectedVariant.seo_description);
@@ -613,6 +701,7 @@ export const ExamplesManager: React.FC = () => {
           ? {
               ...row,
               draftSlug: selectedVariant.slug,
+              draftTitle: selectedVariant.title,
               draftDescription: selectedVariant.description,
               draftSeoTitle: selectedVariant.seo_title,
               draftSeoDescription: selectedVariant.seo_description,
@@ -623,10 +712,15 @@ export const ExamplesManager: React.FC = () => {
   };
 
   const fillCreateSeoDraft = async () => {
+    const prompt = newPrompt.trim();
+    if (!prompt) {
+      toast.error('Сначала укажите промпт примера');
+      return;
+    }
     const tags = normalizeTagList([...selectedExistingTags, ...parseTags(newTags)]);
     const fallbackVariants = buildLocalSeoVariants({
       title: newTitle,
-      prompt: newPrompt,
+      prompt,
       tags,
       description: newDescription,
       seoTitle: newSeoTitle,
@@ -640,7 +734,7 @@ export const ExamplesManager: React.FC = () => {
         slug: newSlug.trim() || null,
         title: newTitle.trim() || null,
         description: newDescription.trim() || null,
-        prompt: newPrompt.trim() || null,
+        prompt,
         tags,
         seo_title: newSeoTitle.trim() || null,
         seo_description: newSeoDescription.trim() || null,
@@ -651,7 +745,7 @@ export const ExamplesManager: React.FC = () => {
           : [
               {
                 slug: draft.slug,
-                title: draft.title || newTitle.trim() || extractTitleFromPrompt(newPrompt),
+                title: draft.title || newTitle.trim() || extractTitleFromPrompt(prompt),
                 description: draft.description,
                 seo_title: draft.seo_title,
                 seo_description: draft.seo_description,
@@ -670,9 +764,14 @@ export const ExamplesManager: React.FC = () => {
   };
 
   const fillItemSeoDraft = async (item: DraftExample) => {
+    const prompt = item.draftPrompt.trim();
+    if (!prompt) {
+      toast.error('Укажите промпт в карточке примера перед SEO-генерацией');
+      return;
+    }
     const fallbackVariants = buildLocalSeoVariants({
       title: item.draftTitle,
-      prompt: item.draftPrompt,
+      prompt,
       tags: item.draftTags,
       description: item.draftDescription,
       seoTitle: item.draftSeoTitle,
@@ -685,7 +784,7 @@ export const ExamplesManager: React.FC = () => {
         slug: item.draftSlug.trim() || null,
         title: item.draftTitle.trim() || null,
         description: item.draftDescription.trim() || null,
-        prompt: item.draftPrompt.trim() || null,
+        prompt,
         tags: item.draftTags,
         seo_title: item.draftSeoTitle.trim() || null,
         seo_description: item.draftSeoDescription.trim() || null,
@@ -696,7 +795,7 @@ export const ExamplesManager: React.FC = () => {
           : [
               {
                 slug: draft.slug,
-                title: draft.title || item.draftTitle || extractTitleFromPrompt(item.draftPrompt),
+                title: draft.title || item.draftTitle || extractTitleFromPrompt(prompt),
                 description: draft.description,
                 seo_title: draft.seo_title,
                 seo_description: draft.seo_description,
@@ -711,6 +810,20 @@ export const ExamplesManager: React.FC = () => {
       toast('OpenRouter недоступен, применен локальный SEO-шаблон', { icon: 'ℹ️' });
     } finally {
       setSeoGeneratingId(null);
+    }
+  };
+
+  const handleCopyExampleLink = async (item: DraftExample) => {
+    const slug = toSlug(item.draftSlug || item.slug || '');
+    if (!slug) {
+      toast.error('Сначала заполните slug карточки');
+      return;
+    }
+    try {
+      await copyTextToClipboard(getPublicExampleUrl(slug));
+      toast.success('Ссылка на карточку скопирована');
+    } catch {
+      toast.error('Не удалось скопировать ссылку');
     }
   };
 
@@ -848,6 +961,9 @@ export const ExamplesManager: React.FC = () => {
                 </button>
               ))}
             </div>
+            <p className="text-xs text-indigo-900/80">
+              Активный title: {newSeoVariants[newSelectedVariantIndex]?.title || '—'}
+            </p>
             <p className="text-xs text-indigo-900/80">
               Активный SEO title: {newSeoVariants[newSelectedVariantIndex]?.seo_title || '—'}
             </p>
@@ -1076,6 +1192,11 @@ export const ExamplesManager: React.FC = () => {
                       Опубликовано
                     </label>
                   </div>
+                  {!item.draftPublished && (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                      Карточка не опубликована и не показывается в разделе «Примеры генераций».
+                    </div>
+                  )}
                   <div className="space-y-3">
                     <TagMultiSelect
                       label="Метки"
@@ -1200,6 +1321,9 @@ export const ExamplesManager: React.FC = () => {
                         ))}
                       </div>
                       <p className="text-xs text-indigo-900/80">
+                        Активный title: {seoVariants[selectedSeoVariant]?.title || '—'}
+                      </p>
+                      <p className="text-xs text-indigo-900/80">
                         Активный SEO title: {seoVariants[selectedSeoVariant]?.seo_title || '—'}
                       </p>
                     </div>
@@ -1236,6 +1360,13 @@ export const ExamplesManager: React.FC = () => {
                       className="px-4 py-2 rounded-lg text-sm font-semibold bg-red-50 text-red-600 hover:bg-red-100"
                     >
                       Удалить
+                    </button>
+                    <button
+                      onClick={() => handleCopyExampleLink(item)}
+                      disabled={savingId === item.id}
+                      className="px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                    >
+                      Скопировать ссылку
                     </button>
                     <span className="text-xs text-gray-500">
                       Использований: {item.uses_count}

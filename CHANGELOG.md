@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- В админке примеров рядом с действиями карточки добавлена кнопка «Скопировать ссылку»: копирует в буфер полный публичный URL вида `/examples/<slug>` (с поддержкой `VITE_PUBLIC_SITE_URL`).
 - Добавлена A/B-аналитика SEO-вариантов карточек примеров: в БД созданы `generation_example_variant_stats` и поле `generation_examples.seo_variant_index`; считаются просмотры SEO-деталки (`source=seo_detail`) и переходы в генерацию по варианту.
 - Добавлен event log `generation_example_variant_events` и admin endpoint `GET /api/v1/admin/examples/variant-report` с фильтрами `source/date_from/date_to` для отчёта по A/B-конверсии.
 - В `POST /api/v1/admin/examples/seo-suggestions` добавлена генерация 3 SEO-вариантов (`variants`) с `selected_index`; в админке примеров реализован селектор A/B/C для переключения вариантов slug/description/SEO-полей перед сохранением.
@@ -37,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Telegram-оповещения об ошибках backend/Celery (опционально, с лимитом по частоте).
 
 ### Changed
+- SEO-автозаполнение карточек примеров теперь работает в prompt-first режиме для RU-аудитории: даже при английском промпте title/description/SEO-поля и FAQ принудительно формируются на русском (с fallback на русские шаблоны и фильтрацией некириллического ответа LLM).
 - Публичная страница `/examples/<slug>` расширена SEO-контентом: блок "Как подготовить фото", FAQ, блок "Похожие примеры" и JSON-LD (`WebPage` + `FAQPage`).
 - Режим "Редактирование фото" переименован в "Генерация и редактирование фото" в ключевых пользовательских экранах (`Home`, `Editing`, `About`, `Landing`), включая обновлённые описания сценариев (с фото и без фото).
 - Backend-задача `generate_editing_task` теперь корректно обрабатывает text-only генерацию: `base_image_url` стал опциональным, для GrsAI/KieAI передаются входы по факту наличия изображений, а OpenRouter пропускается без базового фото.
@@ -57,6 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GrsAI подключён как основной провайдер Nano Banana Pro, kie.ai используется как fallback вместо OpenRouter.
 
 ### Fixed
+- В задачах генерации (`editing` и `fitting`) расширен fallback внутри GrsAI: при `GrsAITaskFailedError` (ошибка задачи на `nano-banana-pro`) теперь также делается повтор на `nano-banana-pro-cl` перед переходом к следующему провайдеру (`kie.ai`/другой fallback).
 - Исправлен Telegram-шаринг: в Mini App сообщение формируется как единый post с `url=<image>` и подписью (`текст + ссылка на приложение`), чтобы не было отдельного текста и лишнего превью сайта.
 - Backend-ошибки (`HTTPException.detail`/`message`) для авторизации, биллинга, админки и платежей переведены на русский язык.
 - Во frontend добавлена централизованная локализация API-ошибок через `frontend/src/utils/errorLocalization.ts` и interceptor в `frontend/src/api/client.ts`, чтобы исключить английские сообщения в UI.

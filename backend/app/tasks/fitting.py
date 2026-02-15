@@ -15,7 +15,6 @@ from app.db.session import async_session
 from app.models.generation import Generation
 from app.models.user import User
 from app.services.file_storage import save_upload_file_by_content, get_file_by_id
-from app.services.openrouter import OpenRouterClient, OpenRouterError
 from app.services.kie_ai import KieAIClient, KieAIError, KieAITimeoutError, KieAITaskFailedError
 from app.services.telegram_alerts import notify_error
 from app.services.grsai import (
@@ -32,7 +31,6 @@ from app.tasks.utils import (
     should_add_watermark,
     to_public_url,
     update_generation_status,
-    image_to_base64_data_url,
 )
 from app.utils.image_utils import (
     determine_image_size_for_fitting,
@@ -197,8 +195,6 @@ def generate_fitting_task(
                 generated_image_url = None
                 service_used = None
                 generation_errors: list[str] = []
-                user_photo_base64 = None
-                item_photo_base64 = None
 
                 resolved_primary, resolved_fallback, disable_from_store = get_generation_providers_for_worker()
                 if primary_provider:
@@ -235,6 +231,12 @@ def generate_fitting_task(
 
                             primary_model = settings.GRS_AI_MODEL
                             fallback_model = settings.GRS_AI_FALLBACK_MODEL
+                            retryable_grs_errors = (
+                                GrsAIServerError,
+                                GrsAIRateLimitError,
+                                GrsAITimeoutError,
+                                GrsAITaskFailedError,
+                            )
 
                             async with GrsAIClient() as grs_client:
                                 await update_generation_status(session, generation_id, "processing", progress=55)
@@ -247,7 +249,12 @@ def generate_fitting_task(
                                         model=primary_model,
                                         progress_callback=progress_callback,
                                     )
-                                except (GrsAIServerError, GrsAIRateLimitError, GrsAITimeoutError) as grs_retry_err:
+                                except retryable_grs_errors as grs_retry_err:
+                                    should_retry_with_fallback_model = (
+                                        bool(fallback_model) and fallback_model != primary_model
+                                    )
+                                    if not should_retry_with_fallback_model:
+                                        raise
                                     logger.warning(
                                         "GrsAI primary model failed (%s). Retrying with fallback model %s",
                                         grs_retry_err,
@@ -272,7 +279,7 @@ def generate_fitting_task(
                             logger.warning(
                                 "GrsAI try-on failed: %s. %s",
                                 error_text,
-                                "Fallback to next provider..." if fallback_provider else "No fallback configured",
+                                "Fallback to next provider..." if resolved_fallback else "No fallback configured",
                             )
                             generated_image_url = None
                             continue
@@ -318,31 +325,6 @@ def generate_fitting_task(
                                 error_text,
                                 "Fallback to next provider..." if fallback_provider else "No fallback configured",
                             )
-                            generated_image_url = None
-                            continue
-
-                    elif provider == "openrouter":
-                        try:
-                            if user_photo_base64 is None or item_photo_base64 is None:
-                                user_photo_base64 = image_to_base64_data_url(user_photo_path)
-                                item_photo_base64 = image_to_base64_data_url(item_photo_path)
-
-                            async with OpenRouterClient() as openrouter_client:
-                                await update_generation_status(session, generation_id, "processing", progress=60)
-
-                                generated_image_url = await openrouter_client.generate_virtual_tryon(
-                                    user_photo_data=user_photo_base64,
-                                    item_photo_data=item_photo_base64,
-                                    prompt=prompt,
-                                    aspect_ratio=resolved_aspect_ratio,
-                                )
-                            service_used = "openrouter"
-                            logger.info("OpenRouter virtual try-on successful")
-                            break
-
-                        except OpenRouterError as or_error:
-                            generation_errors.append(f"openrouter: {or_error}")
-                            logger.error("OpenRouter try-on failed: %s", or_error)
                             generated_image_url = None
                             continue
 

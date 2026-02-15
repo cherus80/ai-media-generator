@@ -5,11 +5,35 @@ FROM node:20-alpine
 # Установка рабочей директории
 WORKDIR /app
 
+# Proxy args (если окружение требует HTTP/HTTPS proxy)
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ARG NO_PROXY
+ARG http_proxy
+ARG https_proxy
+ARG no_proxy
+
+ENV HTTP_PROXY=${HTTP_PROXY}
+ENV HTTPS_PROXY=${HTTPS_PROXY}
+ENV NO_PROXY=${NO_PROXY}
+ENV http_proxy=${http_proxy}
+ENV https_proxy=${https_proxy}
+ENV no_proxy=${no_proxy}
+
 # Копирование package.json и package-lock.json
 COPY package*.json ./
 
-# Установка зависимостей
-RUN npm install
+# Установка зависимостей (устойчиво к временным network-ошибкам)
+RUN --mount=type=cache,target=/root/.npm \
+    npm config set maxsockets 3 && \
+    npm config set fetch-retries 12 && \
+    npm config set fetch-retry-mintimeout 20000 && \
+    npm config set fetch-retry-maxtimeout 180000 && \
+    npm config set fetch-timeout 600000 && \
+    npm config set audit false && \
+    npm config set fund false && \
+    npm config set prefer-offline true && \
+    (npm ci --loglevel=error || npm install --loglevel=error)
 
 # Копирование кода приложения
 COPY . .
@@ -18,4 +42,4 @@ COPY . .
 EXPOSE 3000
 
 # Команда запуска dev сервера
-CMD ["npm", "run", "dev", "--", "--host"]
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3000"]

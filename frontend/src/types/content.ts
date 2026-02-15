@@ -118,7 +118,7 @@ export interface GenerationExampleSeoSuggestionRequest {
   slug?: string | null;
   title?: string | null;
   description?: string | null;
-  prompt?: string | null;
+  prompt: string;
   tags?: string[];
   seo_title?: string | null;
   seo_description?: string | null;

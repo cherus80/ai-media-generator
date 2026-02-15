@@ -216,7 +216,7 @@ async def public_examples_catalog(
 async def public_example_detail(
     slug: str,
     db: AsyncSession = Depends(get_db),
-) -> HTMLResponse | RedirectResponse:
+) -> Response:
     stmt = (
         sa.select(GenerationExample)
         .where(

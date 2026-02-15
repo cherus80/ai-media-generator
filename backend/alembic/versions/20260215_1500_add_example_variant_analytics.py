@@ -1,6 +1,6 @@
 """add seo variant analytics for generation examples
 
-Revision ID: 20260215_example_variant_analytics
+Revision ID: 20260215_ex_var_analytics
 Revises: 20260215_examples_slug_seo
 Create Date: 2026-02-15 15:00:00.000000
 """
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "20260215_example_variant_analytics"
+revision: str = "20260215_ex_var_analytics"
 down_revision: Union[str, None] = "20260215_examples_slug_seo"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

@@ -5,8 +5,11 @@ Celery задачи для генерации редактирования из�
 import asyncio
 import logging
 import base64
+import ipaddress
+from urllib.parse import urlparse
 
 from celery import Task
+import httpx
 from sqlalchemy import select
 
 from app.core.config import settings
@@ -15,7 +18,6 @@ from app.models.user import User
 from app.models.generation import Generation
 from app.models.chat import ChatHistory
 from app.services.file_storage import save_upload_file_by_content, get_file_by_id
-from app.services.openrouter import OpenRouterClient, OpenRouterError
 from app.services.kie_ai import KieAIClient, KieAIError, KieAITimeoutError, KieAITaskFailedError
 from app.services.telegram_alerts import notify_error
 from app.services.grsai import (
@@ -32,7 +34,6 @@ from app.tasks.utils import (
     to_public_url,
     update_generation_status,
     extract_file_id_from_url,
-    image_to_base64_data_url,
 )
 from app.utils.image_utils import (
     determine_image_size_for_editing,
@@ -45,6 +46,49 @@ from app.utils.runtime_config import get_generation_providers_for_worker
 
 logger = logging.getLogger(__name__)
 USER_ERROR_MESSAGE = "Произошла ошибка, повторите запрос еще раз или зайдите позже"
+
+
+def _is_private_or_local_host(hostname: str | None) -> bool:
+    if not hostname:
+        return True
+    normalized = hostname.strip().lower()
+    if normalized in {"localhost", "127.0.0.1", "::1"}:
+        return True
+    try:
+        parsed_ip = ipaddress.ip_address(normalized)
+        return (
+            parsed_ip.is_private
+            or parsed_ip.is_loopback
+            or parsed_ip.is_link_local
+            or parsed_ip.is_reserved
+        )
+    except ValueError:
+        return False
+
+
+def _url_is_publicly_reachable_candidate(url: str | None) -> bool:
+    if not url:
+        return False
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"}:
+        return False
+    return not _is_private_or_local_host(parsed.hostname)
+
+
+async def _probe_remote_image_url(url: str) -> bool:
+    """
+    Лёгкий preflight на доступность изображения по URL.
+    Нужен для URL-only провайдеров (GrsAI/kie.ai), чтобы не отправлять им мёртвые ссылки.
+    """
+    if not _url_is_publicly_reachable_candidate(url):
+        return False
+
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(8.0), follow_redirects=True) as client:
+            response = await client.get(url, headers={"Range": "bytes=0-2048"})
+            return response.status_code < 400
+    except Exception:
+        return False
 
 
 class EditingTask(Task):
@@ -67,7 +111,7 @@ class EditingTask(Task):
 @celery_app.task(
     bind=True,
     base=EditingTask,
-    max_retries=0,  # избегаем автоповторов, чтобы не сжигать токены на OpenRouter
+    max_retries=0,  # избегаем автоповторов, чтобы не сжигать лимиты внешних провайдеров
     name="app.tasks.editing.generate_editing_task"
 )
 def generate_editing_task(
@@ -200,9 +244,8 @@ def generate_editing_task(
                 else:
                     logger.info("Using requested aspect ratio for editing: %s", resolved_aspect_ratio)
 
-                # Подготавливаем вложения: публичные URL и data URLs
+                # Подготавливаем вложения: публичные URL
                 attachment_public_urls: list[str] = []
-                attachment_data_urls: list[str] = []
 
                 for attachment in attachment_items:
                     url = attachment.get("url")
@@ -235,18 +278,34 @@ def generate_editing_task(
                         except Exception as att_err:
                             logger.warning("Failed to cache attachment %s: %s", public_url, att_err)
 
-                    if att_path:
-                        try:
-                            attachment_data_urls.append(image_to_base64_data_url(att_path))
-                        except Exception as data_err:
-                            logger.warning("Failed to convert attachment %s to data URL: %s", att_path, data_err)
-
                 # Публичный URL для kie.ai (требуются HTTP ссылки, не base64)
                 public_base_image_url = (
                     to_public_url(base_image_url_local)
                     if base_image_url_local
                     else None
                 )
+
+                # Проверяем, что URL референсов реально доступны для внешних провайдеров.
+                # Иначе GrsAI/kie.ai могут silently сгенерировать почти text-to-image без лица пользователя.
+                reference_urls_for_url_providers: list[str] = []
+                if public_base_image_url:
+                    reference_urls_for_url_providers.append(public_base_image_url)
+                if attachment_public_urls:
+                    reference_urls_for_url_providers.extend(attachment_public_urls)
+
+                url_provider_refs_are_reachable = True
+                if reference_urls_for_url_providers:
+                    probe_results = await asyncio.gather(
+                        *[_probe_remote_image_url(url) for url in reference_urls_for_url_providers],
+                        return_exceptions=False,
+                    )
+                    url_provider_refs_are_reachable = all(probe_results)
+                    if not url_provider_refs_are_reachable:
+                        logger.warning(
+                            "Some reference URLs are not publicly reachable for generation %s. "
+                            "External providers may not be able to use these references.",
+                            generation_id,
+                        )
 
                 # Обновление прогресса
                 await update_generation_status(
@@ -261,7 +320,6 @@ def generate_editing_task(
                 result_url = None
                 service_used = None
                 generation_errors: list[str] = []
-                base_image_data = None
 
                 resolved_primary, resolved_fallback, disable_from_store = get_generation_providers_for_worker()
                 if primary_provider:
@@ -307,6 +365,12 @@ def generate_editing_task(
 
                             primary_model = settings.GRS_AI_MODEL
                             fallback_model = settings.GRS_AI_FALLBACK_MODEL
+                            retryable_grs_errors = (
+                                GrsAIServerError,
+                                GrsAIRateLimitError,
+                                GrsAITimeoutError,
+                                GrsAITaskFailedError,
+                            )
 
                             async with GrsAIClient() as grs_client:
                                 await update_generation_status(session, generation_id, "processing", progress=55)
@@ -320,7 +384,12 @@ def generate_editing_task(
                                         model=primary_model,
                                         progress_callback=progress_callback,
                                     )
-                                except (GrsAIServerError, GrsAIRateLimitError, GrsAITimeoutError) as grs_retry_err:
+                                except retryable_grs_errors as grs_retry_err:
+                                    should_retry_with_fallback_model = (
+                                        bool(fallback_model) and fallback_model != primary_model
+                                    )
+                                    if not should_retry_with_fallback_model:
+                                        raise
                                     logger.warning(
                                         "GrsAI primary model failed (%s). Retrying with fallback model %s",
                                         grs_retry_err,
@@ -345,7 +414,7 @@ def generate_editing_task(
                             logger.warning(
                                 "GrsAI editing failed: %s. %s",
                                 error_text,
-                                "Fallback to next provider..." if fallback_provider else "No fallback configured",
+                                "Fallback to next provider..." if resolved_fallback else "No fallback configured",
                             )
                             result_url = None
                             continue
@@ -400,43 +469,16 @@ def generate_editing_task(
                             result_url = None
                             continue
 
-                    elif provider == "openrouter":
-                        try:
-                            if base_image_path is None:
-                                generation_errors.append("openrouter: provider requires base image for editing")
-                                logger.warning("Skipping OpenRouter for generation %s without base image", generation_id)
-                                continue
-                            if base_image_data is None:
-                                base_image_data = image_to_base64_data_url(base_image_path)
-
-                            async with OpenRouterClient() as openrouter_client:
-                                await update_generation_status(session, generation_id, "processing", progress=60)
-
-                                result_url = await openrouter_client.generate_image_edit(
-                                    base_image_data=base_image_data,
-                                    prompt=prompt,
-                                    aspect_ratio=resolved_aspect_ratio,
-                                    attachments_data=attachment_data_urls,
-                                )
-
-                            service_used = "openrouter"
-                            logger.info("OpenRouter image editing successful")
-
-                            if not result_url:
-                                raise ValueError("OpenRouter returned empty image URL")
-                            break
-
-                        except OpenRouterError as or_error:
-                            generation_errors.append(f"openrouter: {or_error}")
-                            logger.error("OpenRouter editing failed: %s", or_error)
-                            result_url = None
-                            continue
-
                     else:
                         generation_errors.append(f"{provider}: unsupported provider")
 
                 if not result_url:
                     details = "; ".join(generation_errors) if generation_errors else "no providers available"
+                    if reference_urls_for_url_providers and not url_provider_refs_are_reachable:
+                        details = (
+                            f"{details}; референсы могут быть недоступны внешним сервисам: "
+                            "проверьте публичный BACKEND_URL/доступность /uploads"
+                        )
                     raise ValueError(f"Image editing failed on all services: {details}")
 
                 # Обновление прогресса

@@ -409,6 +409,8 @@ async def get_example_seo_suggestions(
     payload: GenerationExampleSeoSuggestionRequest,
     _admin: AdminOrService,
 ) -> GenerationExampleSeoSuggestionResponse:
+    if not payload.prompt.strip():
+        raise HTTPException(status_code=400, detail="Для SEO-генерации укажите промпт примера")
     return await generate_example_seo_suggestions(payload)
 
 

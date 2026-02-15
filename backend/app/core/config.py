@@ -125,7 +125,7 @@ class Settings(BaseSettings):
     )
     GENERATION_PRIMARY_PROVIDER: str = Field(
         default="grsai",
-        description="Основной провайдер генерации (grsai, kie_ai или openrouter)",
+        description="Основной провайдер генерации (grsai или kie_ai)",
     )
     GENERATION_FALLBACK_PROVIDER: Optional[str] = Field(
         default="kie_ai",
@@ -143,7 +143,7 @@ class Settings(BaseSettings):
     )
     KIE_AI_DISABLE_FALLBACK: bool = Field(
         default=False,
-        description="Если true — не делать fallback на OpenRouter при ошибках kie.ai (для тестов)",
+        description="Если true — не делать fallback на резервный провайдер при ошибках primary",
     )
 
     # Telegram alerts (error notifications)
@@ -410,7 +410,7 @@ class Settings(BaseSettings):
         """Валидация названий провайдеров генерации."""
         if v is None:
             return None
-        allowed = {"grsai", "kie_ai", "openrouter"}
+        allowed = {"grsai", "kie_ai"}
         normalized = v.lower()
         if normalized not in allowed:
             raise ValueError(f"{info.field_name} must be one of {allowed} or null")

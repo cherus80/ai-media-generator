@@ -12,7 +12,6 @@ import toast from 'react-hot-toast';
 const providerLabels: Record<GenerationProvider, string> = {
   grsai: 'GrsAI (primary)',
   kie_ai: 'kie.ai',
-  openrouter: 'OpenRouter',
 };
 
 export const FallbackSettings: React.FC = () => {
@@ -62,7 +61,7 @@ export const FallbackSettings: React.FC = () => {
     await handleUpdate({ fallback_provider: normalized });
   };
 
-  const providers = settings?.available_providers || (['grsai', 'kie_ai', 'openrouter'] as GenerationProvider[]);
+  const providers = settings?.available_providers || (['grsai', 'kie_ai'] as GenerationProvider[]);
   const chain = settings
     ? [settings.primary_provider, settings.fallback_provider].filter(Boolean).join(' → ') || '—'
     : '—';

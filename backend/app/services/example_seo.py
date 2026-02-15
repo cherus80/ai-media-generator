@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from typing import Any
 
 from app.core.config import settings
@@ -28,13 +29,101 @@ def _truncate(value: str, max_len: int) -> str:
     return f"{normalized[: max_len - 1].rstrip()}…"
 
 
+def _normalize_prompt(prompt: str | None) -> str:
+    return " ".join((prompt or "").replace("`", "").replace('"', "").split()).strip()
+
+
+def _has_cyrillic(value: str) -> bool:
+    return bool(re.search(r"[А-Яа-яЁё]", value or ""))
+
+
+def _language_ratio_ru(value: str) -> float:
+    cyrillic = re.findall(r"[А-Яа-яЁё]", value or "")
+    latin = re.findall(r"[A-Za-z]", value or "")
+    letters = len(cyrillic) + len(latin)
+    if letters == 0:
+        return 1.0
+    return len(cyrillic) / letters
+
+
+def _is_mostly_russian(value: str, min_ratio: float = 0.65) -> bool:
+    if not value:
+        return False
+    return _has_cyrillic(value) and _language_ratio_ru(value) >= min_ratio
+
+
+def _infer_ru_theme_from_prompt(prompt: str) -> str:
+    lowered = (prompt or "").lower()
+    rules: list[tuple[tuple[str, ...], str]] = [
+        (("christmas", "new year", "santa", "holiday"), "Праздничный зимний портрет"),
+        (("winter", "snow", "snowy"), "Зимний портрет"),
+        (("selfie", "phone", "camera angle"), "Портрет с эффектом селфи"),
+        (("face", "identity", "preserve"), "Портрет с сохранением черт лица"),
+        (("fashion", "style", "outfit"), "Модный образ"),
+        (("outdoor", "street"), "Уличная фотосцена"),
+        (("studio", "lighting"), "Студийный портрет"),
+        (("cinematic", "movie"), "Кинематографичный портрет"),
+    ]
+    for keywords, title in rules:
+        if any(keyword in lowered for keyword in keywords):
+            return title
+    return "AI генерация по фото"
+
+
+def _sanitize_seo_text(value: str) -> str:
+    text = " ".join((value or "").split()).strip()
+    if not text:
+        return text
+    replacements = (
+        ("исходному промпту примера", "сценарию примера"),
+        ("исходный промпт", "сценарий"),
+        ("с адаптацией на русский язык", ""),
+    )
+    for old, new in replacements:
+        text = text.replace(old, new)
+        text = text.replace(old.capitalize(), new.capitalize())
+    text = re.sub(r"\(\s*\)", "", text)
+    text = re.sub(r"\s{2,}", " ", text)
+    return text.strip(" .")
+
+
+def _prefer_russian(candidate: str, fallback: str) -> str:
+    normalized = _truncate(_sanitize_seo_text(candidate), 4000)
+    if _is_mostly_russian(normalized):
+        return normalized
+    safe_fallback = _truncate(_sanitize_seo_text(fallback), 4000)
+    if _is_mostly_russian(safe_fallback, min_ratio=0.5):
+        return safe_fallback
+    return "Пример генерации AI"
+
+
 def _extract_title_from_prompt(prompt: str) -> str:
-    cleaned = " ".join((prompt or "").replace("`", "").replace('"', "").split()).strip()
+    cleaned = _normalize_prompt(prompt)
     if not cleaned:
         return "Пример генерации"
+    if not _is_mostly_russian(cleaned, min_ratio=0.55):
+        return _infer_ru_theme_from_prompt(cleaned)
     words = cleaned.split(" ")[:7]
     title = " ".join(words)
     return title[:1].upper() + title[1:]
+
+
+def _build_title_variants_from_prompt(prompt: str) -> list[str]:
+    base = _extract_title_from_prompt(prompt)
+    variants = [
+        base,
+        _truncate(f"{base} — сценарий AI-генерации", 200),
+        _truncate(f"{base} — пример генерации по фото", 200),
+    ]
+    unique: list[str] = []
+    seen: set[str] = set()
+    for index, item in enumerate(variants):
+        candidate = _truncate(item.strip() or f"Пример генерации {index + 1}", 200)
+        if candidate in seen:
+            candidate = _truncate(f"{candidate} {index + 1}", 200)
+        seen.add(candidate)
+        unique.append(candidate)
+    return unique
 
 
 def _normalize_tags(tags: list[str]) -> list[str]:
@@ -65,8 +154,11 @@ def _default_faq() -> list[GenerationExampleSeoFaqItem]:
     ]
 
 
-def _normalize_faq(raw_items: Any) -> list[GenerationExampleSeoFaqItem]:
-    fallback = _default_faq()
+def _normalize_faq(
+    raw_items: Any,
+    fallback_items: list[GenerationExampleSeoFaqItem] | None = None,
+) -> list[GenerationExampleSeoFaqItem]:
+    fallback = fallback_items or _default_faq()
     if not isinstance(raw_items, list):
         return fallback
 
@@ -76,7 +168,7 @@ def _normalize_faq(raw_items: Any) -> list[GenerationExampleSeoFaqItem]:
             continue
         question = _truncate(str(item.get("question") or "").strip(), 180)
         answer = _truncate(str(item.get("answer") or "").strip(), 400)
-        if question and answer:
+        if question and answer and _is_mostly_russian(question, 0.6) and _is_mostly_russian(answer, 0.6):
             normalized.append(GenerationExampleSeoFaqItem(question=question, answer=answer))
 
     return normalized or fallback
@@ -131,55 +223,50 @@ def _ensure_unique_variant_slugs(
 def _build_fallback_variants(
     payload: GenerationExampleSeoSuggestionRequest,
 ) -> list[GenerationExampleSeoSuggestionVariant]:
+    prompt_text = _normalize_prompt(payload.prompt)
     tags = _normalize_tags(payload.tags)
-    title = _truncate((payload.title or "").strip(), 200) or _extract_title_from_prompt(payload.prompt or "")
-    first_tag = tags[0] if tags else "AI генерации"
-    base_description = _truncate(
-        (payload.description or "").strip()
-        or f'Пример "{title}" для {first_tag}. Загрузите свои фото и запустите генерацию по готовому сценарию.',
-        400,
-    )
-    base_seo_title = _truncate(
-        (payload.seo_title or "").strip() or f"{title} | Пример генерации AI",
-        120,
-    )
-    base_seo_description = _truncate(
-        (payload.seo_description or "").strip() or base_description,
-        200,
-    )
-    base_slug = slugify((payload.slug or "").strip() or title, fallback="example")
+    first_tag = next((tag for tag in tags if _is_mostly_russian(tag, min_ratio=0.5)), "AI генерации")
+    title_variants = _build_title_variants_from_prompt(prompt_text)
+    base_slug = slugify((payload.slug or "").strip() or title_variants[0], fallback="example")
 
     variants = [
         _build_variant(
             slug=base_slug,
-            title=title,
-            description=base_description,
-            seo_title=base_seo_title,
-            seo_description=base_seo_description,
+            title=title_variants[0],
+            description=_truncate(
+                f'Пример "{title_variants[0]}" для {first_tag}. '
+                "Шаблон уже настроен: загрузите свои фото и запустите генерацию по этому образцу.",
+                400,
+            ),
+            seo_title=_truncate(f"{title_variants[0]} | Пример генерации AI", 120),
+            seo_description=_truncate(
+                f'Готовый пример "{title_variants[0]}": используйте свой исходник и получите результат по заданному промпту.',
+                200,
+            ),
         ),
         _build_variant(
             slug=f"{base_slug}-variant-2",
-            title=title,
+            title=title_variants[1],
             description=_truncate(
-                f"{base_description} Подходит для публикации в соцсетях и быстрого старта генерации по образцу.",
+                f'Карточка "{title_variants[1]}" подготовлена для соцсетей и быстрого старта генерации по фото.',
                 400,
             ),
-            seo_title=_truncate(f"{title} — сценарий генерации по фото", 120),
+            seo_title=_truncate(f"{title_variants[1]} | Генерация по промпту", 120),
             seo_description=_truncate(
-                f"Готовый SEO-сценарий: {title}. Загрузите фото, скорректируйте запрос и получите результат.",
+                f'Сценарий "{title_variants[1]}" для релевантной генерации: загрузите фото и примените идею карточки.',
                 200,
             ),
         ),
         _build_variant(
             slug=f"{base_slug}-variant-3",
-            title=title,
+            title=title_variants[2],
             description=_truncate(
-                f"{base_description} Вариант ориентирован на коммерческий контент и маркетплейсы.",
+                f'Вариант "{title_variants[2]}" ориентирован на коммерческий контент и быструю подготовку визуалов.',
                 400,
             ),
-            seo_title=_truncate(f"{title}: AI пример для генерации", 120),
+            seo_title=_truncate(f"{title_variants[2]} | AI пример для генерации", 120),
             seo_description=_truncate(
-                f'Карточка "{title}" с подготовленным описанием, FAQ и CTA для запуска генерации.',
+                f'Карточка "{title_variants[2]}" с SEO-описанием и CTA для запуска генерации по вашему фото.',
                 200,
             ),
         ),
@@ -191,7 +278,9 @@ def _build_response(
     variants: list[GenerationExampleSeoSuggestionVariant],
     selected_index: int = 0,
 ) -> GenerationExampleSeoSuggestionResponse:
-    safe_variants = variants or _build_fallback_variants(GenerationExampleSeoSuggestionRequest())
+    safe_variants = variants or _build_fallback_variants(
+        GenerationExampleSeoSuggestionRequest(prompt="Пример генерации AI")
+    )
     safe_variants = _ensure_unique_variant_slugs(safe_variants)
     safe_index = min(max(selected_index, 0), len(safe_variants) - 1)
     selected = safe_variants[safe_index]
@@ -233,22 +322,40 @@ def _normalize_llm_result(
             normalized.append(
                 _build_variant(
                     slug=str(item.get("slug") or fallback_variant.slug),
-                    title=str(item.get("title") or fallback_variant.title),
-                    description=str(item.get("description") or fallback_variant.description),
-                    seo_title=str(item.get("seo_title") or fallback_variant.seo_title),
-                    seo_description=str(item.get("seo_description") or fallback_variant.seo_description),
-                    faq=_normalize_faq(item.get("faq")),
+                    title=_prefer_russian(
+                        str(item.get("title") or fallback_variant.title),
+                        fallback_variant.title,
+                    ),
+                    description=_prefer_russian(
+                        str(item.get("description") or fallback_variant.description),
+                        fallback_variant.description,
+                    ),
+                    seo_title=_prefer_russian(
+                        str(item.get("seo_title") or fallback_variant.seo_title),
+                        fallback_variant.seo_title,
+                    ),
+                    seo_description=_prefer_russian(
+                        str(item.get("seo_description") or fallback_variant.seo_description),
+                        fallback_variant.seo_description,
+                    ),
+                    faq=_normalize_faq(item.get("faq"), fallback_variant.faq),
                 )
             )
     else:
         normalized.append(
             _build_variant(
                 slug=str(raw.get("slug") or fallback.slug),
-                title=str(raw.get("title") or fallback.title),
-                description=str(raw.get("description") or fallback.description),
-                seo_title=str(raw.get("seo_title") or fallback.seo_title),
-                seo_description=str(raw.get("seo_description") or fallback.seo_description),
-                faq=_normalize_faq(raw.get("faq")),
+                title=_prefer_russian(str(raw.get("title") or fallback.title), fallback.title),
+                description=_prefer_russian(
+                    str(raw.get("description") or fallback.description),
+                    fallback.description,
+                ),
+                seo_title=_prefer_russian(str(raw.get("seo_title") or fallback.seo_title), fallback.seo_title),
+                seo_description=_prefer_russian(
+                    str(raw.get("seo_description") or fallback.seo_description),
+                    fallback.seo_description,
+                ),
+                faq=_normalize_faq(raw.get("faq"), fallback.faq),
             )
         )
 
@@ -256,7 +363,11 @@ def _normalize_llm_result(
         normalized.append(fallback_variants[len(normalized)])
 
     if len(normalized) < 3:
-        normalized.extend(_build_fallback_variants(GenerationExampleSeoSuggestionRequest())[: 3 - len(normalized)])
+        normalized.extend(
+            _build_fallback_variants(GenerationExampleSeoSuggestionRequest(prompt="Пример генерации AI"))[
+                : 3 - len(normalized)
+            ]
+        )
 
     selected_index_raw = raw.get("recommended_index", raw.get("selected_index", fallback.selected_index))
     try:
@@ -273,7 +384,17 @@ async def generate_example_seo_suggestions(
     """
     Генерирует SEO suggestions для карточки примера.
     """
-    fallback = _build_response(_build_fallback_variants(payload), selected_index=0)
+    prompt_text = _normalize_prompt(payload.prompt)
+    fallback_payload = GenerationExampleSeoSuggestionRequest(
+        prompt=prompt_text or "Пример генерации AI",
+        slug=payload.slug,
+        title=payload.title,
+        description=payload.description,
+        tags=payload.tags,
+        seo_title=payload.seo_title,
+        seo_description=payload.seo_description,
+    )
+    fallback = _build_response(_build_fallback_variants(fallback_payload), selected_index=0)
 
     if not settings.OPENROUTER_API_KEY:
         return fallback
@@ -284,16 +405,24 @@ async def generate_example_seo_suggestions(
             "Ты SEO-редактор карточек AI генераций. Верни только JSON. "
             "Формат: {\"variants\":[{slug,title,description,seo_title,seo_description,faq}],\"recommended_index\":0}. "
             "В variants должно быть ровно 3 варианта. faq — массив из 3 объектов {question,answer}. "
-            "Язык: русский. Ограничения: title<=200, description<=400, seo_title<=120, seo_description<=200."
+            "Основа для контента — поле prompt. Остальные поля только как вспомогательный контекст. "
+            "title в каждом варианте обязателен и должен отличаться. "
+            "Если prompt не на русском, сначала переведи смысл на русский и только затем формируй SEO-тексты. "
+            "Запрещённые формулировки: 'исходный промпт', 'адаптация на русский язык', 'собран по промпту'. "
+            "Нельзя оставлять английские фразы в title/description/seo_title/seo_description/faq. "
+            "Все текстовые поля строго на русском языке (кириллица), кроме slug. "
+            "Ограничения: title<=200, description<=400, seo_title<=120, seo_description<=200."
         )
         user_payload = {
-            "title": payload.title,
-            "description": payload.description,
-            "prompt": payload.prompt,
+            "prompt": prompt_text,
             "tags": _normalize_tags(payload.tags),
-            "seo_title": payload.seo_title,
-            "seo_description": payload.seo_description,
-            "slug": payload.slug,
+            "context": {
+                "title_hint_ru": payload.title if _is_mostly_russian(payload.title or "", min_ratio=0.5) else None,
+                "description_hint_ru": payload.description if _is_mostly_russian(payload.description or "", min_ratio=0.5) else None,
+                "seo_title_hint_ru": payload.seo_title if _is_mostly_russian(payload.seo_title or "", min_ratio=0.5) else None,
+                "seo_description_hint_ru": payload.seo_description if _is_mostly_russian(payload.seo_description or "", min_ratio=0.5) else None,
+                "slug_hint": payload.slug,
+            },
         }
 
         response = await client.client.post(

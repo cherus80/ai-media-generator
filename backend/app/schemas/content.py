@@ -142,7 +142,7 @@ class GenerationExampleSeoSuggestionRequest(BaseModel):
     slug: Optional[str] = Field(default=None, max_length=240)
     title: Optional[str] = Field(default=None, max_length=200)
     description: Optional[str] = None
-    prompt: Optional[str] = None
+    prompt: str = Field(..., min_length=1)
     tags: list[str] = Field(default_factory=list)
     seo_title: Optional[str] = Field(default=None, max_length=120)
     seo_description: Optional[str] = Field(default=None, max_length=200)

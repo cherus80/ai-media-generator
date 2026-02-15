@@ -91,6 +91,13 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
+      args:
+        HTTP_PROXY: ${HTTP_PROXY:-}
+        HTTPS_PROXY: ${HTTPS_PROXY:-}
+        NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1,backend,postgres,redis}
+        http_proxy: ${http_proxy:-}
+        https_proxy: ${https_proxy:-}
+        no_proxy: ${no_proxy:-localhost,127.0.0.1,backend,postgres,redis}
     container_name: ai_image_bot_frontend
     restart: unless-stopped
     env_file:
@@ -104,7 +111,7 @@ services:
       - backend
     networks:
       - ai_image_bot_network
-    command: npm run dev
+    command: npm run dev -- --host 0.0.0.0 --port 3000
 
 volumes:
   postgres_data:
