@@ -21,9 +21,12 @@ from app.schemas.content import (
     GenerationExampleAdminItem,
     GenerationExampleCreateRequest,
     GenerationExampleUpdateRequest,
+    GenerationExampleSeoSuggestionRequest,
+    GenerationExampleSeoSuggestionResponse,
 )
 from app.services.file_storage import save_raw_upload_file, save_upload_file
 from app.services.file_validator import validate_video_file, validate_image_file
+from app.services.example_seo import generate_example_seo_suggestions
 from app.utils.slug import generate_unique_slug
 
 router = APIRouter()
@@ -312,6 +315,14 @@ async def list_examples(
         ],
         total=len(items),
     )
+
+
+@router.post("/examples/seo-suggestions", response_model=GenerationExampleSeoSuggestionResponse)
+async def get_example_seo_suggestions(
+    payload: GenerationExampleSeoSuggestionRequest,
+    _admin: AdminOrService,
+) -> GenerationExampleSeoSuggestionResponse:
+    return await generate_example_seo_suggestions(payload)
 
 
 @router.post("/examples", response_model=GenerationExampleAdminItem, status_code=status.HTTP_201_CREATED)

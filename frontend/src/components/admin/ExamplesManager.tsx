@@ -6,6 +6,7 @@ import {
   updateExample,
   deleteExample,
   uploadExampleImage,
+  getExampleSeoSuggestions,
 } from '../../api/admin';
 import { getExampleTags } from '../../api/content';
 import { FileUpload } from '../common/FileUpload';
@@ -191,6 +192,7 @@ export const ExamplesManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<number | null>(null);
   const [uploadingId, setUploadingId] = useState<number | 'new' | null>(null);
+  const [seoGeneratingId, setSeoGeneratingId] = useState<number | 'new' | null>(null);
 
   const [newSlug, setNewSlug] = useState('');
   const [newTitle, setNewTitle] = useState('');
@@ -412,9 +414,9 @@ export const ExamplesManager: React.FC = () => {
 
   const normalizeSelectedTags = (tags: string[]) => normalizeTagList(tags);
 
-  const fillCreateSeoDraft = () => {
+  const fillCreateSeoDraft = async () => {
     const tags = normalizeTagList([...selectedExistingTags, ...parseTags(newTags)]);
-    const draft = buildSeoDraft({
+    const fallback = buildSeoDraft({
       title: newTitle,
       prompt: newPrompt,
       tags,
@@ -423,15 +425,36 @@ export const ExamplesManager: React.FC = () => {
       seoDescription: newSeoDescription,
       slug: newSlug,
     });
-    setNewSlug(draft.slug);
-    setNewDescription(draft.description);
-    setNewSeoTitle(draft.seoTitle);
-    setNewSeoDescription(draft.seoDescription);
-    toast.success('SEO-поля автозаполнены');
+
+    setSeoGeneratingId('new');
+    try {
+      const draft = await getExampleSeoSuggestions({
+        slug: newSlug.trim() || null,
+        title: newTitle.trim() || null,
+        description: newDescription.trim() || null,
+        prompt: newPrompt.trim() || null,
+        tags,
+        seo_title: newSeoTitle.trim() || null,
+        seo_description: newSeoDescription.trim() || null,
+      });
+      setNewSlug(draft.slug);
+      setNewDescription(draft.description);
+      setNewSeoTitle(draft.seo_title);
+      setNewSeoDescription(draft.seo_description);
+      toast.success('SEO-поля сгенерированы');
+    } catch {
+      setNewSlug(fallback.slug);
+      setNewDescription(fallback.description);
+      setNewSeoTitle(fallback.seoTitle);
+      setNewSeoDescription(fallback.seoDescription);
+      toast('OpenRouter недоступен, применен локальный SEO-шаблон', { icon: 'ℹ️' });
+    } finally {
+      setSeoGeneratingId(null);
+    }
   };
 
-  const fillItemSeoDraft = (item: DraftExample) => {
-    const draft = buildSeoDraft({
+  const fillItemSeoDraft = async (item: DraftExample) => {
+    const fallback = buildSeoDraft({
       title: item.draftTitle,
       prompt: item.draftPrompt,
       tags: item.draftTags,
@@ -440,20 +463,49 @@ export const ExamplesManager: React.FC = () => {
       seoDescription: item.draftSeoDescription,
       slug: item.draftSlug,
     });
-    setItems((prev) =>
-      prev.map((row) =>
-        row.id === item.id
-          ? {
-              ...row,
-              draftSlug: draft.slug,
-              draftDescription: draft.description,
-              draftSeoTitle: draft.seoTitle,
-              draftSeoDescription: draft.seoDescription,
-            }
-          : row
-      )
-    );
-    toast.success('SEO-поля обновлены');
+    setSeoGeneratingId(item.id);
+    try {
+      const draft = await getExampleSeoSuggestions({
+        slug: item.draftSlug.trim() || null,
+        title: item.draftTitle.trim() || null,
+        description: item.draftDescription.trim() || null,
+        prompt: item.draftPrompt.trim() || null,
+        tags: item.draftTags,
+        seo_title: item.draftSeoTitle.trim() || null,
+        seo_description: item.draftSeoDescription.trim() || null,
+      });
+      setItems((prev) =>
+        prev.map((row) =>
+          row.id === item.id
+            ? {
+                ...row,
+                draftSlug: draft.slug,
+                draftDescription: draft.description,
+                draftSeoTitle: draft.seo_title,
+                draftSeoDescription: draft.seo_description,
+              }
+            : row
+        )
+      );
+      toast.success('SEO-поля сгенерированы');
+    } catch {
+      setItems((prev) =>
+        prev.map((row) =>
+          row.id === item.id
+            ? {
+                ...row,
+                draftSlug: fallback.slug,
+                draftDescription: fallback.description,
+                draftSeoTitle: fallback.seoTitle,
+                draftSeoDescription: fallback.seoDescription,
+              }
+            : row
+        )
+      );
+      toast('OpenRouter недоступен, применен локальный SEO-шаблон', { icon: 'ℹ️' });
+    } finally {
+      setSeoGeneratingId(null);
+    }
   };
 
   const topExamples = useMemo(
@@ -581,9 +633,10 @@ export const ExamplesManager: React.FC = () => {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={fillCreateSeoDraft}
+            disabled={seoGeneratingId === 'new'}
             className="px-4 py-2 rounded-lg bg-indigo-50 text-indigo-700 font-semibold text-sm hover:bg-indigo-100"
           >
-            Автозаполнить SEO
+            {seoGeneratingId === 'new' ? 'Генерация SEO...' : 'Автозаполнить SEO'}
           </button>
           <button
             onClick={handleCreate}
@@ -795,10 +848,10 @@ export const ExamplesManager: React.FC = () => {
                   <div className="flex flex-wrap items-center gap-2">
                     <button
                       onClick={() => fillItemSeoDraft(item)}
-                      disabled={savingId === item.id}
+                      disabled={savingId === item.id || seoGeneratingId === item.id}
                       className="px-4 py-2 rounded-lg text-sm font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
                     >
-                      SEO автозаполнение
+                      {seoGeneratingId === item.id ? 'Генерация SEO...' : 'SEO автозаполнение'}
                     </button>
                     <button
                       onClick={() => handleSave(item)}

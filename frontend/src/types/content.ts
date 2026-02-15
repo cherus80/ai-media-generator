@@ -105,6 +105,30 @@ export interface GenerationExampleUpdateRequest {
   is_published?: boolean;
 }
 
+export interface GenerationExampleSeoFaqItem {
+  question: string;
+  answer: string;
+}
+
+export interface GenerationExampleSeoSuggestionRequest {
+  slug?: string | null;
+  title?: string | null;
+  description?: string | null;
+  prompt?: string | null;
+  tags?: string[];
+  seo_title?: string | null;
+  seo_description?: string | null;
+}
+
+export interface GenerationExampleSeoSuggestionResponse {
+  slug: string;
+  title: string;
+  description: string;
+  seo_title: string;
+  seo_description: string;
+  faq: GenerationExampleSeoFaqItem[];
+}
+
 export interface GenerationExampleUseResponse {
   success: boolean;
   uses_count: number;

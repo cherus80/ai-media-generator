@@ -39,6 +39,8 @@ import type {
   GenerationExampleAdminListResponse,
   GenerationExampleCreateRequest,
   GenerationExampleUpdateRequest,
+  GenerationExampleSeoSuggestionRequest,
+  GenerationExampleSeoSuggestionResponse,
 } from '../types/content';
 
 // ============================================================================
@@ -365,6 +367,16 @@ export const updateExample = async (
 
 export const deleteExample = async (exampleId: number): Promise<void> => {
   await apiClient.delete(`/api/v1/admin/examples/${exampleId}`);
+};
+
+export const getExampleSeoSuggestions = async (
+  payload: GenerationExampleSeoSuggestionRequest
+): Promise<GenerationExampleSeoSuggestionResponse> => {
+  const response = await apiClient.post<GenerationExampleSeoSuggestionResponse>(
+    '/api/v1/admin/examples/seo-suggestions',
+    payload
+  );
+  return response.data;
 };
 
 /**

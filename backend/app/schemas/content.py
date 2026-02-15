@@ -121,6 +121,30 @@ class GenerationExampleUpdateRequest(BaseModel):
     is_published: Optional[bool] = None
 
 
+class GenerationExampleSeoFaqItem(BaseModel):
+    question: str = Field(..., min_length=1, max_length=180)
+    answer: str = Field(..., min_length=1, max_length=400)
+
+
+class GenerationExampleSeoSuggestionRequest(BaseModel):
+    slug: Optional[str] = Field(default=None, max_length=240)
+    title: Optional[str] = Field(default=None, max_length=200)
+    description: Optional[str] = None
+    prompt: Optional[str] = None
+    tags: list[str] = Field(default_factory=list)
+    seo_title: Optional[str] = Field(default=None, max_length=120)
+    seo_description: Optional[str] = Field(default=None, max_length=200)
+
+
+class GenerationExampleSeoSuggestionResponse(BaseModel):
+    slug: str
+    title: str
+    description: str
+    seo_title: str
+    seo_description: str
+    faq: list[GenerationExampleSeoFaqItem] = Field(default_factory=list)
+
+
 class GenerationExampleUseResponse(BaseModel):
     success: bool
     uses_count: int
