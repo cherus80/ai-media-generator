@@ -120,6 +120,15 @@ export interface GenerationExampleSeoSuggestionRequest {
   seo_description?: string | null;
 }
 
+export interface GenerationExampleSeoSuggestionVariant {
+  slug: string;
+  title: string;
+  description: string;
+  seo_title: string;
+  seo_description: string;
+  faq: GenerationExampleSeoFaqItem[];
+}
+
 export interface GenerationExampleSeoSuggestionResponse {
   slug: string;
   title: string;
@@ -127,6 +136,8 @@ export interface GenerationExampleSeoSuggestionResponse {
   seo_title: string;
   seo_description: string;
   faq: GenerationExampleSeoFaqItem[];
+  selected_index: number;
+  variants: GenerationExampleSeoSuggestionVariant[];
 }
 
 export interface GenerationExampleUseResponse {

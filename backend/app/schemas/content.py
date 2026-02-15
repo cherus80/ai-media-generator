@@ -136,6 +136,15 @@ class GenerationExampleSeoSuggestionRequest(BaseModel):
     seo_description: Optional[str] = Field(default=None, max_length=200)
 
 
+class GenerationExampleSeoSuggestionVariant(BaseModel):
+    slug: str
+    title: str
+    description: str
+    seo_title: str
+    seo_description: str
+    faq: list[GenerationExampleSeoFaqItem] = Field(default_factory=list)
+
+
 class GenerationExampleSeoSuggestionResponse(BaseModel):
     slug: str
     title: str
@@ -143,6 +152,8 @@ class GenerationExampleSeoSuggestionResponse(BaseModel):
     seo_title: str
     seo_description: str
     faq: list[GenerationExampleSeoFaqItem] = Field(default_factory=list)
+    selected_index: int = Field(default=0, ge=0)
+    variants: list[GenerationExampleSeoSuggestionVariant] = Field(default_factory=list)
 
 
 class GenerationExampleUseResponse(BaseModel):

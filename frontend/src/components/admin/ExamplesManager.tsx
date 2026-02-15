@@ -10,7 +10,10 @@ import {
 } from '../../api/admin';
 import { getExampleTags } from '../../api/content';
 import { FileUpload } from '../common/FileUpload';
-import type { GenerationExampleAdminItem } from '../../types/content';
+import type {
+  GenerationExampleAdminItem,
+  GenerationExampleSeoSuggestionVariant,
+} from '../../types/content';
 import { getUploadErrorMessage } from '../../utils/uploadErrors';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
@@ -97,6 +100,90 @@ const buildSeoDraft = (params: {
     seoTitle: params.seoTitle.trim() || generatedSeoTitle,
     seoDescription: params.seoDescription.trim() || generatedSeoDescription,
   };
+};
+
+const buildLocalSeoVariants = (params: {
+  title: string;
+  prompt: string;
+  tags: string[];
+  description: string;
+  seoTitle: string;
+  seoDescription: string;
+  slug: string;
+}): GenerationExampleSeoSuggestionVariant[] => {
+  const base = buildSeoDraft(params);
+  const baseTitle = params.title.trim() || extractTitleFromPrompt(params.prompt);
+  const baseSlug = base.slug || 'example';
+  const variants: GenerationExampleSeoSuggestionVariant[] = [
+    {
+      slug: baseSlug,
+      title: baseTitle,
+      description: base.description,
+      seo_title: base.seoTitle,
+      seo_description: base.seoDescription,
+      faq: [],
+    },
+    {
+      slug: `${baseSlug}-variant-2`,
+      title: baseTitle,
+      description: truncate(
+        `${base.description} Подходит для публикации в соцсетях и быстрого старта генерации по образцу.`,
+        400
+      ),
+      seo_title: truncate(`${baseTitle} — сценарий генерации по фото`, 120),
+      seo_description: truncate(
+        `Готовый SEO-сценарий: ${baseTitle}. Загрузите фото, скорректируйте запрос и получите результат.`,
+        200
+      ),
+      faq: [],
+    },
+    {
+      slug: `${baseSlug}-variant-3`,
+      title: baseTitle,
+      description: truncate(
+        `${base.description} Вариант ориентирован на коммерческий контент и маркетплейсы.`,
+        400
+      ),
+      seo_title: truncate(`${baseTitle}: AI пример для генерации`, 120),
+      seo_description: truncate(
+        `Карточка "${baseTitle}" с подготовленным описанием, FAQ и CTA для запуска генерации.`,
+        200
+      ),
+      faq: [],
+    },
+  ];
+
+  return variants.map((variant, index) => ({
+    ...variant,
+    slug: toSlug(variant.slug) || `example-${index + 1}`,
+  }));
+};
+
+const clampVariantIndex = (index: number, size: number): number => {
+  if (size <= 0) {
+    return 0;
+  }
+  return Math.min(Math.max(index, 0), size - 1);
+};
+
+const normalizeSeoVariants = (
+  variants: GenerationExampleSeoSuggestionVariant[] | undefined,
+  fallback: GenerationExampleSeoSuggestionVariant[]
+): GenerationExampleSeoSuggestionVariant[] => {
+  const source = variants && variants.length > 0 ? variants : fallback;
+  const normalized = source.slice(0, 3).map((variant, index) => ({
+    slug: toSlug(variant.slug) || fallback[index]?.slug || `example-${index + 1}`,
+    title: truncate(variant.title || fallback[index]?.title || 'Пример генерации', 200),
+    description: truncate(variant.description || fallback[index]?.description || 'Пример генерации AI.', 400),
+    seo_title: truncate(variant.seo_title || fallback[index]?.seo_title || 'Пример генерации AI', 120),
+    seo_description: truncate(
+      variant.seo_description || fallback[index]?.seo_description || 'Пример генерации AI',
+      200
+    ),
+    faq: Array.isArray(variant.faq) ? variant.faq : [],
+  }));
+
+  return normalized.length > 0 ? normalized : fallback.slice(0, 3);
 };
 
 interface TagMultiSelectProps {
@@ -205,6 +292,10 @@ export const ExamplesManager: React.FC = () => {
   const [newPublished, setNewPublished] = useState(true);
   const [existingTags, setExistingTags] = useState<string[]>([]);
   const [selectedExistingTags, setSelectedExistingTags] = useState<string[]>([]);
+  const [newSeoVariants, setNewSeoVariants] = useState<GenerationExampleSeoSuggestionVariant[]>([]);
+  const [newSelectedVariantIndex, setNewSelectedVariantIndex] = useState(0);
+  const [itemSeoVariants, setItemSeoVariants] = useState<Record<number, GenerationExampleSeoSuggestionVariant[]>>({});
+  const [itemSelectedVariantIndex, setItemSelectedVariantIndex] = useState<Record<number, number>>({});
 
   const load = async () => {
     setLoading(true);
@@ -224,6 +315,8 @@ export const ExamplesManager: React.FC = () => {
           draftPublished: item.is_published,
         }))
       );
+      setItemSeoVariants({});
+      setItemSelectedVariantIndex({});
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || 'Не удалось загрузить примеры');
     } finally {
@@ -321,6 +414,8 @@ export const ExamplesManager: React.FC = () => {
       setNewTags('');
       setSelectedExistingTags([]);
       setNewPublished(true);
+      setNewSeoVariants([]);
+      setNewSelectedVariantIndex(0);
       toast.success('Пример добавлен');
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || 'Не удалось добавить пример');
@@ -376,6 +471,16 @@ export const ExamplesManager: React.FC = () => {
     try {
       await deleteExample(item.id);
       setItems((prev) => prev.filter((row) => row.id !== item.id));
+      setItemSeoVariants((prev) => {
+        const next = { ...prev };
+        delete next[item.id];
+        return next;
+      });
+      setItemSelectedVariantIndex((prev) => {
+        const next = { ...prev };
+        delete next[item.id];
+        return next;
+      });
       toast.success('Пример удален');
     } catch (err: any) {
       toast.error(err?.response?.data?.detail || 'Не удалось удалить');
@@ -414,9 +519,53 @@ export const ExamplesManager: React.FC = () => {
 
   const normalizeSelectedTags = (tags: string[]) => normalizeTagList(tags);
 
+  const applyNewVariant = (
+    variants: GenerationExampleSeoSuggestionVariant[],
+    variantIndex: number
+  ) => {
+    const safeIndex = clampVariantIndex(variantIndex, variants.length);
+    const selectedVariant = variants[safeIndex];
+    if (!selectedVariant) {
+      return;
+    }
+    setNewSeoVariants(variants);
+    setNewSelectedVariantIndex(safeIndex);
+    setNewSlug(selectedVariant.slug);
+    setNewDescription(selectedVariant.description);
+    setNewSeoTitle(selectedVariant.seo_title);
+    setNewSeoDescription(selectedVariant.seo_description);
+  };
+
+  const applyItemVariant = (
+    itemId: number,
+    variants: GenerationExampleSeoSuggestionVariant[],
+    variantIndex: number
+  ) => {
+    const safeIndex = clampVariantIndex(variantIndex, variants.length);
+    const selectedVariant = variants[safeIndex];
+    if (!selectedVariant) {
+      return;
+    }
+    setItemSeoVariants((prev) => ({ ...prev, [itemId]: variants }));
+    setItemSelectedVariantIndex((prev) => ({ ...prev, [itemId]: safeIndex }));
+    setItems((prev) =>
+      prev.map((row) =>
+        row.id === itemId
+          ? {
+              ...row,
+              draftSlug: selectedVariant.slug,
+              draftDescription: selectedVariant.description,
+              draftSeoTitle: selectedVariant.seo_title,
+              draftSeoDescription: selectedVariant.seo_description,
+            }
+          : row
+      )
+    );
+  };
+
   const fillCreateSeoDraft = async () => {
     const tags = normalizeTagList([...selectedExistingTags, ...parseTags(newTags)]);
-    const fallback = buildSeoDraft({
+    const fallbackVariants = buildLocalSeoVariants({
       title: newTitle,
       prompt: newPrompt,
       tags,
@@ -437,16 +586,24 @@ export const ExamplesManager: React.FC = () => {
         seo_title: newSeoTitle.trim() || null,
         seo_description: newSeoDescription.trim() || null,
       });
-      setNewSlug(draft.slug);
-      setNewDescription(draft.description);
-      setNewSeoTitle(draft.seo_title);
-      setNewSeoDescription(draft.seo_description);
+      const responseVariants =
+        draft.variants && draft.variants.length > 0
+          ? draft.variants
+          : [
+              {
+                slug: draft.slug,
+                title: draft.title || newTitle.trim() || extractTitleFromPrompt(newPrompt),
+                description: draft.description,
+                seo_title: draft.seo_title,
+                seo_description: draft.seo_description,
+                faq: draft.faq || [],
+              },
+            ];
+      const variants = normalizeSeoVariants(responseVariants, fallbackVariants);
+      applyNewVariant(variants, draft.selected_index ?? 0);
       toast.success('SEO-поля сгенерированы');
     } catch {
-      setNewSlug(fallback.slug);
-      setNewDescription(fallback.description);
-      setNewSeoTitle(fallback.seoTitle);
-      setNewSeoDescription(fallback.seoDescription);
+      applyNewVariant(fallbackVariants, 0);
       toast('OpenRouter недоступен, применен локальный SEO-шаблон', { icon: 'ℹ️' });
     } finally {
       setSeoGeneratingId(null);
@@ -454,7 +611,7 @@ export const ExamplesManager: React.FC = () => {
   };
 
   const fillItemSeoDraft = async (item: DraftExample) => {
-    const fallback = buildSeoDraft({
+    const fallbackVariants = buildLocalSeoVariants({
       title: item.draftTitle,
       prompt: item.draftPrompt,
       tags: item.draftTags,
@@ -474,34 +631,24 @@ export const ExamplesManager: React.FC = () => {
         seo_title: item.draftSeoTitle.trim() || null,
         seo_description: item.draftSeoDescription.trim() || null,
       });
-      setItems((prev) =>
-        prev.map((row) =>
-          row.id === item.id
-            ? {
-                ...row,
-                draftSlug: draft.slug,
-                draftDescription: draft.description,
-                draftSeoTitle: draft.seo_title,
-                draftSeoDescription: draft.seo_description,
-              }
-            : row
-        )
-      );
+      const responseVariants =
+        draft.variants && draft.variants.length > 0
+          ? draft.variants
+          : [
+              {
+                slug: draft.slug,
+                title: draft.title || item.draftTitle || extractTitleFromPrompt(item.draftPrompt),
+                description: draft.description,
+                seo_title: draft.seo_title,
+                seo_description: draft.seo_description,
+                faq: draft.faq || [],
+              },
+            ];
+      const variants = normalizeSeoVariants(responseVariants, fallbackVariants);
+      applyItemVariant(item.id, variants, draft.selected_index ?? 0);
       toast.success('SEO-поля сгенерированы');
     } catch {
-      setItems((prev) =>
-        prev.map((row) =>
-          row.id === item.id
-            ? {
-                ...row,
-                draftSlug: fallback.slug,
-                draftDescription: fallback.description,
-                draftSeoTitle: fallback.seoTitle,
-                draftSeoDescription: fallback.seoDescription,
-              }
-            : row
-        )
-      );
+      applyItemVariant(item.id, fallbackVariants, 0);
       toast('OpenRouter недоступен, применен локальный SEO-шаблон', { icon: 'ℹ️' });
     } finally {
       setSeoGeneratingId(null);
@@ -623,6 +770,30 @@ export const ExamplesManager: React.FC = () => {
             />
           </div>
         </div>
+        {newSeoVariants.length > 0 && (
+          <div className="rounded-lg border border-indigo-100 bg-indigo-50/40 p-3 space-y-2">
+            <p className="text-xs font-semibold text-indigo-700">Варианты SEO</p>
+            <div className="flex flex-wrap gap-2">
+              {newSeoVariants.map((variant, index) => (
+                <button
+                  key={`new-seo-variant-${variant.slug}-${index}`}
+                  type="button"
+                  onClick={() => applyNewVariant(newSeoVariants, index)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${
+                    newSelectedVariantIndex === index
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-white text-indigo-700 border border-indigo-200 hover:bg-indigo-100'
+                  }`}
+                >
+                  Вариант {index + 1}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-indigo-900/80">
+              Активный SEO title: {newSeoVariants[newSelectedVariantIndex]?.seo_title || '—'}
+            </p>
+          </div>
+        )}
         <FileUpload
           onFileSelect={(file) => handleUpload(file, 'new')}
           preview={newImageUrl ? resolveImageUrl(newImageUrl) : null}
@@ -677,8 +848,12 @@ export const ExamplesManager: React.FC = () => {
               Пока нет примеров.
             </div>
           )}
-          {items.map((item) => (
-            <div key={item.id} className="bg-white rounded-xl shadow p-6 space-y-4">
+          {items.map((item) => {
+            const seoVariants = itemSeoVariants[item.id] || [];
+            const selectedSeoVariant = itemSelectedVariantIndex[item.id] ?? 0;
+
+            return (
+              <div key={item.id} className="bg-white rounded-xl shadow p-6 space-y-4">
               <div className="flex flex-wrap gap-4">
                 <div className="w-full md:w-48">
                   <img
@@ -838,6 +1013,30 @@ export const ExamplesManager: React.FC = () => {
                       />
                     </div>
                   </div>
+                  {seoVariants.length > 0 && (
+                    <div className="rounded-lg border border-indigo-100 bg-indigo-50/40 p-3 space-y-2">
+                      <p className="text-xs font-semibold text-indigo-700">Варианты SEO</p>
+                      <div className="flex flex-wrap gap-2">
+                        {seoVariants.map((variant, index) => (
+                          <button
+                            key={`item-${item.id}-seo-variant-${variant.slug}-${index}`}
+                            type="button"
+                            onClick={() => applyItemVariant(item.id, seoVariants, index)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${
+                              selectedSeoVariant === index
+                                ? 'bg-indigo-600 text-white'
+                                : 'bg-white text-indigo-700 border border-indigo-200 hover:bg-indigo-100'
+                            }`}
+                          >
+                            Вариант {index + 1}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-xs text-indigo-900/80">
+                        Активный SEO title: {seoVariants[selectedSeoVariant]?.seo_title || '—'}
+                      </p>
+                    </div>
+                  )}
                   <FileUpload
                     onFileSelect={(file) => handleUpload(file, item.id)}
                     preview={resolveImageUrl(item.draftImageUrl)}
@@ -880,8 +1079,9 @@ export const ExamplesManager: React.FC = () => {
                   </p>
                 </div>
               </div>
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

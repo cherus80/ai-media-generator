@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- В `POST /api/v1/admin/examples/seo-suggestions` добавлена генерация 3 SEO-вариантов (`variants`) с `selected_index`; в админке примеров реализован селектор A/B/C для переключения вариантов slug/description/SEO-полей перед сохранением.
 - Добавлен endpoint `POST /api/v1/admin/examples/seo-suggestions`: генерация SEO-полей и FAQ для карточек примеров через OpenRouter (`OPENROUTER_PROMPT_MODEL`) с автоматическим fallback на локальный шаблон при недоступности модели.
 - В админке примеров добавлены SEO-поля (`slug`, описание, `SEO title`, `SEO description`) и кнопки автозаполнения SEO-контента при создании/редактировании карточки.
 - SEO-витрина примеров: публичный каталог `/examples`, отдельные страницы `/examples/<slug>`, динамический `sitemap.xml`, OG/Twitter meta-теги и backend-render для корректного индексирования и превью в соцсетях.
