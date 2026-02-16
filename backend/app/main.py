@@ -177,6 +177,11 @@ async def rate_limit_requests(request: Request, call_next):
     if request.method == "OPTIONS":
         return await call_next(request)
 
+    # Админские API вызываются пачками (dashboard + таблицы) и имеют
+    # отдельную авторизацию, поэтому не ограничиваем их общим IP-лимитером.
+    if path.startswith("/api/v1/admin"):
+        return await call_next(request)
+
     if not rate_limiter_ready():
         return await call_next(request)
 
