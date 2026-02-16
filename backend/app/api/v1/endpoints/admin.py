@@ -244,76 +244,154 @@ async def get_dashboard_stats(
     month_start = today_start - timedelta(days=30)
 
     # Пользователи
-    total_users = await db.scalar(select(func.count(User.id)))
+    total_users = await db.scalar(
+        select(func.count(User.id)).where(User.role == UserRole.USER)
+    )
 
     active_users_today = await db.scalar(
-        select(func.count(User.id)).where(User.last_active_at >= today_start)
+        select(func.count(User.id)).where(
+            User.role == UserRole.USER,
+            User.last_active_at >= today_start,
+        )
     )
     active_users_week = await db.scalar(
-        select(func.count(User.id)).where(User.last_active_at >= week_start)
+        select(func.count(User.id)).where(
+            User.role == UserRole.USER,
+            User.last_active_at >= week_start,
+        )
     )
     active_users_month = await db.scalar(
-        select(func.count(User.id)).where(User.last_active_at >= month_start)
+        select(func.count(User.id)).where(
+            User.role == UserRole.USER,
+            User.last_active_at >= month_start,
+        )
     )
 
     new_users_today = await db.scalar(
-        select(func.count(User.id)).where(User.created_at >= today_start)
+        select(func.count(User.id)).where(
+            User.role == UserRole.USER,
+            User.created_at >= today_start,
+        )
     )
     new_users_week = await db.scalar(
-        select(func.count(User.id)).where(User.created_at >= week_start)
+        select(func.count(User.id)).where(
+            User.role == UserRole.USER,
+            User.created_at >= week_start,
+        )
     )
     new_users_month = await db.scalar(
-        select(func.count(User.id)).where(User.created_at >= month_start)
+        select(func.count(User.id)).where(
+            User.role == UserRole.USER,
+            User.created_at >= month_start,
+        )
     )
 
     # Генерации
-    total_generations = await db.scalar(select(func.count(Generation.id)))
+    total_generations = await db.scalar(
+        select(func.count(Generation.id))
+        .join(User, User.id == Generation.user_id)
+        .where(User.role == UserRole.USER)
+    )
     generations_today = await db.scalar(
-        select(func.count(Generation.id)).where(Generation.created_at >= today_start)
+        select(func.count(Generation.id))
+        .join(User, User.id == Generation.user_id)
+        .where(
+            User.role == UserRole.USER,
+            Generation.created_at >= today_start,
+        )
     )
     generations_week = await db.scalar(
-        select(func.count(Generation.id)).where(Generation.created_at >= week_start)
+        select(func.count(Generation.id))
+        .join(User, User.id == Generation.user_id)
+        .where(
+            User.role == UserRole.USER,
+            Generation.created_at >= week_start,
+        )
     )
     generations_month = await db.scalar(
-        select(func.count(Generation.id)).where(Generation.created_at >= month_start)
+        select(func.count(Generation.id))
+        .join(User, User.id == Generation.user_id)
+        .where(
+            User.role == UserRole.USER,
+            Generation.created_at >= month_start,
+        )
     )
 
     fitting_generations = await db.scalar(
-        select(func.count(Generation.id)).where(Generation.type == "fitting")
+        select(func.count(Generation.id))
+        .join(User, User.id == Generation.user_id)
+        .where(
+            User.role == UserRole.USER,
+            Generation.type == "fitting",
+        )
     )
     editing_generations = await db.scalar(
-        select(func.count(Generation.id)).where(Generation.type == "editing")
+        select(func.count(Generation.id))
+        .join(User, User.id == Generation.user_id)
+        .where(
+            User.role == UserRole.USER,
+            Generation.type == "editing",
+        )
     )
 
     # Платежи
-    total_payments = await db.scalar(select(func.count(Payment.id)))
+    total_payments = await db.scalar(
+        select(func.count(Payment.id))
+        .join(User, User.id == Payment.user_id)
+        .where(User.role == UserRole.USER)
+    )
     successful_payments = await db.scalar(
-        select(func.count(Payment.id)).where(Payment.status == "succeeded")
+        select(func.count(Payment.id))
+        .join(User, User.id == Payment.user_id)
+        .where(
+            User.role == UserRole.USER,
+            Payment.status == "succeeded",
+        )
     )
 
     total_revenue_result = await db.scalar(
-        select(func.sum(Payment.amount)).where(Payment.status == "succeeded")
+        select(func.sum(Payment.amount))
+        .join(User, User.id == Payment.user_id)
+        .where(
+            User.role == UserRole.USER,
+            Payment.status == "succeeded",
+        )
     )
     total_revenue = total_revenue_result or Decimal("0")
 
     revenue_today_result = await db.scalar(
         select(func.sum(Payment.amount)).where(
-            and_(Payment.status == "succeeded", Payment.created_at >= today_start)
+            and_(
+                Payment.status == "succeeded",
+                Payment.created_at >= today_start,
+            )
         )
+        .join(User, User.id == Payment.user_id)
+        .where(User.role == UserRole.USER)
     )
     revenue_today = revenue_today_result or Decimal("0")
 
     revenue_week_result = await db.scalar(
         select(func.sum(Payment.amount)).where(
-            and_(Payment.status == "succeeded", Payment.created_at >= week_start)
+            and_(
+                Payment.status == "succeeded",
+                Payment.created_at >= week_start,
+            )
         )
+        .join(User, User.id == Payment.user_id)
+        .where(User.role == UserRole.USER)
     )
     revenue_week = revenue_week_result or Decimal("0")
 
     revenue_month_result = await db.scalar(
         select(func.sum(Payment.amount)).where(
-            and_(Payment.status == "succeeded", Payment.created_at >= month_start)
+            and_(
+                Payment.status == "succeeded",
+                Payment.created_at >= month_start,
+            )
         )
+        .join(User, User.id == Payment.user_id)
+        .where(User.role == UserRole.USER)
     )
     revenue_month = revenue_month_result or Decimal("0")
 
@@ -326,7 +404,15 @@ async def get_dashboard_stats(
 
     async def _safe_subscription_count(condition):
         try:
-            return await db.scalar(select(func.count(User.id)).where(condition)) or 0
+            return (
+                await db.scalar(
+                    select(func.count(User.id)).where(
+                        User.role == UserRole.USER,
+                        condition,
+                    )
+                )
+                or 0
+            )
         except Exception as exc:
             logger.exception("Failed to count subscriptions: %s", exc)
             return 0
@@ -417,7 +503,10 @@ async def get_user_registrations(
             func.date(User.created_at).label("date"),
             func.count(User.id).label("count")
         )
-        .where(User.created_at >= days_ago)
+        .where(
+            User.role == UserRole.USER,
+            User.created_at >= days_ago,
+        )
         .group_by(func.date(User.created_at))
         .order_by(func.date(User.created_at))
     )
@@ -449,15 +538,24 @@ async def get_user_activity(
 
     # Активные пользователи
     active_today = await db.scalar(
-        select(func.count(User.id)).where(User.last_active_at >= today_start)
+        select(func.count(User.id)).where(
+            User.role == UserRole.USER,
+            User.last_active_at >= today_start,
+        )
     ) or 0
 
     active_this_week = await db.scalar(
-        select(func.count(User.id)).where(User.last_active_at >= week_start)
+        select(func.count(User.id)).where(
+            User.role == UserRole.USER,
+            User.last_active_at >= week_start,
+        )
     ) or 0
 
     active_this_month = await db.scalar(
-        select(func.count(User.id)).where(User.last_active_at >= month_start)
+        select(func.count(User.id)).where(
+            User.role == UserRole.USER,
+            User.last_active_at >= month_start,
+        )
     ) or 0
 
     # Топ 10 пользователей по генерациям
@@ -469,6 +567,7 @@ async def get_user_activity(
             func.count(Generation.id).label("generations_count")
         )
         .join(Generation, User.id == Generation.user_id)
+        .where(User.role == UserRole.USER)
         .group_by(User.id, User.email, User.username)
         .order_by(func.count(Generation.id).desc())
         .limit(10)
@@ -485,13 +584,21 @@ async def get_user_activity(
     ]
 
     # Средн количество генераций на пользователя
-    total_users = await db.scalar(select(func.count(User.id))) or 1
-    total_generations = await db.scalar(select(func.count(Generation.id))) or 0
+    total_users = await db.scalar(
+        select(func.count(User.id)).where(User.role == UserRole.USER)
+    ) or 1
+    total_generations = await db.scalar(
+        select(func.count(Generation.id))
+        .join(User, User.id == Generation.user_id)
+        .where(User.role == UserRole.USER)
+    ) or 0
     avg_generations = total_generations / total_users if total_users > 0 else 0.0
 
     # Всего потрачено кредитов (по полю credits_spent в Generation)
     total_credits_result = await db.scalar(
         select(func.sum(Generation.credits_spent))
+        .join(User, User.id == Generation.user_id)
+        .where(User.role == UserRole.USER)
     )
     total_credits_spent = int(total_credits_result or 0)
 

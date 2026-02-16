@@ -96,6 +96,36 @@ async def get_current_user(
     return user
 
 
+async def get_optional_current_user(
+    credentials: Annotated[Optional[HTTPAuthorizationCredentials], Depends(optional_security)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> Optional[User]:
+    """
+    Dependency для опционального получения пользователя из Bearer токена.
+
+    Для публичных endpoint'ов возвращает None вместо HTTP-ошибки при любой
+    проблеме с токеном/пользователем.
+    """
+    if credentials is None:
+        return None
+
+    try:
+        payload = verify_token(credentials.credentials)
+    except JWTTokenError:
+        return None
+
+    if not payload or "user_id" not in payload:
+        return None
+
+    result = await db.execute(select(User).where(User.id == payload["user_id"]))
+    user = result.scalar_one_or_none()
+    if not user:
+        return None
+    if user.is_banned or not user.is_active:
+        return None
+    return user
+
+
 async def get_current_active_user(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> User:
@@ -267,6 +297,7 @@ async def require_verified_email(
 
 # Type aliases для удобства
 CurrentUser = Annotated[User, Depends(get_current_user)]
+OptionalUser = Annotated[Optional[User], Depends(get_optional_current_user)]
 ActiveUser = Annotated[User, Depends(get_current_active_user)]
 VerifiedUser = Annotated[User, Depends(require_verified_email)]
 AdminUser = Annotated[User, Depends(get_current_admin)]

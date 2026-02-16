@@ -150,11 +150,17 @@ class GenerationExampleVariantEvent(Base, TimestampMixin):
         nullable=False,
         index=True,
     )
+    actor_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     source: Mapped[str] = mapped_column(String(40), nullable=False, server_default="unknown", index=True)
     seo_variant_index: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0", index=True)
     event_type: Mapped[str] = mapped_column(String(16), nullable=False, index=True)
 
     example = relationship("GenerationExample", back_populates="variant_events", lazy="joined")
+    actor_user = relationship("User", lazy="joined")
 
     def __repr__(self) -> str:  # pragma: no cover
         return (

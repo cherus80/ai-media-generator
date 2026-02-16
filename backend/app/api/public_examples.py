@@ -16,9 +16,11 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.api.dependencies import OptionalUser
 from app.core.config import settings
 from app.db.session import get_db
 from app.models import GenerationExample, GenerationExampleSlug, GenerationExampleTag
+from app.models.user import UserRole
 from app.services.example_analytics import normalize_source, normalize_variant_index, track_variant_event
 
 router = APIRouter()
@@ -215,6 +217,7 @@ async def public_examples_catalog(
 @router.get("/examples/{slug}", response_class=HTMLResponse)
 async def public_example_detail(
     slug: str,
+    current_user: OptionalUser,
     db: AsyncSession = Depends(get_db),
 ) -> Response:
     stmt = (
@@ -263,16 +266,22 @@ async def public_example_detail(
     cta_href = f"/app/examples/generate?example={quote(item.slug)}&source=seo_detail&v={variant_index}"
     tag_names = [tag.tag for tag in item.tags]
 
-    try:
-        await track_variant_event(
-            db,
-            example_id=item.id,
-            source=normalize_source("seo_detail"),
-            seo_variant_index=variant_index,
-            event_type="view",
-        )
-    except Exception:
-        pass
+    is_admin_actor = (
+        current_user is not None
+        and current_user.role in {UserRole.ADMIN, UserRole.SUPER_ADMIN}
+    )
+    if not is_admin_actor:
+        try:
+            await track_variant_event(
+                db,
+                example_id=item.id,
+                source=normalize_source("seo_detail"),
+                seo_variant_index=variant_index,
+                event_type="view",
+                actor_user_id=current_user.id if current_user else None,
+            )
+        except Exception:
+            pass
 
     if tag_names:
         similar_ids_stmt = (

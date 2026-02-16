@@ -8,8 +8,9 @@ from fastapi import APIRouter, HTTPException, Query
 import sqlalchemy as sa
 from sqlalchemy.orm import selectinload
 
-from app.api.dependencies import DBSession
+from app.api.dependencies import DBSession, OptionalUser
 from app.models import Instruction, GenerationExample, GenerationExampleTag
+from app.models.user import UserRole
 from app.schemas.content import (
     InstructionPublicListResponse,
     InstructionPublicItem,
@@ -156,37 +157,58 @@ async def get_example_by_slug(
 async def increment_example_use(
     example_id: int,
     db: DBSession,
+    current_user: OptionalUser,
     payload: GenerationExampleUseRequest | None = None,
 ) -> GenerationExampleUseResponse:
     """
     Увеличить счётчик использования примера.
     """
-    stmt = (
-        sa.update(GenerationExample)
-        .where(
-            GenerationExample.id == example_id,
-            GenerationExample.is_published.is_(True),
-        )
-        .values(uses_count=GenerationExample.uses_count + 1)
-        .returning(GenerationExample.uses_count, GenerationExample.seo_variant_index)
+    is_admin_actor = (
+        current_user is not None
+        and current_user.role in {UserRole.ADMIN, UserRole.SUPER_ADMIN}
     )
-    result = await db.execute(stmt)
-    row = result.first()
+
+    if is_admin_actor:
+        stmt = (
+            sa.select(GenerationExample.uses_count, GenerationExample.seo_variant_index)
+            .where(
+                GenerationExample.id == example_id,
+                GenerationExample.is_published.is_(True),
+            )
+            .limit(1)
+        )
+        result = await db.execute(stmt)
+        row = result.first()
+    else:
+        stmt = (
+            sa.update(GenerationExample)
+            .where(
+                GenerationExample.id == example_id,
+                GenerationExample.is_published.is_(True),
+            )
+            .values(uses_count=GenerationExample.uses_count + 1)
+            .returning(GenerationExample.uses_count, GenerationExample.seo_variant_index)
+        )
+        result = await db.execute(stmt)
+        row = result.first()
+
     if not row:
         raise HTTPException(status_code=404, detail="Пример не найден")
 
-    effective_variant = normalize_variant_index(
-        payload.seo_variant_index if payload else None,
-        fallback=row[1],
-    )
-    effective_source = normalize_source(payload.source if payload else None)
-    await track_variant_event(
-        db,
-        example_id=example_id,
-        source=effective_source,
-        seo_variant_index=effective_variant,
-        event_type="start",
-    )
+    if not is_admin_actor:
+        effective_variant = normalize_variant_index(
+            payload.seo_variant_index if payload else None,
+            fallback=row[1],
+        )
+        effective_source = normalize_source(payload.source if payload else None)
+        await track_variant_event(
+            db,
+            example_id=example_id,
+            source=effective_source,
+            seo_variant_index=effective_variant,
+            event_type="start",
+            actor_user_id=current_user.id if current_user else None,
+        )
 
     await db.commit()
     return GenerationExampleUseResponse(success=True, uses_count=row[0])

@@ -12,7 +12,8 @@ import sqlalchemy as sa
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import GenerationExample, GenerationExampleVariantEvent, GenerationExampleVariantStat
+from app.models import GenerationExample, GenerationExampleVariantEvent, GenerationExampleVariantStat, User
+from app.models.user import UserRole
 
 MAX_VARIANT_INDEX = 99
 MAX_SOURCE_LENGTH = 40
@@ -96,11 +97,13 @@ async def track_variant_event(
     source: str,
     seo_variant_index: int,
     event_type: EventType,
+    actor_user_id: int | None = None,
 ) -> None:
     metric: Literal["views", "starts"] = "views" if event_type == "view" else "starts"
     db.add(
         GenerationExampleVariantEvent(
             example_id=example_id,
+            actor_user_id=actor_user_id,
             source=source,
             seo_variant_index=seo_variant_index,
             event_type=event_type,
@@ -179,7 +182,14 @@ async def get_variant_report_rows(
             starts_expr,
         )
         .join(GenerationExample, GenerationExample.id == GenerationExampleVariantEvent.example_id)
-        .where(GenerationExample.is_published.is_(True))
+        .outerjoin(User, User.id == GenerationExampleVariantEvent.actor_user_id)
+        .where(
+            GenerationExample.is_published.is_(True),
+            sa.or_(
+                GenerationExampleVariantEvent.actor_user_id.is_(None),
+                User.role == UserRole.USER,
+            ),
+        )
         .group_by(
             GenerationExample.id,
             GenerationExample.slug,
