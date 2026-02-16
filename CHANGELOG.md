@@ -61,6 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GrsAI подключён как основной провайдер Nano Banana Pro, kie.ai используется как fallback вместо OpenRouter.
 
 ### Fixed
+- В админских endpoints примеров (`POST/PUT /api/v1/admin/examples`) добавлена серверная защита от дублей `title` (без учёта регистра и внешних пробелов): при конфликте возвращается `409`.
 - В задачах генерации (`editing` и `fitting`) расширен fallback внутри GrsAI: при `GrsAITaskFailedError` (ошибка задачи на `nano-banana-pro`) теперь также делается повтор на `nano-banana-pro-cl` перед переходом к следующему провайдеру (`kie.ai`/другой fallback).
 - Исправлен Telegram-шаринг: в Mini App сообщение формируется как единый post с `url=<image>` и подписью (`текст + ссылка на приложение`), чтобы не было отдельного текста и лишнего превью сайта.
 - Backend-ошибки (`HTTPException.detail`/`message`) для авторизации, биллинга, админки и платежей переведены на русский язык.

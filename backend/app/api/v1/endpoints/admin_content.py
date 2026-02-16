@@ -62,6 +62,39 @@ def _clean_optional_text(value: Optional[str]) -> Optional[str]:
     return cleaned or None
 
 
+def _normalize_title_for_lookup(value: Optional[str]) -> Optional[str]:
+    cleaned = _clean_optional_text(value)
+    if cleaned is None:
+        return None
+    return cleaned.lower()
+
+
+async def _ensure_unique_example_title(
+    db: DBSession,
+    title: Optional[str],
+    *,
+    exclude_example_id: Optional[int] = None,
+) -> None:
+    normalized_title = _normalize_title_for_lookup(title)
+    if normalized_title is None:
+        return
+
+    stmt = sa.select(GenerationExample.id).where(
+        GenerationExample.title.is_not(None),
+        sa.func.lower(sa.func.trim(GenerationExample.title)) == normalized_title,
+    )
+    if exclude_example_id is not None:
+        stmt = stmt.where(GenerationExample.id != exclude_example_id)
+
+    result = await db.execute(stmt.limit(1))
+    existing_id = result.scalar_one_or_none()
+    if existing_id is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f'Карточка с названием "{title.strip()}" уже существует',
+        )
+
+
 def _build_variant_stat_item(source: str, seo_variant_index: int, views_count: int, starts_count: int) -> GenerationExampleVariantStatItem:
     conversion_rate = float(starts_count / views_count) if views_count > 0 else 0.0
     return GenerationExampleVariantStatItem(
@@ -420,15 +453,18 @@ async def create_example(
     admin: AdminOrService,
     db: DBSession,
 ) -> GenerationExampleAdminItem:
+    cleaned_title = _clean_optional_text(payload.title)
+    await _ensure_unique_example_title(db, cleaned_title)
+
     slug = await generate_unique_slug(
         db,
-        payload.slug or payload.title,
+        payload.slug or cleaned_title,
         fallback_prefix="example",
     )
     item = GenerationExample(
         slug=slug,
         seo_variant_index=payload.seo_variant_index,
-        title=_clean_optional_text(payload.title),
+        title=cleaned_title,
         description=_clean_optional_text(payload.description),
         prompt=payload.prompt.strip(),
         image_url=payload.image_url.strip(),
@@ -468,7 +504,9 @@ async def update_example(
         raise HTTPException(status_code=404, detail="Пример не найден")
 
     if payload.title is not None:
-        item.title = _clean_optional_text(payload.title)
+        cleaned_title = _clean_optional_text(payload.title)
+        await _ensure_unique_example_title(db, cleaned_title, exclude_example_id=item.id)
+        item.title = cleaned_title
     if payload.seo_variant_index is not None:
         item.seo_variant_index = payload.seo_variant_index
     if payload.description is not None:
