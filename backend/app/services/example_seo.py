@@ -64,10 +64,12 @@ def _extract_prompt_highlights_ru(prompt: str, max_items: int = 4) -> list[str]:
         (("full-length", "full length", "в полный рост"), "кадр в полный рост"),
         (("symmetrical", "symmetry", "симметр"), "строгая симметричная композиция"),
         (("couture", "3d roses", "rose dress", "платье с розами"), "кутюрный образ с объёмными розами"),
-        (("studio lighting", "studio", "студийный свет"), "профессиональный студийный свет"),
+        (("studio lighting", "studio", "студийный свет", "мягкое студийное освещение"), "профессиональный студийный свет"),
         (("fashion editorial", "luxury fashion", "editorial", "fashion"), "стиль luxury fashion editorial"),
         (("minimalist", "минималист"), "минималистичная сценография"),
         (("red", "scarlet", "crimson", "красн"), "насыщенная красная палитра"),
+        (("winter", "snow", "snowy", "снег", "снеж", "снегопад"), "зимняя атмосфера"),
+        (("christmas", "new year", "holiday", "рождеств", "новогод"), "праздничное настроение"),
     ]
 
     highlights: list[str] = []
@@ -84,14 +86,43 @@ def _extract_prompt_highlights_ru(prompt: str, max_items: int = 4) -> list[str]:
     return unique[:max_items]
 
 
+def _extract_prompt_details_ru(prompt: str, max_items: int = 4) -> list[str]:
+    lowered = (prompt or "").lower()
+    detail_rules: list[tuple[tuple[str, ...], str]] = [
+        (("белое пушистое пальто", "пушистое пальто", "white fluffy coat", "fur coat"), "белое пушистое пальто"),
+        (("рождественское дерево", "новогодняя ёлка", "новогоднее дерево", "christmas tree"), "размытая новогодняя ёлка на фоне"),
+        (("снегопад", "snowfall", "falling snow", "снеж"), "лёгкий снегопад"),
+        (("мягкое студийное освещение", "soft studio lighting", "студийный свет"), "мягкий студийный свет"),
+        (("реалистичные волокна ткани", "детализация текстуры кожи", "realistic fabric fibers"), "высокая детализация кожи и ткани"),
+        (("кинематографическая глубина резкости", "cinematic depth of field"), "кинематографическая глубина резкости"),
+        (("нейтральная цветовая градация", "neutral color grading"), "нейтральная цветокоррекция"),
+        (("смотрит прямо в камеру", "looks directly at the camera", "прямо в камеру"), "прямой взгляд в камеру"),
+    ]
+
+    details: list[str] = []
+    for keywords, label in detail_rules:
+        if _contains_any(lowered, keywords):
+            details.append(label)
+
+    unique: list[str] = []
+    seen: set[str] = set()
+    for item in details:
+        if item not in seen:
+            unique.append(item)
+            seen.add(item)
+    return unique[:max_items]
+
+
 def _infer_ru_theme_from_prompt(prompt: str) -> str:
     lowered = (prompt or "").lower()
-    is_fashion = _contains_any(lowered, ("fashion", "editorial", "couture", "outfit", "стиль"))
+    is_fashion = _contains_any(lowered, ("fashion", "editorial", "couture", "outfit", "стиль", "модн"))
     is_studio = _contains_any(lowered, ("studio", "lighting", "студ"))
     has_bow = _contains_any(lowered, ("bow", "arrow", "лук", "стрела"))
     has_keyhole = _contains_any(lowered, ("keyhole", "замочная скважина"))
     has_red = _contains_any(lowered, ("red", "scarlet", "crimson", "красн"))
     has_couture = _contains_any(lowered, ("couture", "3d roses", "rose dress", "роз"))
+    has_holiday = _contains_any(lowered, ("christmas", "new year", "holiday", "рождеств", "новогод"))
+    has_winter = _contains_any(lowered, ("winter", "snow", "snowy", "снег", "снеж", "зим"))
 
     if is_studio and is_fashion and has_bow:
         return "Студийная fashion-съёмка с луком"
@@ -99,18 +130,24 @@ def _infer_ru_theme_from_prompt(prompt: str) -> str:
         return "Fashion-съёмка в keyhole-сцене"
     if is_fashion and has_couture and has_red:
         return "Кутюрный красный fashion-образ"
+    if has_holiday and has_winter:
+        return "Праздничный зимний портрет"
+    if has_holiday:
+        return "Праздничный портрет у новогодней ёлки"
+    if has_winter:
+        return "Зимний портрет"
     if is_studio and has_red:
         return "Красная студийная фотосцена"
 
     rules: list[tuple[tuple[str, ...], str]] = [
-        (("christmas", "new year", "santa", "holiday"), "Праздничный зимний портрет"),
-        (("winter", "snow", "snowy"), "Зимний портрет"),
+        (("christmas", "new year", "santa", "holiday", "рождеств", "новогод"), "Праздничный зимний портрет"),
+        (("winter", "snow", "snowy", "снег", "снеж", "зим"), "Зимний портрет"),
         (("selfie", "phone", "camera angle"), "Портрет с эффектом селфи"),
         (("face", "identity", "preserve"), "Портрет с сохранением черт лица"),
-        (("fashion", "style", "outfit"), "Модный образ"),
+        (("fashion", "style", "outfit", "модн"), "Модный редакционный портрет"),
         (("outdoor", "street"), "Уличная фотосцена"),
-        (("studio", "lighting"), "Студийный портрет"),
-        (("cinematic", "movie"), "Кинематографичный портрет"),
+        (("studio", "lighting", "студ"), "Студийный портрет"),
+        (("cinematic", "movie", "кинематограф"), "Кинематографичный портрет"),
     ]
     for keywords, title in rules:
         if _contains_any(lowered, keywords):
@@ -126,6 +163,10 @@ def _sanitize_seo_text(value: str) -> str:
         ("исходному промпту примера", "сценарию примера"),
         ("исходный промпт", "сценарий"),
         ("с адаптацией на русский язык", ""),
+        ("с seo-описанием и cta", ""),
+        ("с seo описанием и cta", ""),
+        ("сценарий уже оптимизирован для быстрого старта и качественного результата", ""),
+        ("ориентирован на коммерческие визуалы и рекламные публикации", "подходит для публикаций в соцсетях и рекламных креативов"),
     )
     for old, new in replacements:
         text = text.replace(old, new)
@@ -155,36 +196,102 @@ def _looks_generic_title(value: str) -> bool:
         "готовый пример",
         "шаблон",
         "контент для соцсетей",
+        "пример генерации по фото",
+        "сценарий ai-генерации",
+        "основанный на фотографическом",
     )
     if any(pattern in lowered for pattern in generic_patterns):
         return True
     return len(lowered.split()) < 2
 
 
+def _is_low_signal_text(value: str) -> bool:
+    lowered = " ".join((value or "").lower().split())
+    if not lowered:
+        return True
+    low_signal_patterns = (
+        "ориентирован на коммерческие визуалы",
+        "с seo-описанием",
+        "с seo описанием",
+        "сценарий уже оптимизирован",
+        "пример генерации по фото",
+        "карточка \"",
+        "собран по промпту",
+        "адаптацией на русский язык",
+    )
+    return any(pattern in lowered for pattern in low_signal_patterns)
+
+
+def _normalize_title_phrase(value: str) -> str:
+    text = _sanitize_seo_text(value)
+    text = re.sub(
+        r"\s*[—-]\s*(пример генерации по фото|сценарий ai-генерации|ai пример для генерации)\b.*$",
+        "",
+        text,
+        flags=re.IGNORECASE,
+    )
+    text = re.sub(r",?\s*основан[аоы]?[^\.,;:]*", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\s{2,}", " ", text).strip(" .,:;—-")
+    return text
+
+
 def _prefer_title(candidate: str, fallback: str) -> str:
-    selected = _prefer_russian(candidate, fallback)
-    if _looks_generic_title(selected) and not _looks_generic_title(fallback):
-        return _truncate(_sanitize_seo_text(fallback), 200)
-    return selected
+    selected = _normalize_title_phrase(_prefer_russian(candidate, fallback))
+    if _looks_generic_title(selected) or len(selected.split()) > 11:
+        return _truncate(_normalize_title_phrase(fallback), 200)
+    return _truncate(selected, 200)
 
 
 def _extract_title_from_prompt(prompt: str) -> str:
     cleaned = _normalize_prompt(prompt)
     if not cleaned:
         return "Пример генерации"
-    if not _is_mostly_russian(cleaned, min_ratio=0.55):
-        return _infer_ru_theme_from_prompt(cleaned)
-    words = cleaned.split(" ")[:7]
-    title = " ".join(words)
-    return title[:1].upper() + title[1:]
+    theme_title = _infer_ru_theme_from_prompt(cleaned)
+    if theme_title != "AI генерация по фото":
+        return _truncate(theme_title, 200)
+    first_sentence = re.split(r"[.!?\n]", cleaned, maxsplit=1)[0]
+    phrase = _normalize_title_phrase(first_sentence)
+    if not phrase:
+        return "Пример генерации"
+    words = phrase.split()
+    if len(words) > 8:
+        phrase = " ".join(words[:8])
+    phrase = phrase[:1].upper() + phrase[1:]
+    return _truncate(phrase, 200)
 
 
 def _build_title_variants_from_prompt(prompt: str) -> list[str]:
     base = _extract_title_from_prompt(prompt)
+    lowered = (prompt or "").lower()
+    details = _extract_prompt_details_ru(prompt, max_items=2)
+    detail_hint = details[0] if details else ""
+    has_holiday = _contains_any(lowered, ("christmas", "new year", "holiday", "рождеств", "новогод"))
+    has_winter = _contains_any(lowered, ("winter", "snow", "snowy", "снег", "снеж", "зим"))
+    is_fashion = _contains_any(lowered, ("fashion", "editorial", "couture", "outfit", "модн"))
+    is_studio = _contains_any(lowered, ("studio", "lighting", "студ"))
+
+    variant_two = _infer_ru_theme_from_prompt(prompt)
+    if variant_two == "AI генерация по фото" or variant_two == base:
+        if detail_hint:
+            variant_two = _truncate(f"{base} с акцентом на {detail_hint}", 200)
+        elif is_studio:
+            variant_two = _truncate(f"{base} с мягким студийным светом", 200)
+        else:
+            variant_two = _truncate(f"{base} с фотореалистичной детализацией", 200)
+
+    if has_holiday or has_winter:
+        variant_three = _truncate(f"{base} в зимней праздничной атмосфере", 200)
+    elif is_fashion:
+        variant_three = _truncate(f"{base} в редакционном fashion-стиле", 200)
+    elif is_studio:
+        variant_three = _truncate(f"{base} в студийной постановке", 200)
+    else:
+        variant_three = _truncate(f"{base} с акцентом на реалистичную фактуру", 200)
+
     variants = [
-        base,
-        _truncate(f"{base} — сценарий AI-генерации", 200),
-        _truncate(f"{base} — пример генерации по фото", 200),
+        _truncate(_normalize_title_phrase(base), 200),
+        _truncate(_normalize_title_phrase(variant_two), 200),
+        _truncate(_normalize_title_phrase(variant_three), 200),
     ]
     unique: list[str] = []
     seen: set[str] = set()
@@ -195,6 +302,52 @@ def _build_title_variants_from_prompt(prompt: str) -> list[str]:
         seen.add(candidate)
         unique.append(candidate)
     return unique
+
+
+def _build_semantic_description(
+    *,
+    title: str,
+    prompt: str,
+    tags: list[str],
+    angle: str,
+) -> str:
+    details = _extract_prompt_details_ru(prompt, max_items=3)
+    highlights = _extract_prompt_highlights_ru(prompt, max_items=2)
+    details_part = ", ".join(details[:2]) if details else ", ".join(highlights[:2])
+
+    first_tag = next((tag for tag in tags if _is_mostly_russian(tag, min_ratio=0.5)), "")
+    tag_context = f" для сценария «{first_tag}»" if first_tag else ""
+
+    if details_part:
+        details_sentence = f"Ключевые детали: {details_part}."
+    else:
+        details_sentence = "Сцена построена как фотореалистичный портрет с аккуратным светом и глубиной."
+
+    if angle == "social":
+        usage_sentence = "Подходит для публикаций в соцсетях, промо-постов и визуалов для карточек товара."
+    elif angle == "mood":
+        usage_sentence = "Подходит для атмосферных подборок, сезонных публикаций и креативных обложек."
+    else:
+        usage_sentence = "Подходит для персональных портретов, рекламных креативов и контент-съёмок."
+
+    return _truncate(
+        f"«{title}»{tag_context}. {details_sentence} {usage_sentence}",
+        400,
+    )
+
+
+def _build_semantic_seo_title(title: str) -> str:
+    clean_title = _truncate(_normalize_title_phrase(title), 88)
+    return _truncate(f"{clean_title} | AI генерация по фото", 120)
+
+
+def _build_semantic_seo_description(title: str, prompt: str) -> str:
+    details = _extract_prompt_details_ru(prompt, max_items=2)
+    details_part = ", ".join(details) if details else "естественный свет, фотореализм и аккуратная фактура"
+    return _truncate(
+        f"{title}: {details_part}. Загрузите своё фото и получите результат в этом стиле за пару шагов.",
+        200,
+    )
 
 
 def _normalize_tags(tags: list[str]) -> list[str]:
@@ -296,60 +449,45 @@ def _build_fallback_variants(
 ) -> list[GenerationExampleSeoSuggestionVariant]:
     prompt_text = _normalize_prompt(payload.prompt)
     tags = _normalize_tags(payload.tags)
-    first_tag = next((tag for tag in tags if _is_mostly_russian(tag, min_ratio=0.5)), "AI генерации")
-    highlights = _extract_prompt_highlights_ru(prompt_text, max_items=3)
-    highlights_text = ", ".join(highlights)
     title_variants = _build_title_variants_from_prompt(prompt_text)
     base_slug = slugify((payload.slug or "").strip() or title_variants[0], fallback="example")
-    title_context = f"для {first_tag}"
-    scene_context = (
-        f" Ключевые детали: {highlights_text}."
-        if highlights_text
-        else " Сценарий уже оптимизирован для быстрого старта и качественного результата."
-    )
 
     variants = [
         _build_variant(
             slug=base_slug,
             title=title_variants[0],
-            description=_truncate(
-                f'Пример "{title_variants[0]}" {title_context}.'
-                f"{scene_context} Загрузите свои фото и запустите генерацию по этому образцу.",
-                400,
+            description=_build_semantic_description(
+                title=title_variants[0],
+                prompt=prompt_text,
+                tags=tags,
+                angle="main",
             ),
-            seo_title=_truncate(f"{title_variants[0]} | Пример генерации AI", 120),
-            seo_description=_truncate(
-                f'Готовый пример "{title_variants[0]}": загрузите исходник и получите релевантный результат в выбранном стиле.',
-                200,
-            ),
+            seo_title=_build_semantic_seo_title(title_variants[0]),
+            seo_description=_build_semantic_seo_description(title_variants[0], prompt_text),
         ),
         _build_variant(
             slug=f"{base_slug}-variant-2",
             title=title_variants[1],
-            description=_truncate(
-                f'Карточка "{title_variants[1]}" подготовлена для соцсетей и быстрых креативов по фото.'
-                f"{scene_context}",
-                400,
+            description=_build_semantic_description(
+                title=title_variants[1],
+                prompt=prompt_text,
+                tags=tags,
+                angle="social",
             ),
-            seo_title=_truncate(f"{title_variants[1]} | Генерация по промпту", 120),
-            seo_description=_truncate(
-                f'Сценарий "{title_variants[1]}" для релевантной генерации: примените идею карточки к своему фото.',
-                200,
-            ),
+            seo_title=_build_semantic_seo_title(title_variants[1]),
+            seo_description=_build_semantic_seo_description(title_variants[1], prompt_text),
         ),
         _build_variant(
             slug=f"{base_slug}-variant-3",
             title=title_variants[2],
-            description=_truncate(
-                f'Вариант "{title_variants[2]}" ориентирован на коммерческие визуалы и рекламные публикации.'
-                f"{scene_context}",
-                400,
+            description=_build_semantic_description(
+                title=title_variants[2],
+                prompt=prompt_text,
+                tags=tags,
+                angle="mood",
             ),
-            seo_title=_truncate(f"{title_variants[2]} | AI пример для генерации", 120),
-            seo_description=_truncate(
-                f'Карточка "{title_variants[2]}" с SEO-описанием и CTA для запуска генерации по вашему фото.',
-                200,
-            ),
+            seo_title=_build_semantic_seo_title(title_variants[2]),
+            seo_description=_build_semantic_seo_description(title_variants[2], prompt_text),
         ),
     ]
     return _ensure_unique_variant_slugs(variants)
@@ -383,6 +521,36 @@ def _build_response(
     )
 
 
+def _apply_variant_quality_guard(
+    variant: GenerationExampleSeoSuggestionVariant,
+    fallback_variant: GenerationExampleSeoSuggestionVariant,
+) -> GenerationExampleSeoSuggestionVariant:
+    safe_title = _normalize_title_phrase(variant.title)
+    if _looks_generic_title(safe_title) or len(safe_title.split()) > 11:
+        safe_title = fallback_variant.title
+
+    safe_description = variant.description
+    if _is_low_signal_text(safe_description):
+        safe_description = fallback_variant.description
+
+    safe_seo_title = _normalize_title_phrase(variant.seo_title)
+    if _looks_generic_title(safe_seo_title) or _is_low_signal_text(safe_seo_title):
+        safe_seo_title = fallback_variant.seo_title
+
+    safe_seo_description = variant.seo_description
+    if _is_low_signal_text(safe_seo_description):
+        safe_seo_description = fallback_variant.seo_description
+
+    return _build_variant(
+        slug=variant.slug,
+        title=safe_title,
+        description=safe_description,
+        seo_title=safe_seo_title,
+        seo_description=safe_seo_description,
+        faq=variant.faq or fallback_variant.faq,
+    )
+
+
 def _normalize_llm_result(
     raw: dict[str, Any],
     fallback: GenerationExampleSeoSuggestionResponse,
@@ -409,45 +577,44 @@ def _normalize_llm_result(
             if not isinstance(item, dict):
                 normalized.append(fallback_variant)
                 continue
-            normalized.append(
-                _build_variant(
-                    slug=str(item.get("slug") or fallback_variant.slug),
-                    title=_prefer_title(
-                        str(item.get("title") or fallback_variant.title),
-                        fallback_variant.title,
-                    ),
-                    description=_prefer_russian(
-                        str(item.get("description") or fallback_variant.description),
-                        fallback_variant.description,
-                    ),
-                    seo_title=_prefer_russian(
-                        str(item.get("seo_title") or fallback_variant.seo_title),
-                        fallback_variant.seo_title,
-                    ),
-                    seo_description=_prefer_russian(
-                        str(item.get("seo_description") or fallback_variant.seo_description),
-                        fallback_variant.seo_description,
-                    ),
-                    faq=_normalize_faq(item.get("faq"), fallback_variant.faq),
-                )
-            )
-    else:
-        normalized.append(
-            _build_variant(
-                slug=str(raw.get("slug") or fallback.slug),
-                title=_prefer_title(str(raw.get("title") or fallback.title), fallback.title),
+            candidate_variant = _build_variant(
+                slug=str(item.get("slug") or fallback_variant.slug),
+                title=_prefer_title(
+                    str(item.get("title") or fallback_variant.title),
+                    fallback_variant.title,
+                ),
                 description=_prefer_russian(
-                    str(raw.get("description") or fallback.description),
-                    fallback.description,
+                    str(item.get("description") or fallback_variant.description),
+                    fallback_variant.description,
                 ),
-                seo_title=_prefer_russian(str(raw.get("seo_title") or fallback.seo_title), fallback.seo_title),
+                seo_title=_prefer_russian(
+                    str(item.get("seo_title") or fallback_variant.seo_title),
+                    fallback_variant.seo_title,
+                ),
                 seo_description=_prefer_russian(
-                    str(raw.get("seo_description") or fallback.seo_description),
-                    fallback.seo_description,
+                    str(item.get("seo_description") or fallback_variant.seo_description),
+                    fallback_variant.seo_description,
                 ),
-                faq=_normalize_faq(raw.get("faq"), fallback.faq),
+                faq=_normalize_faq(item.get("faq"), fallback_variant.faq),
             )
+            normalized.append(_apply_variant_quality_guard(candidate_variant, fallback_variant))
+    else:
+        fallback_variant = fallback_variants[0]
+        candidate_variant = _build_variant(
+            slug=str(raw.get("slug") or fallback.slug),
+            title=_prefer_title(str(raw.get("title") or fallback.title), fallback.title),
+            description=_prefer_russian(
+                str(raw.get("description") or fallback.description),
+                fallback.description,
+            ),
+            seo_title=_prefer_russian(str(raw.get("seo_title") or fallback.seo_title), fallback.seo_title),
+            seo_description=_prefer_russian(
+                str(raw.get("seo_description") or fallback.seo_description),
+                fallback.seo_description,
+            ),
+            faq=_normalize_faq(raw.get("faq"), fallback.faq),
         )
+        normalized.append(_apply_variant_quality_guard(candidate_variant, fallback_variant))
 
     while len(normalized) < 3 and len(normalized) < len(fallback_variants):
         normalized.append(fallback_variants[len(normalized)])
@@ -525,26 +692,31 @@ async def generate_example_seo_suggestions(
         )
 
     highlights = _extract_prompt_highlights_ru(prompt_text, max_items=5)
+    details = _extract_prompt_details_ru(prompt_text, max_items=5)
     system_prompt = (
-        "Ты SEO-редактор карточек AI генераций. Верни только JSON. "
-        "Формат: {\"variants\":[{slug,title,description,seo_title,seo_description,faq}],\"recommended_index\":0}. "
-        "В variants должно быть ровно 3 варианта. faq — массив из 3 объектов {question,answer}. "
-        "Основа для контента — поле prompt. Остальные поля только как вспомогательный контекст. "
-        "Каждый title должен быть предметным, отличаться от других и отражать сцену/стиль/действие, "
-        "а не быть абстрактным шаблоном. "
-        "Если prompt не на русском, сначала переведи смысл на русский и затем создай естественные RU-тексты. "
-        "Запрещённые формулировки: 'исходный промпт', 'адаптация на русский язык', 'собран по промпту'. "
-        "Нельзя оставлять английские фразы в title/description/seo_title/seo_description/faq. "
-        "Не используй title вида 'Пример генерации', 'Портрет с сохранением черт лица', если этого нет в задаче. "
-        "В description и seo_description упомяни 2-3 конкретные детали из prompt. "
+        "Ты старший SEO-редактор карточек AI-генераций. Верни только JSON без пояснений. "
+        "Формат ответа строго: {\"variants\":[{slug,title,description,seo_title,seo_description,faq}],\"recommended_index\":0}. "
+        "variants: ровно 3 элемента. faq: ровно 3 вопроса, каждый объект {question,answer}. "
+        "Контент строится из prompt; tags/hints используй только как дополнительный контекст. "
+        "Критерии качества: "
+        "1) title должен быть коротким, человеческим и предметным (обычно 3-8 слов), без канцеляризмов и хвостов. "
+        "2) description и seo_description обязаны содержать 2-3 конкретные детали сцены из prompt (одежда, фон, свет, ракурс, настроение). "
+        "3) seo_title должен быть читабельным и не дублировать title слово-в-слово с шаблонным хвостом. "
+        "Жёсткие запреты: "
+        "- не писать 'пример генерации по фото', 'сценарий AI-генерации', 'ориентирован на коммерческие визуалы', "
+        "'с SEO-описанием и CTA', 'собран по промпту', 'адаптация на русский язык'. "
+        "- не использовать бессмысленные абстракции и мета-описание карточки вместо описания изображения. "
+        "- не оставлять английские фразы в title/description/seo_title/seo_description/faq. "
+        "Если prompt не на русском, сначала переведи смысл на русский и только затем формируй финальные поля. "
         "Все текстовые поля строго на русском языке (кириллица), кроме slug. "
-        "Ограничения: title<=200, description<=400, seo_title<=120, seo_description<=200."
+        "Ограничения длины: title<=200, description<=400, seo_title<=120, seo_description<=200."
     )
     user_payload = {
         "prompt": prompt_text,
         "tags": _normalize_tags(payload.tags),
         "hints_ru": {
             "prompt_highlights": highlights,
+            "prompt_details": details,
             "theme_hint": _infer_ru_theme_from_prompt(prompt_text),
             "title_hint_ru": payload.title if _is_mostly_russian(payload.title or "", min_ratio=0.5) else None,
             "description_hint_ru": payload.description if _is_mostly_russian(payload.description or "", min_ratio=0.5) else None,
@@ -563,8 +735,8 @@ async def generate_example_seo_suggestions(
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
                 ],
-                "max_tokens": 900,
-                "temperature": 0.25,
+                "max_tokens": 1000,
+                "temperature": 0.15,
                 "response_format": {"type": "json_object"},
             },
         )
