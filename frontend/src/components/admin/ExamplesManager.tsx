@@ -28,8 +28,8 @@ const PUBLIC_SITE_BASE_URL = (
 const resolveImageUrl = (url: string) =>
   url.startsWith('http') ? url : `${API_BASE_URL}${url.startsWith('/') ? url : `/${url}`}`;
 
-const getPublicExampleUrl = (slug: string): string =>
-  `${PUBLIC_SITE_BASE_URL}/examples/${encodeURIComponent(slug)}`;
+const getPublicExampleShortUrl = (id: number): string =>
+  `${PUBLIC_SITE_BASE_URL}/e/${id}`;
 
 const copyTextToClipboard = async (value: string): Promise<void> => {
   if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
@@ -897,14 +897,13 @@ export const ExamplesManager: React.FC = () => {
   };
 
   const handleCopyExampleLink = async (item: DraftExample) => {
-    const slug = toSlug(item.draftSlug || item.slug || '');
-    if (!slug) {
-      toast.error('Сначала заполните slug карточки');
+    if (!item.id) {
+      toast.error('Сначала сохраните карточку');
       return;
     }
     try {
-      await copyTextToClipboard(getPublicExampleUrl(slug));
-      toast.success('Ссылка на карточку скопирована');
+      await copyTextToClipboard(getPublicExampleShortUrl(item.id));
+      toast.success('Короткая ссылка скопирована');
     } catch {
       toast.error('Не удалось скопировать ссылку');
     }
@@ -1449,7 +1448,7 @@ export const ExamplesManager: React.FC = () => {
                       disabled={savingId === item.id}
                       className="px-4 py-2 rounded-lg text-sm font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                     >
-                      Скопировать ссылку
+                      Скопировать короткую ссылку
                     </button>
                     <span className="text-xs text-gray-500">
                       Использований: {item.uses_count}

@@ -425,6 +425,37 @@ async def public_example_detail(
     return HTMLResponse(content=page)
 
 
+@router.get("/e/{example_id}")
+async def public_example_short_redirect(
+    example_id: int,
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    stmt = (
+        sa.select(GenerationExample.slug)
+        .where(
+            GenerationExample.id == example_id,
+            GenerationExample.is_published.is_(True),
+        )
+        .limit(1)
+    )
+    result = await db.execute(stmt)
+    slug = result.scalar_one_or_none()
+
+    if not slug:
+        return HTMLResponse(
+            status_code=404,
+            content=_render_layout(
+                title="Пример не найден | AI Generator",
+                description="Запрошенный пример недоступен.",
+                canonical=_app_url(f"/e/{example_id}"),
+                og_image=_app_url("/logo.png"),
+                body='<h1 class="title">Пример не найден</h1><p class="desc">Проверьте ссылку или откройте каталог примеров.</p><a class="cta" href="/examples">Открыть каталог</a>',
+            ),
+        )
+
+    return RedirectResponse(url=f"/examples/{quote(slug)}", status_code=301)
+
+
 @router.get("/sitemap.xml")
 async def public_sitemap(
     db: AsyncSession = Depends(get_db),
