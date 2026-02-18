@@ -64,7 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GrsAI подключён как основной провайдер Nano Banana Pro, kie.ai используется как fallback вместо OpenRouter.
 
 ### Fixed
-- Исправлен прод-инцидент авторизации с `502 Bad Gateway` на `/api/v1/auth-web/*` после пересоздания backend: в `nginx/modsecurity/waf.conf` включён динамический DNS-резолв Docker-сервисов (`resolver 127.0.0.11` + `server ... resolve`), чтобы WAF не зависал на устаревшем IP upstream.
+- Исправлен прод-инцидент авторизации с `502 Bad Gateway` на `/api/v1/auth-web/*` после пересоздания backend: в `nginx/modsecurity/waf.conf` включён динамический DNS-резолв Docker-upstream (`server ... resolve` + `zone`), чтобы WAF не зависал на устаревшем IP backend/frontend.
 - Исправлен сценарий падения `/api/v1/editing/generate` в старых чат-сессиях: если `chat.base_image_url` указывает на удалённый файл (404), воркер теперь автоматически пытается взять базу из актуальных `attachments` (с приоритетом роли `base/base-extra`) и синхронизирует обновлённый `base_image_url` в `chat_histories`.
 - Исправлена ошибка загрузки админ-панели после всплеска `429`: глобальный API rate-limit больше не ограничивает `/api/v1/admin/*`, чтобы пакетные запросы dashboard не блокировались общим IP-лимитером.
 - Сброшена загрязнённая статистика по карточкам примеров (исторические `events/stats/uses_count`), чтобы после релиза собирать чистые метрики без админских действий.
