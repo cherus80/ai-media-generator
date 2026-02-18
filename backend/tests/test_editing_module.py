@@ -292,6 +292,41 @@ class TestChatModel:
         assert chat.message_count == 2
 
 
+class TestEditingTaskBaseImageFallback:
+    """Тесты fallback-выбора базового изображения из attachments."""
+
+    def test_prefers_attachment_with_base_role(self):
+        """Если есть роль base/base-extra, выбираем её URL."""
+        from app.tasks.editing import _select_fallback_base_attachment_url
+
+        attachments = [
+            {"id": "1", "url": "/uploads/ref-1.jpg", "role": "reference"},
+            {"id": "2", "url": "/uploads/base-1.jpg", "role": "base"},
+            {"id": "3", "url": "/uploads/ref-2.jpg", "role": "reference"},
+        ]
+
+        assert _select_fallback_base_attachment_url(attachments) == "/uploads/base-1.jpg"
+
+    def test_uses_first_attachment_when_no_base_role(self):
+        """Если base-ролей нет, берём первый валидный attachment URL."""
+        from app.tasks.editing import _select_fallback_base_attachment_url
+
+        attachments = [
+            {"id": "1", "url": "/uploads/first.jpg", "role": "reference"},
+            {"id": "2", "url": "/uploads/second.jpg", "role": "reference"},
+        ]
+
+        assert _select_fallback_base_attachment_url(attachments) == "/uploads/first.jpg"
+
+    def test_returns_none_for_empty_or_invalid_payload(self):
+        """Пустой/невалидный payload не должен давать fallback URL."""
+        from app.tasks.editing import _select_fallback_base_attachment_url
+
+        assert _select_fallback_base_attachment_url([]) is None
+        assert _select_fallback_base_attachment_url(None) is None
+        assert _select_fallback_base_attachment_url([{"id": "x"}, {"role": "base"}]) is None
+
+
 def test_imports():
     """Тест что все необходимые модули импортируются"""
 

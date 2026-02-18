@@ -91,6 +91,38 @@ async def _probe_remote_image_url(url: str) -> bool:
         return False
 
 
+def _select_fallback_base_attachment_url(attachments: list[dict] | None) -> str | None:
+    """
+    Выбрать URL вложения, которое можно использовать как fallback базового изображения.
+
+    Приоритет:
+    1. attachment с role=base/base-extra/source/original
+    2. первый attachment с валидным url
+    """
+    if not attachments:
+        return None
+
+    preferred_roles = {"base", "base-extra", "source", "original"}
+    for attachment in attachments:
+        if not isinstance(attachment, dict):
+            continue
+        url = attachment.get("url")
+        if not url:
+            continue
+        role = str(attachment.get("role") or "").strip().lower()
+        if role in preferred_roles:
+            return str(url)
+
+    for attachment in attachments:
+        if not isinstance(attachment, dict):
+            continue
+        url = attachment.get("url")
+        if url:
+            return str(url)
+
+    return None
+
+
 class EditingTask(Task):
     """
     Базовый класс для задач редактирования с поддержкой прогресса.
@@ -152,6 +184,18 @@ def generate_editing_task(
         attachment_items = attachments or []
         async with async_session() as session:
             try:
+                async def _sync_chat_base_image_url(new_url: str) -> None:
+                    chat_record = await session.execute(
+                        select(ChatHistory).where(
+                            ChatHistory.session_id == session_id,
+                            ChatHistory.user_id == user_id,
+                        )
+                    )
+                    chat = chat_record.scalar_one_or_none()
+                    if chat and chat.base_image_url != new_url:
+                        chat.base_image_url = new_url
+                        await session.commit()
+
                 # Обновление статуса: processing
                 await update_generation_status(
                     session,
@@ -178,16 +222,38 @@ def generate_editing_task(
 
                 # Подготовка исходного изображения (опционально)
                 if base_image_url_local:
-                    base_image_id = extract_file_id_from_url(base_image_url_local)
-                    base_image_path = get_file_by_id(base_image_id)
-                    if not base_image_path:
+                    original_base_image_url = base_image_url_local
+                    candidate_base_urls: list[str] = [base_image_url_local]
+                    fallback_attachment_base_url = _select_fallback_base_attachment_url(attachment_items)
+                    if (
+                        fallback_attachment_base_url
+                        and fallback_attachment_base_url not in candidate_base_urls
+                    ):
+                        candidate_base_urls.append(fallback_attachment_base_url)
+
+                    last_fetch_error: Exception | None = None
+                    for candidate_base_url in candidate_base_urls:
+                        base_image_id = extract_file_id_from_url(candidate_base_url)
+                        base_image_path = get_file_by_id(base_image_id)
+                        if base_image_path:
+                            if candidate_base_url != original_base_image_url:
+                                logger.warning(
+                                    "Base image %s missing for generation %s, using attachment fallback %s",
+                                    original_base_image_url,
+                                    generation_id,
+                                    candidate_base_url,
+                                )
+                                base_image_url_local = candidate_base_url
+                                await _sync_chat_base_image_url(base_image_url_local)
+                            break
+
                         logger.warning(
                             "Base image %s not found locally for generation %s, trying to re-download",
-                            base_image_url_local,
+                            candidate_base_url,
                             generation_id,
                         )
                         try:
-                            download_url = to_public_url(base_image_url_local)
+                            download_url = to_public_url(candidate_base_url)
                             raw_bytes, ext, content_type = await download_image_bytes(download_url)
                             normalized_bytes, normalized_ext = normalize_image_bytes(raw_bytes, ext)
 
@@ -201,26 +267,28 @@ def generate_editing_task(
                             base_image_url_local = saved_url
 
                             # Синхронизируем base_image_url в чат-сессии, чтобы следующие генерации использовали локальную копию
-                            chat_record = await session.execute(
-                                select(ChatHistory).where(
-                                    ChatHistory.session_id == session_id,
-                                    ChatHistory.user_id == user_id,
-                                )
-                            )
-                            chat = chat_record.scalar_one_or_none()
-                            if chat:
-                                chat.base_image_url = saved_url
-                                await session.commit()
+                            await _sync_chat_base_image_url(saved_url)
 
                             logger.info(
                                 "Re-saved base image for editing generation %s to %s",
                                 generation_id,
                                 base_image_url_local,
                             )
+                            break
                         except Exception as fetch_err:
-                            raise ValueError("Base image not found for editing and re-download failed") from fetch_err
+                            last_fetch_error = fetch_err
+                            logger.warning(
+                                "Failed to fetch base image candidate %s for generation %s: %s",
+                                candidate_base_url,
+                                generation_id,
+                                fetch_err,
+                            )
+                            base_image_path = None
+                            continue
 
                     if not base_image_path:
+                        if last_fetch_error is not None:
+                            raise ValueError("Base image not found for editing and re-download failed") from last_fetch_error
                         raise ValueError("Base image not found for editing")
 
                     # Конвертация iPhone форматов (MPO/HEIC/HEIF) в PNG если необходимо
