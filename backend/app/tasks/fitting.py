@@ -45,6 +45,11 @@ from app.services.fitting_prompts import get_prompt_for_zone
 
 logger = logging.getLogger(__name__)
 USER_ERROR_MESSAGE = "Произошла ошибка, повторите запрос еще раз или зайдите позже"
+PROVIDER_SWITCH_TO_MODEL_MESSAGE = "Провайдер №1 вернул ошибку, переключаемся на резервную модель."
+PROVIDER_SWITCH_TO_NEXT_PROVIDER_MESSAGE = (
+    "Резервная модель тоже вернула ошибку, переключаемся на альтернативный провайдер."
+)
+PROVIDERS_OVERLOADED_MESSAGE = "Провайдеры сейчас перегружены. Попробуйте повторить запрос немного позже."
 
 
 class FittingTask(Task):
@@ -102,6 +107,7 @@ def generate_fitting_task(
         """Async функция для выполнения генерации"""
         user = None
         service_used = None
+        user_failure_message = USER_ERROR_MESSAGE
         async with async_session() as session:
             try:
                 # Обновление статуса: processing
@@ -203,6 +209,11 @@ def generate_fitting_task(
                     resolved_fallback = fallback_provider.lower()
                 if disable_fallback is True or disable_from_store:
                     resolved_fallback = None
+                elif resolved_fallback is None:
+                    if resolved_primary == "grsai":
+                        resolved_fallback = "kie_ai"
+                    elif resolved_primary == "kie_ai":
+                        resolved_fallback = "grsai"
 
                 providers_chain = []
                 for candidate in (resolved_primary, resolved_fallback):
@@ -211,6 +222,7 @@ def generate_fitting_task(
 
                 if not providers_chain:
                     providers_chain.append("grsai")
+                next_provider_after_grsai = next((item for item in providers_chain if item != "grsai"), None)
 
                 for provider in providers_chain:
                     if provider == "grsai":
@@ -260,14 +272,32 @@ def generate_fitting_task(
                                         grs_retry_err,
                                         fallback_model,
                                     )
-                                    generated_image_url = await grs_client.generate_image(
-                                        prompt=prompt,
-                                        urls=[public_user_photo_url, public_item_photo_url],
-                                        aspect_ratio=resolved_aspect_ratio,
-                                        image_size=settings.GRS_AI_IMAGE_SIZE,
-                                        model=fallback_model,
-                                        progress_callback=progress_callback,
+                                    await update_generation_status(
+                                        session,
+                                        generation_id,
+                                        "processing",
+                                        progress=58,
+                                        error_message=PROVIDER_SWITCH_TO_MODEL_MESSAGE,
                                     )
+                                    try:
+                                        generated_image_url = await grs_client.generate_image(
+                                            prompt=prompt,
+                                            urls=[public_user_photo_url, public_item_photo_url],
+                                            aspect_ratio=resolved_aspect_ratio,
+                                            image_size=settings.GRS_AI_IMAGE_SIZE,
+                                            model=fallback_model,
+                                            progress_callback=progress_callback,
+                                        )
+                                    except Exception:
+                                        if next_provider_after_grsai:
+                                            await update_generation_status(
+                                                session,
+                                                generation_id,
+                                                "processing",
+                                                progress=62,
+                                                error_message=PROVIDER_SWITCH_TO_NEXT_PROVIDER_MESSAGE,
+                                            )
+                                        raise
 
                             service_used = "grsai"
                             logger.info("GrsAI virtual try-on successful")
@@ -333,6 +363,8 @@ def generate_fitting_task(
 
                 if not generated_image_url:
                     details = "; ".join(generation_errors) if generation_errors else "no providers available"
+                    if generation_errors:
+                        user_failure_message = PROVIDERS_OVERLOADED_MESSAGE
                     raise ValueError(f"Virtual try-on failed on all services: {details}")
 
                 if not generated_image_url:
@@ -468,7 +500,7 @@ def generate_fitting_task(
                     session,
                     generation_id,
                     "failed",
-                    error_message=USER_ERROR_MESSAGE,
+                    error_message=user_failure_message,
                 )
 
                 try:

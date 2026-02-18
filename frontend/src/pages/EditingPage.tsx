@@ -31,6 +31,7 @@ export const EditingPage: React.FC = () => {
     currentPrompts,
     isSendingMessage,
     isGenerating,
+    generationStatusMessage,
     uploadAndCreateSession,
     createTextSession,
     loadHistory,
@@ -535,6 +536,7 @@ export const EditingPage: React.FC = () => {
                 currentPrompts={currentPrompts}
                 onSelectPrompt={handleSelectPrompt}
                 isGenerating={isGenerating}
+                generatingMessage={generationStatusMessage}
                 baseImageUrl={baseImage?.url}
               />
 

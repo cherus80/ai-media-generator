@@ -257,6 +257,8 @@ async def get_fitting_status(
     }
 
     message = message_map.get(generation.status, "Неизвестный статус")
+    if generation.status in {"processing", "failed"} and generation.error_message:
+        message = generation.error_message
 
     return FittingStatusResponse(
         task_id=task_id,

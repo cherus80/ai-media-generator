@@ -64,6 +64,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GrsAI подключён как основной провайдер Nano Banana Pro, kie.ai используется как fallback вместо OpenRouter.
 
 ### Fixed
+- Исправлен fallback генерации после сбоев GrsAI: `runtime_config` теперь корректно обрабатывает рассинхрон `GENERATION_FALLBACK_PROVIDER` и `KIE_AI_DISABLE_FALLBACK`, чтобы цепочка `grsai -> kie.ai` не обрывалась на `No fallback configured`.
+- В задачах `editing` и `fitting` добавлены пользовательские сообщения по этапам переключения: переход на резервную модель GrsAI, затем переключение на следующий провайдер (`kie.ai`), и финальное сообщение о перегрузке при исчерпании провайдеров.
+- Endpoint `GET /api/v1/fitting/status/{task_id}` теперь возвращает актуальный `generation.error_message` для статусов `processing/failed`, чтобы UI показывал живые сообщения fallback вместо статического текста.
+- В UI редактирования добавлен показ статуса генерации во время polling: индикатор в чате теперь отображает backend-сообщения о переключении провайдеров.
 - Исправлен прод-инцидент авторизации с `502 Bad Gateway` на `/api/v1/auth-web/*` после пересоздания backend: в `nginx/modsecurity/waf.conf` включён динамический DNS-резолв Docker-upstream (`server ... resolve` + `zone`), чтобы WAF не зависал на устаревшем IP backend/frontend.
 - Исправлен сценарий падения `/api/v1/editing/generate` в старых чат-сессиях: если `chat.base_image_url` указывает на удалённый файл (404), воркер теперь автоматически пытается взять базу из актуальных `attachments` (с приоритетом роли `base/base-extra`) и синхронизирует обновлённый `base_image_url` в `chat_histories`.
 - Исправлена ошибка загрузки админ-панели после всплеска `429`: глобальный API rate-limit больше не ограничивает `/api/v1/admin/*`, чтобы пакетные запросы dashboard не блокировались общим IP-лимитером.

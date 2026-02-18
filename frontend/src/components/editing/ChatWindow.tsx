@@ -16,6 +16,7 @@ interface ChatWindowProps {
   currentPrompts: string[] | null;
   onSelectPrompt: (prompt: string, attachments?: ChatAttachment[]) => void;
   isGenerating?: boolean;
+  generatingMessage?: string | null;
   baseImageUrl?: string;
 }
 
@@ -24,6 +25,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   currentPrompts,
   onSelectPrompt,
   isGenerating = false,
+  generatingMessage = null,
   baseImageUrl,
 }) => {
   const promptAssistantModel =
@@ -180,7 +182,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                   ></path>
                 </svg>
                 <span className="text-sm font-semibold gradient-text">
-                  Генерируем изображение...
+                  {generatingMessage || 'Генерируем изображение...'}
                 </span>
               </div>
             </Card>

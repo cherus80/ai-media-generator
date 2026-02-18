@@ -54,6 +54,7 @@ interface ChatState {
   isGenerating: boolean;
   taskId: string | null;
   generationProgress: number; // 0-100
+  generationStatusMessage: string | null;
   aspectRatio: AspectRatio;
 
   // State: ошибки
@@ -102,6 +103,7 @@ export const useChatStore = create<ChatState>()(
   isGenerating: false,
   taskId: null,
   generationProgress: 0,
+  generationStatusMessage: null,
   error: null,
   uploadError: null,
   aspectRatio: 'auto',
@@ -359,6 +361,7 @@ export const useChatStore = create<ChatState>()(
       isGenerating: true,
       error: null,
       generationProgress: 0,
+      generationStatusMessage: 'Запускаем генерацию...',
       currentPrompts: null,
     });
 
@@ -376,6 +379,7 @@ export const useChatStore = create<ChatState>()(
 
       set({
         taskId: response.task_id,
+        generationStatusMessage: response.message || 'Генерация запущена',
       });
 
       // Запускаем polling для отслеживания прогресса
@@ -419,6 +423,7 @@ export const useChatStore = create<ChatState>()(
           messages: [...state.messages, imageMessage],
           isGenerating: false,
           generationProgress: 100,
+          generationStatusMessage: 'Готово!',
           // Обновляем базовое изображение, чтобы следующие генерации использовали свежий результат
           baseImage: state.baseImage
             ? {
@@ -442,6 +447,7 @@ export const useChatStore = create<ChatState>()(
         isGenerating: false,
         error: errorMessage,
         generationProgress: 0,
+        generationStatusMessage: null,
       });
       throw error;
     }
@@ -451,6 +457,7 @@ export const useChatStore = create<ChatState>()(
   updateGenerationProgress: (status: FittingStatusResponse) => {
     set({
       generationProgress: status.progress,
+      generationStatusMessage: status.message,
     });
   },
 
@@ -479,6 +486,7 @@ export const useChatStore = create<ChatState>()(
       isGenerating: false,
       taskId: null,
       generationProgress: 0,
+      generationStatusMessage: null,
       error: null,
       uploadError: null,
       aspectRatio: 'auto',

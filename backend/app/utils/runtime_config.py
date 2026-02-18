@@ -29,6 +29,14 @@ def _normalize_provider(value: Optional[str]) -> Optional[str]:
     return value
 
 
+def _default_fallback_for(primary: str) -> Optional[str]:
+    if primary == "grsai":
+        return "kie_ai"
+    if primary == "kie_ai":
+        return "grsai"
+    return None
+
+
 async def set_generation_providers(
     primary: Optional[str],
     fallback: Optional[str],
@@ -64,10 +72,24 @@ def get_generation_providers_for_worker() -> Tuple[str, Optional[str], bool]:
         (primary, fallback, disable_fallback)
     """
     primary_raw = settings.GENERATION_PRIMARY_PROVIDER or ("kie_ai" if settings.USE_KIE_AI else "grsai")
-    fallback_raw = None if settings.KIE_AI_DISABLE_FALLBACK else settings.GENERATION_FALLBACK_PROVIDER
     primary = _normalize_provider(primary_raw) or "grsai"
-    fallback = _normalize_provider(fallback_raw)
-    disable_fallback = settings.KIE_AI_DISABLE_FALLBACK
+
+    fallback = _normalize_provider(settings.GENERATION_FALLBACK_PROVIDER)
+    disable_fallback = bool(settings.KIE_AI_DISABLE_FALLBACK)
+
+    # Самовосстановление при рассинхроне env: fallback задан, но disable=true.
+    if disable_fallback and fallback:
+        logger.warning(
+            "Inconsistent provider settings detected (disable_fallback=true with fallback=%s). "
+            "Using configured fallback provider.",
+            fallback,
+        )
+        disable_fallback = False
+
+    if disable_fallback:
+        fallback = None
+    elif fallback is None:
+        fallback = _default_fallback_for(primary)
 
     try:
         client = redis.Redis.from_url(settings.REDIS_URL, decode_responses=True)
@@ -75,20 +97,25 @@ def get_generation_providers_for_worker() -> Tuple[str, Optional[str], bool]:
 
         stored_primary = _normalize_provider(data.get("primary"))
         stored_fallback = _normalize_provider(data.get("fallback"))
-        stored_disable = data.get("disable_fallback") == "1"
+        stored_disable_raw = data.get("disable_fallback")
+        stored_disable: Optional[bool] = None
+        if stored_disable_raw is not None:
+            stored_disable = stored_disable_raw == "1"
 
         if stored_primary:
             primary = stored_primary
-        if stored_fallback:
+        if "fallback" in data:
             fallback = stored_fallback
-        if stored_disable:
+        if stored_disable is True:
             fallback = None
             disable_fallback = True
-        else:
-            disable_fallback = False if stored_disable is not None else disable_fallback
+        elif stored_disable is False:
+            disable_fallback = False
 
         if fallback == primary:
             fallback = None
+        if not disable_fallback and fallback is None:
+            fallback = _default_fallback_for(primary)
     except Exception as e:
         logger.warning("Failed to load generation providers from Redis: %s", e)
 
