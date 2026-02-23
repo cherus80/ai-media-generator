@@ -79,6 +79,14 @@ jobs:
           port: ${{ secrets.VPS_PORT }}
           script: |
             set -e
+            compose() {
+              # Prefer Docker Compose v2 plugin (avoids docker-compose v1.29.2 KeyError: 'ContainerConfig')
+              if docker compose version >/dev/null 2>&1; then
+                docker compose "$@"
+              else
+                docker-compose "$@"
+              fi
+            }
             cd /root/ai-image-bot
             git checkout master
             git pull --ff-only origin master
@@ -86,9 +94,9 @@ jobs:
             export GHCR_BACKEND_IMAGE="${{ env.BACKEND_IMAGE }}"
             export GHCR_FRONTEND_IMAGE="${{ env.FRONTEND_IMAGE }}"
             echo "${{ secrets.VPS_GHCR_READ_TOKEN }}" | docker login ghcr.io -u "${{ secrets.VPS_GHCR_USERNAME }}" --password-stdin
-            docker-compose -f docker-compose.prod.yml pull backend celery_worker celery_beat frontend
-            docker-compose -f docker-compose.prod.yml up -d backend celery_worker celery_beat frontend
-            docker-compose -f docker-compose.prod.yml exec -T backend alembic upgrade head
+            compose -f docker-compose.prod.yml pull backend celery_worker celery_beat frontend
+            compose -f docker-compose.prod.yml up -d backend celery_worker celery_beat frontend
+            compose -f docker-compose.prod.yml exec -T backend alembic upgrade head
             curl -fsS http://localhost:8000/health
 
       - name: Notify on success
