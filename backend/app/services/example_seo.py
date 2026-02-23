@@ -33,6 +33,132 @@ def _normalize_prompt(prompt: str | None) -> str:
     return " ".join((prompt or "").replace("`", "").replace('"', "").split()).strip()
 
 
+def _strip_technical_prompt_noise(text: str) -> str:
+    normalized = text or ""
+    noise_patterns = [
+        # Служебные блоки identity preservation / guardrails
+        r"identity lock[^.:\n]*[:\-]\s*.*?(?=(?:\bavoid\b|\brender\b|\bprompt\b|\bscene\b|\n[A-Za-z_]+\s*:|$))",
+        r"\bdo not alter\b.*?(?=(?:[.;]\s+[A-Z]|\n|$))",
+        r"\bpreserve exact\b.*?(?=(?:[.;]\s+[A-Z]|\n|$))",
+        r"\bno beautification\b.*?(?=(?:[.;]\s+[A-Z]|\n|$))",
+        r"\bthe output must depict the exact same person\b.*?(?=(?:[.;]\s+[A-Z]|\n|$))",
+        r"\bavoid\s*:\s*\[[^\]]*\]",
+    ]
+    for pattern in noise_patterns:
+        normalized = re.sub(pattern, " ", normalized, flags=re.IGNORECASE | re.DOTALL)
+    normalized = re.sub(r"\s{2,}", " ", normalized)
+    return normalized.strip()
+
+
+def _looks_technical_prompt_key(key: str) -> bool:
+    lowered = (key or "").strip().lower()
+    if not lowered:
+        return False
+    technical_keys = {
+        "identity_lock",
+        "avoid",
+        "negative_prompt",
+        "negative",
+        "constraints",
+        "guardrails",
+        "rules",
+        "task",
+        "inputs",
+        "render",
+        "identity_image",
+        "style_reference_image",
+        "photorealism",
+        "detail",
+        "resolution",
+        "aspect_ratio",
+    }
+    if lowered in technical_keys:
+        return True
+    return lowered.endswith("_lock") or lowered.startswith("avoid")
+
+
+def _extract_semantic_prompt_text(prompt: str) -> str:
+    raw = _normalize_prompt(prompt)
+    if not raw:
+        return ""
+
+    # 1) Пытаемся вытащить смысловые поля из структурированного промпта (JSON и JSON-like).
+    prioritized_chunks: list[str] = []
+    secondary_chunks: list[str] = []
+
+    try:
+        parsed = json.loads(prompt)
+    except Exception:
+        parsed = None
+
+    if isinstance(parsed, (dict, list)):
+        preferred_keys = {
+            "scene",
+            "subject",
+            "wardrobe",
+            "pose_expression",
+            "pose",
+            "expression",
+            "environment",
+            "lighting",
+            "camera",
+            "style_grade",
+            "style",
+            "mood",
+        }
+
+        def walk(node: Any, path: tuple[str, ...] = ()) -> None:
+            if isinstance(node, dict):
+                for key, value in node.items():
+                    key_str = str(key)
+                    next_path = (*path, key_str)
+                    if _looks_technical_prompt_key(key_str):
+                        continue
+                    walk(value, next_path)
+                return
+            if isinstance(node, list):
+                # Списки часто содержат "avoid"/negative пункты; собираем только если путь не технический.
+                if any(_looks_technical_prompt_key(part) for part in path):
+                    return
+                for item in node:
+                    walk(item, path)
+                return
+            if not isinstance(node, str):
+                return
+
+            text = _strip_technical_prompt_noise(node)
+            text = _normalize_prompt(text)
+            if not text:
+                return
+            if any(_looks_technical_prompt_key(part) for part in path):
+                return
+
+            leaf_key = path[-1].lower() if path else ""
+            if leaf_key in preferred_keys:
+                prioritized_chunks.append(text)
+            else:
+                secondary_chunks.append(text)
+
+        walk(parsed)
+
+    # 2) Для универсальности добавляем raw текст, но уже без техничного шума.
+    raw_semantic = _normalize_prompt(_strip_technical_prompt_noise(raw))
+
+    merged_chunks: list[str] = []
+    seen: set[str] = set()
+    for chunk in [*prioritized_chunks, *secondary_chunks, raw_semantic]:
+        cleaned = _normalize_prompt(chunk)
+        if not cleaned:
+            continue
+        lowered = cleaned.lower()
+        if lowered in seen:
+            continue
+        seen.add(lowered)
+        merged_chunks.append(cleaned)
+
+    return " ".join(merged_chunks)
+
+
 def _has_cyrillic(value: str) -> bool:
     return bool(re.search(r"[А-Яа-яЁё]", value or ""))
 
@@ -57,8 +183,14 @@ def _contains_any(text: str, keywords: tuple[str, ...]) -> bool:
 
 
 def _extract_prompt_highlights_ru(prompt: str, max_items: int = 4) -> list[str]:
-    lowered = (prompt or "").lower()
+    lowered = _extract_semantic_prompt_text(prompt).lower()
     highlight_rules: list[tuple[tuple[str, ...], str]] = [
+        (("trunk", "багажник"), "съёмка внутри открытого багажника"),
+        (("sports car", "спорткар", "sports-car"), "яркий спорткар в кадре"),
+        (("yellow sports car", "bright yellow sports car", "желт", "жёлт"), "акцент на жёлтом автомобиле"),
+        (("35mm flash", "direct flash", "flash photography", "вспышк"), "жёсткий прямой свет вспышки"),
+        (("high-angle", "looking down", "сверху", "верхний ракурс"), "верхний ракурс съёмки"),
+        (("night outdoor", "dark ambient", "ночн", "night "), "ночная уличная атмосфера"),
         (("keyhole", "замочная скважина"), "фон в форме keyhole"),
         (("bow", "arrow", "лук", "стрела"), "поза с луком и стрелой"),
         (("full-length", "full length", "в полный рост"), "кадр в полный рост"),
@@ -87,8 +219,17 @@ def _extract_prompt_highlights_ru(prompt: str, max_items: int = 4) -> list[str]:
 
 
 def _extract_prompt_details_ru(prompt: str, max_items: int = 4) -> list[str]:
-    lowered = (prompt or "").lower()
+    lowered = _extract_semantic_prompt_text(prompt).lower()
     detail_rules: list[tuple[tuple[str, ...], str]] = [
+        (("open trunk", "inside the trunk", "багажник"), "поза внутри открытого багажника автомобиля"),
+        (("yellow sports car", "bright yellow sports car", "жёлт", "желт"), "яркий жёлтый спорткар"),
+        (("hard direct 35mm flash", "35mm flash", "direct flash", "жесткий", "жёсткий"), "жёсткая вспышка с контрастными тенями"),
+        (("high-angle shot", "looking down", "верхний ракурс", "сверху"), "верхний ракурс в стиле flash-фото"),
+        (("lit cigarette", "сигарет"), "расслабленная поза с сигаретой"),
+        (("black hoodie", "cropped black hoodie", "худи"), "чёрное укороченное худи"),
+        (("denim shorts", "distressed denim shorts", "джинсовые шорты"), "рваные джинсовые шорты"),
+        (("onitsuka tiger", "mexico 66"), "кроссовки Onitsuka Tiger Mexico 66"),
+        (("film grain", "analog flash", "плёноч", "пленоч"), "лёгкое плёночное зерно"),
         (("белое пушистое пальто", "пушистое пальто", "white fluffy coat", "fur coat"), "белое пушистое пальто"),
         (("рождественское дерево", "новогодняя ёлка", "новогоднее дерево", "christmas tree"), "размытая новогодняя ёлка на фоне"),
         (("снегопад", "snowfall", "falling snow", "снеж"), "лёгкий снегопад"),
@@ -114,15 +255,27 @@ def _extract_prompt_details_ru(prompt: str, max_items: int = 4) -> list[str]:
 
 
 def _infer_ru_theme_from_prompt(prompt: str) -> str:
-    lowered = (prompt or "").lower()
+    lowered = _extract_semantic_prompt_text(prompt).lower()
     is_fashion = _contains_any(lowered, ("fashion", "editorial", "couture", "outfit", "стиль", "модн"))
-    is_studio = _contains_any(lowered, ("studio", "lighting", "студ"))
+    is_studio = _contains_any(lowered, ("studio", "студ"))
     has_bow = _contains_any(lowered, ("bow", "arrow", "лук", "стрела"))
     has_keyhole = _contains_any(lowered, ("keyhole", "замочная скважина"))
     has_red = _contains_any(lowered, ("red", "scarlet", "crimson", "красн"))
     has_couture = _contains_any(lowered, ("couture", "3d roses", "rose dress", "роз"))
     has_holiday = _contains_any(lowered, ("christmas", "new year", "holiday", "рождеств", "новогод"))
     has_winter = _contains_any(lowered, ("winter", "snow", "snowy", "снег", "снеж", "зим"))
+    has_trunk = _contains_any(lowered, ("trunk", "багажник"))
+    has_car = _contains_any(lowered, ("sports car", "car", "авто", "машин", "спорткар"))
+    has_flash = _contains_any(lowered, ("flash", "вспышк"))
+    has_night = _contains_any(lowered, ("night", "ночн", "dark ambient"))
+    has_high_angle = _contains_any(lowered, ("high-angle", "looking down", "сверху", "верхний ракурс"))
+
+    if has_trunk and has_car and has_flash:
+        return "Ночная флэш-съёмка в багажнике спорткара"
+    if has_car and has_flash and has_night:
+        return "Ночная флэш-съёмка у спорткара"
+    if has_flash and has_high_angle:
+        return "Флэш-портрет с верхнего ракурса"
 
     if is_studio and is_fashion and has_bow:
         return "Студийная fashion-съёмка с луком"
@@ -243,7 +396,7 @@ def _prefer_title(candidate: str, fallback: str) -> str:
 
 
 def _extract_title_from_prompt(prompt: str) -> str:
-    cleaned = _normalize_prompt(prompt)
+    cleaned = _extract_semantic_prompt_text(prompt)
     if not cleaned:
         return "Пример генерации"
     theme_title = _infer_ru_theme_from_prompt(cleaned)
@@ -262,7 +415,7 @@ def _extract_title_from_prompt(prompt: str) -> str:
 
 def _build_title_variants_from_prompt(prompt: str) -> list[str]:
     base = _extract_title_from_prompt(prompt)
-    lowered = (prompt or "").lower()
+    lowered = _extract_semantic_prompt_text(prompt).lower()
     details = _extract_prompt_details_ru(prompt, max_items=2)
     detail_hint = details[0] if details else ""
     has_holiday = _contains_any(lowered, ("christmas", "new year", "holiday", "рождеств", "новогод"))
@@ -273,14 +426,23 @@ def _build_title_variants_from_prompt(prompt: str) -> list[str]:
     variant_two = _infer_ru_theme_from_prompt(prompt)
     if variant_two == "AI генерация по фото" or variant_two == base:
         if detail_hint:
-            variant_two = _truncate(f"{base} с акцентом на {detail_hint}", 200)
+            variant_two = _truncate(f"{base} с акцентом: {detail_hint}", 200)
         elif is_studio:
             variant_two = _truncate(f"{base} с мягким студийным светом", 200)
         else:
             variant_two = _truncate(f"{base} с фотореалистичной детализацией", 200)
 
+    has_trunk = _contains_any(lowered, ("trunk", "багажник"))
+    has_car = _contains_any(lowered, ("sports car", "car", "спорткар", "авто", "машин"))
+    has_flash = _contains_any(lowered, ("flash", "вспышк"))
+    has_high_angle = _contains_any(lowered, ("high-angle", "looking down", "сверху", "верхний ракурс"))
+
     if has_holiday or has_winter:
         variant_three = _truncate(f"{base} в зимней праздничной атмосфере", 200)
+    elif has_trunk and has_car and has_flash and has_high_angle:
+        variant_three = _truncate(f"{base} с верхним ракурсом и жёсткой вспышкой", 200)
+    elif has_trunk and has_car and has_flash:
+        variant_three = _truncate(f"{base} в дерзкой ночной флэш-эстетике", 200)
     elif is_fashion:
         variant_three = _truncate(f"{base} в редакционном fashion-стиле", 200)
     elif is_studio:
