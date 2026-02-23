@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     if: >-
       github.event.pull_request.draft == false &&
-      contains(join(github.event.pull_request.labels.*.name, ','), 'automerge') &&
+      contains(github.event.pull_request.labels.*.name, 'automerge') &&
       github.event.pull_request.user.login == 'cherus80'
 
     steps:
@@ -55,4 +55,3 @@ jobs:
 
             await github.graphql(mutation, { pullRequestId });
             core.info(`Auto-merge enabled for PR #${prNumber}.`);
-
