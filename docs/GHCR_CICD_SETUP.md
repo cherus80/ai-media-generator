@@ -49,6 +49,17 @@
 - В GitHub: `Actions` -> `Deploy to Production` -> `Run workflow`
 - Полезно для повторного деплоя того же commit после временных ошибок VPS/GHCR
 
+## Режим PR (рекомендуется для мобильных хотфиксов)
+
+Чтобы модель могла делать правки без прямого пуша в `master`:
+
+- Включите branch protection для `master`: Require PR + Required status checks (из `.github/workflows/ci.yml`).
+- Включите Auto-merge в настройках репозитория.
+- Добавьте label `automerge` на PR (Codex может делать это сам).
+- В репозитории есть workflow `.github/workflows/automerge.yml`: он включает auto-merge для PR с label `automerge` (только если автор PR — `cherus80`).
+
+После auto-merge в `master` запустится `Deploy to Production` и задеплоит на VPS.
+
 ## Автозаполнение через `gh` (без вывода секретов)
 
 - Добавлен интерактивный скрипт: `scripts/setup-github-cicd-ghcr.sh`

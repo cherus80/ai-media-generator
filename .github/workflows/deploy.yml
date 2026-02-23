@@ -3,6 +3,9 @@ name: Deploy to Production
 on:
   push:
     branches: [ master ]
+    paths-ignore:
+      - '.github/workflows/**'
+      - 'docs/**'
   workflow_dispatch:
 
 env:
