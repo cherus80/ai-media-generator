@@ -54,7 +54,6 @@ export const Layout: React.FC<LayoutProps> = ({
     refreshProfile().catch(() => {
       /* игнорируем ошибки автообновления */
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   React.useEffect(() => {

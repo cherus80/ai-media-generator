@@ -44,9 +44,10 @@ export function TelegramSignInButton({ onSuccess, onError, className, disabled =
         const callbackName = `onTelegramAuth_${Math.floor(Math.random() * 1000000)}`;
         script.setAttribute('data-onauth', `${callbackName}(user)`);
 
+        const windowCallbacks = window as unknown as Record<string, unknown>;
+
         // Assign callback to window
-        // @ts-ignore
-        window[callbackName] = async (user: TelegramUser) => {
+        windowCallbacks[callbackName] = async (user: TelegramUser) => {
             try {
                 await loginWithTelegramWidget(user);
                 onSuccess?.();
@@ -61,8 +62,7 @@ export function TelegramSignInButton({ onSuccess, onError, className, disabled =
 
         return () => {
             // Cleanup
-            // @ts-ignore
-            delete window[callbackName];
+            delete windowCallbacks[callbackName];
         };
     }, [botName, disabled]);
 
