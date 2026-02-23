@@ -651,6 +651,32 @@ def _resolve_seo_model(prompt_model: str | None) -> str | None:
     return None
 
 
+def _build_llm_user_payload(
+    payload: GenerationExampleSeoSuggestionRequest,
+    prompt_text: str,
+) -> dict[str, Any]:
+    highlights = _extract_prompt_highlights_ru(prompt_text, max_items=5)
+    details = _extract_prompt_details_ru(prompt_text, max_items=5)
+
+    hints_ru: dict[str, Any] = {
+        "prompt_highlights": highlights,
+        "prompt_details": details,
+        "theme_hint": _infer_ru_theme_from_prompt(prompt_text),
+        "slug_hint": payload.slug,
+    }
+    if _is_mostly_russian(payload.title or "", min_ratio=0.5):
+        hints_ru["title_hint_ru"] = payload.title
+
+    # Не передаём в LLM предыдущие description/seo_* тексты из формы.
+    # Часто это старый AI-ответ от другой карточки/попытки, который начинает
+    # доминировать над текущим prompt и даёт повторяющиеся шаблонные описания.
+    return {
+        "prompt": prompt_text,
+        "tags": _normalize_tags(payload.tags),
+        "hints_ru": hints_ru,
+    }
+
+
 async def generate_example_seo_suggestions(
     payload: GenerationExampleSeoSuggestionRequest,
 ) -> GenerationExampleSeoSuggestionResponse:
@@ -691,8 +717,6 @@ async def generate_example_seo_suggestions(
             update={"warning": "Не удалось определить OpenRouter-модель: применён локальный SEO-шаблон."}
         )
 
-    highlights = _extract_prompt_highlights_ru(prompt_text, max_items=5)
-    details = _extract_prompt_details_ru(prompt_text, max_items=5)
     system_prompt = (
         "Ты старший SEO-редактор карточек AI-генераций. Верни только JSON без пояснений. "
         "Формат ответа строго: {\"variants\":[{slug,title,description,seo_title,seo_description,faq}],\"recommended_index\":0}. "
@@ -711,20 +735,7 @@ async def generate_example_seo_suggestions(
         "Все текстовые поля строго на русском языке (кириллица), кроме slug. "
         "Ограничения длины: title<=200, description<=400, seo_title<=120, seo_description<=200."
     )
-    user_payload = {
-        "prompt": prompt_text,
-        "tags": _normalize_tags(payload.tags),
-        "hints_ru": {
-            "prompt_highlights": highlights,
-            "prompt_details": details,
-            "theme_hint": _infer_ru_theme_from_prompt(prompt_text),
-            "title_hint_ru": payload.title if _is_mostly_russian(payload.title or "", min_ratio=0.5) else None,
-            "description_hint_ru": payload.description if _is_mostly_russian(payload.description or "", min_ratio=0.5) else None,
-            "seo_title_hint_ru": payload.seo_title if _is_mostly_russian(payload.seo_title or "", min_ratio=0.5) else None,
-            "seo_description_hint_ru": payload.seo_description if _is_mostly_russian(payload.seo_description or "", min_ratio=0.5) else None,
-            "slug_hint": payload.slug,
-        },
-    }
+    user_payload = _build_llm_user_payload(payload, prompt_text)
 
     try:
         response = await client.client.post(

@@ -64,6 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GrsAI подключён как основной провайдер Nano Banana Pro, kie.ai используется как fallback вместо OpenRouter.
 
 ### Fixed
+- Исправлено «залипание» SEO-автогенерации карточек примеров на старом AI-тексте: backend `POST /api/v1/admin/examples/seo-suggestions` больше не передаёт в LLM предыдущие `description/seo_title/seo_description` как hints, чтобы модель опиралась на текущий `prompt`.
 - Исправлен fallback генерации после сбоев GrsAI: `runtime_config` теперь корректно обрабатывает рассинхрон `GENERATION_FALLBACK_PROVIDER` и `KIE_AI_DISABLE_FALLBACK`, чтобы цепочка `grsai -> kie.ai` не обрывалась на `No fallback configured`.
 - В задачах `editing` и `fitting` добавлены пользовательские сообщения по этапам переключения: переход на резервную модель GrsAI, затем переключение на следующий провайдер (`kie.ai`), и финальное сообщение о перегрузке при исчерпании провайдеров.
 - Endpoint `GET /api/v1/fitting/status/{task_id}` теперь возвращает актуальный `generation.error_message` для статусов `processing/failed`, чтобы UI показывал живые сообщения fallback вместо статического текста.
