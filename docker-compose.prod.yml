@@ -50,6 +50,7 @@ services:
 
   # FastAPI Backend
   backend:
+    image: "${GHCR_BACKEND_IMAGE:-ghcr.io/cherus80/ai-media-generator-backend}:${IMAGE_TAG:-latest}"
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -93,6 +94,7 @@ services:
 
   # Celery Worker для async задач
   celery_worker:
+    image: "${GHCR_BACKEND_IMAGE:-ghcr.io/cherus80/ai-media-generator-backend}:${IMAGE_TAG:-latest}"
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -134,6 +136,7 @@ services:
 
   # Celery Beat для периодических задач
   celery_beat:
+    image: "${GHCR_BACKEND_IMAGE:-ghcr.io/cherus80/ai-media-generator-backend}:${IMAGE_TAG:-latest}"
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -166,6 +169,7 @@ services:
 
   # Frontend (Production build с nginx)
   frontend:
+    image: "${GHCR_FRONTEND_IMAGE:-ghcr.io/cherus80/ai-media-generator-frontend}:${IMAGE_TAG:-latest}"
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod

@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ master ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ master ]
 
 env:
   PYTHON_VERSION: '3.11'
@@ -146,6 +146,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Build Telegram Bot Docker image
+        if: ${{ hashFiles('telegram_bot/Dockerfile') != '' }}
         uses: docker/build-push-action@v5
         with:
           context: ./telegram_bot

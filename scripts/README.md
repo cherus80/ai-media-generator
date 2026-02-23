@@ -54,3 +54,20 @@
 - `KEEP_REMOTE_DUMP` (default: `0`) — оставить загруженный дамп на VPS
 - `REQUIRED_TABLES` (default: `alembic_version,users`) — обязательные таблицы для проверки восстановления
 - `EXPECTED_ALEMBIC_VERSION` (default: авто) — ожидаемая версия alembic; если пусто, определяется по последней миграции в `backend/alembic/versions`
+
+## CI/CD Setup
+
+### setup-github-cicd-ghcr.sh (локальный)
+
+Интерактивный скрипт для безопасной настройки GitHub Actions `Secrets`/`Variables` под автодеплой `GHCR + sha-tag + latest`.
+
+Особенности:
+- Не печатает значения секретов в консоль
+- Для `VPS_SSH_KEY` читает приватный ключ из файла
+- Может сразу запустить workflow `Deploy to Production`
+
+Использование:
+
+```bash
+./scripts/setup-github-cicd-ghcr.sh
+```
