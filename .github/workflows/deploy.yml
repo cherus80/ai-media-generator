@@ -95,8 +95,19 @@ jobs:
             export GHCR_FRONTEND_IMAGE="${{ env.FRONTEND_IMAGE }}"
             echo "${{ secrets.VPS_GHCR_READ_TOKEN }}" | docker login ghcr.io -u "${{ secrets.VPS_GHCR_USERNAME }}" --password-stdin
             compose -f docker-compose.prod.yml pull backend celery_worker celery_beat frontend
-            compose -f docker-compose.prod.yml up -d backend celery_worker celery_beat frontend
+            # Avoid recreating DB/Redis (and unrelated services) during app deploy.
+            compose -f docker-compose.prod.yml up -d --no-deps backend celery_worker celery_beat frontend
             compose -f docker-compose.prod.yml exec -T backend alembic upgrade head
+            echo "Waiting for backend health..."
+            i=1
+            while [ "$i" -le 30 ]; do
+              if curl -fsS --max-time 2 http://localhost:8000/health >/dev/null 2>&1; then
+                break
+              fi
+              echo "Health not ready (attempt ${i}/30). Sleeping 2s..."
+              i=$((i + 1))
+              sleep 2
+            done
             curl -fsS http://localhost:8000/health
 
       - name: Notify on success

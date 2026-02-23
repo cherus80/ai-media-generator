@@ -82,3 +82,4 @@ docker-compose -f docker-compose.prod.yml up -d backend celery_worker celery_bea
 - `backend`, `celery_worker`, `celery_beat` используют один и тот же backend image.
 - `build:` в `docker-compose.prod.yml` оставлен как fallback для ручной локальной/VPS сборки.
 - На некоторых VPS с `docker-compose` v1.29.2 может проявляться баг `KeyError: 'ContainerConfig'` при `up`/recreate. В workflow `deploy.yml` используется `docker compose` (v2), если доступен, чтобы избежать этой проблемы.
+- Health-check после деплоя делается с короткими ретраями, потому что сразу после `up`/миграций `curl /health` может кратковременно получать сетевые ошибки (например reset) во время старта воркеров.
