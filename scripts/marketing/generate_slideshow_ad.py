@@ -21,6 +21,10 @@ from PIL import Image, ImageDraw, ImageFont
 
 APP_BASE_URL_DEFAULT = "https://ai-generator.mix4.ru"
 EXAMPLES_API_PATH = "/api/v1/content/examples"
+HTTP = requests.Session()
+# Не используем переменные окружения типа HTTP_PROXY/HTTPS_PROXY по умолчанию:
+# они часто ломают доступ к публичному домену или дают 502 от прокси.
+HTTP.trust_env = False
 
 
 @dataclass(frozen=True)
@@ -58,7 +62,7 @@ def fetch_examples(base_url: str, tags: list[str], limit: int, sort: str) -> lis
     params = {"sort": sort, "limit": str(limit)}
     if tags:
         params["tags"] = ",".join(tags)
-    r = requests.get(url, params=params, timeout=30)
+    r = HTTP.get(url, params=params, timeout=30)
     r.raise_for_status()
     payload = r.json()
     items = payload.get("items") or []
@@ -88,7 +92,7 @@ def absolutize_image_url(base_url: str, image_url: str) -> str:
 
 def download(url: str, dest: Path) -> None:
     dest.parent.mkdir(parents=True, exist_ok=True)
-    with requests.get(url, stream=True, timeout=60) as r:
+    with HTTP.get(url, stream=True, timeout=60) as r:
         r.raise_for_status()
         with open(dest, "wb") as f:
             for chunk in r.iter_content(chunk_size=1024 * 1024):
@@ -140,6 +144,60 @@ def ffprobe_duration_seconds(path: Path) -> float:
         return float(out)
     except Exception:
         return 0.0
+
+
+def tts_macos_say_to_wav(
+    *,
+    say_voice: str,
+    say_rate: int,
+    text: str,
+    out_wav: Path,
+    workdir: Path,
+) -> None:
+    require_bin("say")
+    require_bin("ffmpeg")
+    tts_aiff = workdir / "tts.aiff"
+    run(["say", "-v", say_voice, "-r", str(say_rate), "-o", str(tts_aiff), text])
+    run(["ffmpeg", "-y", "-i", str(tts_aiff), "-ar", "44100", "-ac", "2", str(out_wav)])
+
+
+def tts_edge_to_wav(
+    *,
+    edge_voice: str,
+    edge_rate: str,
+    text: str,
+    out_wav: Path,
+    workdir: Path,
+) -> None:
+    """
+    Требует установленный пакет edge-tts (CLI `edge-tts`).
+    Удобный бесплатный нейронный TTS (качество RU обычно заметно лучше macOS `say`).
+    """
+    require_bin("ffmpeg")
+    edge_cli = shutil.which("edge-tts")
+    edge_cmd: list[str]
+    if edge_cli:
+        edge_cmd = [edge_cli]
+    else:
+        # Частый случай на macOS: `edge-tts` ставится в каталог bin не в PATH.
+        # Надёжнее запускать через python module.
+        edge_cmd = [sys.executable, "-m", "edge_tts"]
+
+    mp3 = workdir / "tts.mp3"
+    run(
+        edge_cmd
+        + [
+            "--voice",
+            edge_voice,
+            "--rate",
+            edge_rate,
+            "--text",
+            text,
+            "--write-media",
+            str(mp3),
+        ]
+    )
+    run(["ffmpeg", "-y", "-i", str(mp3), "-ar", "44100", "-ac", "2", str(out_wav)])
 
 
 def _load_font(font_path: Path, size: int) -> ImageFont.FreeTypeFont:
@@ -540,13 +598,28 @@ def main() -> int:
     parser.add_argument("--sort", default="popular", choices=["popular", "newest"], help="Сортировка примеров")
     parser.add_argument("--url", default=APP_BASE_URL_DEFAULT + "/", help="URL, который кодируем в QR")
     parser.add_argument("--out", required=True, help="Путь для итогового MP4")
+    parser.add_argument(
+        "--tts",
+        default="edge",
+        choices=["edge", "macos"],
+        help="Движок озвучки (edge — нейронный, macos — встроенный `say`)",
+    )
     parser.add_argument("--voice", default="Milena", help="macOS voice для `say` (например: Milena)")
     parser.add_argument("--rate", type=int, default=185, help="Скорость речи `say` (слов/мин примерно)")
+    parser.add_argument(
+        "--edge-voice",
+        default="ru-RU-SvetlanaNeural",
+        help="Голос для edge-tts (пример: ru-RU-SvetlanaNeural, ru-RU-DmitryNeural)",
+    )
+    parser.add_argument(
+        "--edge-rate",
+        default="+20%",
+        help="Скорость edge-tts (например: +10%, +25%, -10%)",
+    )
     args = parser.parse_args()
 
     require_bin("ffmpeg")
     require_bin("ffprobe")
-    require_bin("say")
 
     font_bold = Path("/System/Library/Fonts/Supplemental/Arial Bold.ttf")
     if not font_bold.exists():
@@ -584,14 +657,27 @@ def main() -> int:
 
         voice_text = (
             "Хочешь такое фото? "
-            "Загрузи своё изображение, выбери пример из Нейрофотосессии — "
-            "и получишь фото в этом стиле. "
-            "Сканируй QR или зайди на ai-generator.mix4.ru."
+            "Загрузи своё. "
+            "Выбери пример «Нейрофотосессия» — получишь фото в этом стиле. "
+            "Сканируй QR: ai-generator.mix4.ru."
         )
-        tts_aiff = workdir / "tts.aiff"
         tts_wav = workdir / "tts.wav"
-        run(["say", "-v", str(args.voice), "-r", str(args.rate), "-o", str(tts_aiff), voice_text])
-        run(["ffmpeg", "-y", "-i", str(tts_aiff), "-ar", "44100", "-ac", "2", str(tts_wav)])
+        if args.tts == "macos":
+            tts_macos_say_to_wav(
+                say_voice=str(args.voice),
+                say_rate=int(args.rate),
+                text=voice_text,
+                out_wav=tts_wav,
+                workdir=workdir,
+            )
+        else:
+            tts_edge_to_wav(
+                edge_voice=str(args.edge_voice),
+                edge_rate=str(args.edge_rate),
+                text=voice_text,
+                out_wav=tts_wav,
+                workdir=workdir,
+            )
 
         segments = build_segments(
             workdir=workdir,
