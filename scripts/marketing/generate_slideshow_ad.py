@@ -263,22 +263,23 @@ def make_fullscreen_overlay_png(
     if dim_alpha > 0:
         draw.rectangle([0, 0, w, h], fill=(0, 0, 0, dim_alpha))
 
-    font_main = _load_font(font_bold, main_font_size)
-    wrapped = _wrap_text(draw, main_text, font_main, max_width=w - 140)
-    bbox = draw.multiline_textbbox((0, 0), wrapped, font=font_main, spacing=10, align="center")
-    text_w = bbox[2] - bbox[0]
-    text_h = bbox[3] - bbox[1]
-    x = (w - text_w) // 2
-    y = max(0, main_y - text_h // 2)
-    _draw_text_with_stroke(
-        draw,
-        (x, y),
-        wrapped,
-        font_main,
-        fill=(255, 255, 255, 255),
-        stroke_fill=(0, 0, 0, 170),
-        stroke_width=8,
-    )
+    if main_text.strip():
+        font_main = _load_font(font_bold, main_font_size)
+        wrapped = _wrap_text(draw, main_text, font_main, max_width=w - 140)
+        bbox = draw.multiline_textbbox((0, 0), wrapped, font=font_main, spacing=10, align="center")
+        text_w = bbox[2] - bbox[0]
+        text_h = bbox[3] - bbox[1]
+        x = (w - text_w) // 2
+        y = max(0, main_y - text_h // 2)
+        _draw_text_with_stroke(
+            draw,
+            (x, y),
+            wrapped,
+            font_main,
+            fill=(255, 255, 255, 255),
+            stroke_fill=(0, 0, 0, 170),
+            stroke_width=8,
+        )
 
     if left_text and left_font_size and left_xy:
         font_left = _load_font(font_bold, left_font_size)
@@ -327,6 +328,30 @@ def make_caption_overlay_png(
     img.save(out_path, format="PNG")
 
 
+def srt_timestamp(seconds: float) -> str:
+    if seconds < 0:
+        seconds = 0.0
+    ms = int(round(seconds * 1000.0))
+    hh = ms // 3_600_000
+    ms -= hh * 3_600_000
+    mm = ms // 60_000
+    ms -= mm * 60_000
+    ss = ms // 1000
+    ms -= ss * 1000
+    return f"{hh:02d}:{mm:02d}:{ss:02d},{ms:03d}"
+
+
+def write_srt(path: Path, cues: list[tuple[float, float, str]]) -> None:
+    lines: list[str] = []
+    for idx, (t0, t1, text) in enumerate(cues, start=1):
+        lines.append(str(idx))
+        lines.append(f"{srt_timestamp(t0)} --> {srt_timestamp(t1)}")
+        lines.append(text.strip())
+        lines.append("")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
+
+
 def build_segments(
     *,
     workdir: Path,
@@ -334,6 +359,8 @@ def build_segments(
     qr_png: Path,
     font_bold: Path,
     app_domain_text: str,
+    embed_hook_text: bool,
+    embed_cta_text: bool,
 ) -> list[Path]:
     require_bin("ffmpeg")
 
@@ -353,7 +380,7 @@ def build_segments(
         size=(w, h),
         dim_alpha=90,
         font_bold=font_bold,
-        main_text=hook_text,
+        main_text=hook_text if embed_hook_text else "",
         main_font_size=80,
         main_y=int(h * 0.43),
     )
@@ -445,12 +472,12 @@ def build_segments(
         size=(w, h),
         dim_alpha=90,
         font_bold=font_bold,
-        main_text=cta_text,
+        main_text=cta_text if embed_cta_text else "",
         main_font_size=66,
         main_y=int(h * 0.45),
-        left_text=app_domain_text,
-        left_font_size=54,
-        left_xy=(70, int(h * 0.78)),
+        left_text=app_domain_text if embed_cta_text else None,
+        left_font_size=54 if embed_cta_text else None,
+        left_xy=(70, int(h * 0.78)) if embed_cta_text else None,
     )
     run(
         [
@@ -599,6 +626,16 @@ def main() -> int:
     parser.add_argument("--url", default=APP_BASE_URL_DEFAULT + "/", help="URL, который кодируем в QR")
     parser.add_argument("--out", required=True, help="Путь для итогового MP4")
     parser.add_argument(
+        "--capcut-web",
+        action="store_true",
+        help="Экспорт под CapCut Web: MP4 без озвучки/вшитых субтитров + отдельный .srt для импорта",
+    )
+    parser.add_argument(
+        "--srt-out",
+        default=None,
+        help="Путь для .srt (по умолчанию рядом с --out)",
+    )
+    parser.add_argument(
         "--tts",
         default="edge",
         choices=["edge", "macos"],
@@ -627,6 +664,11 @@ def main() -> int:
 
     out_path = Path(args.out).expanduser().resolve()
     out_path.parent.mkdir(parents=True, exist_ok=True)
+    srt_out = (
+        Path(args.srt_out).expanduser().resolve()
+        if args.srt_out
+        else out_path.with_suffix(".srt")
+    )
 
     tag = str(args.tag).strip().lower()
     examples = fetch_examples(args.base_url, [tag] if tag else [], args.limit, args.sort)
@@ -655,6 +697,34 @@ def main() -> int:
         if not ok or not qr_png.exists():
             raise SystemExit("Не удалось сгенерировать QR-код (ни локально, ни через fallback).")
 
+        segments = build_segments(
+            workdir=workdir,
+            images=imgs,
+            qr_png=qr_png,
+            font_bold=font_bold,
+            app_domain_text="ai-generator.mix4.ru",
+            embed_hook_text=not bool(args.capcut_web),
+            embed_cta_text=not bool(args.capcut_web),
+        )
+        video_concat = concat_segments(workdir, segments)
+
+        video_dur = ffprobe_duration_seconds(video_concat)
+        # Timings for caption windows (we keep them stable for CapCut import).
+        captions = [
+            (0.0, 2.6, "Хочешь такое фото?"),
+            (2.6, 8.8, "Загрузи фото → выбери пример «Нейрофотосессия»"),
+            (8.8, min(11.6, max(9.8, video_dur - 0.2)), "Получишь фото в этом стиле • ai-generator.mix4.ru"),
+        ]
+
+        if args.capcut_web:
+            # CapCut Web: export clean video + .srt
+            run(["ffmpeg", "-y", "-i", str(video_concat), "-an", "-c:v", "copy", str(out_path)])
+            write_srt(srt_out, captions)
+            print("OK:", out_path)
+            print("SRT:", srt_out)
+            print(f"(video_dur={video_dur:.2f}s)")
+            return 0
+
         voice_text = (
             "Хочешь такое фото? "
             "Загрузи своё. "
@@ -679,25 +749,8 @@ def main() -> int:
                 workdir=workdir,
             )
 
-        segments = build_segments(
-            workdir=workdir,
-            images=imgs,
-            qr_png=qr_png,
-            font_bold=font_bold,
-            app_domain_text="ai-generator.mix4.ru",
-        )
-        video_concat = concat_segments(workdir, segments)
-
         audio_dur = ffprobe_duration_seconds(tts_wav)
-        video_dur = ffprobe_duration_seconds(video_concat)
-        # Caption timings (simple, aligned to the approximate rhythm)
         total = max(video_dur, audio_dur + 0.4)
-        # Cap windows in the cut (hook+6*1.25+cta≈11.9s). Use measured duration.
-        captions = [
-            (0.0, 2.6, "Хочешь такое фото?"),
-            (2.6, 8.8, "Загрузи фото → выбери пример «Нейрофотосессия»"),
-            (8.8, min(12.5, max(9.8, video_dur - 0.2)), "Получишь фото в этом стиле • ai-generator.mix4.ru"),
-        ]
 
         final_mp4 = out_path
         add_voice_and_captions(
