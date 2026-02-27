@@ -57,8 +57,8 @@
 
 Нажмите на область загрузки и выберите фото.
 
-**Скриншот (до):** `output/playwright/prod-tryon-2stars/40-tryon-step1-empty.png`  
-**Скриншот (после):** `output/playwright/prod-tryon-2stars/41-tryon-step1-user-photo.png`
+**Скриншот (до):** `docs/assets/screenshots/tryon-2-stars/01-step1-upload-your-photo_empty.png`  
+**Скриншот (после):** `docs/assets/screenshots/tryon-2-stars/02-step1-upload-your-photo_done.png`
 
 Нажмите **«Далее →»**.
 
@@ -66,8 +66,8 @@
 
 Добавьте фото вещи, которую хотите примерить.
 
-**Скриншот (до):** `output/playwright/prod-tryon-2stars/42-tryon-step2-empty.png`  
-**Скриншот (после):** `output/playwright/prod-tryon-2stars/43-tryon-step2-item-photo.png`
+**Скриншот (до):** `docs/assets/screenshots/tryon-2-stars/03-step2-upload-item_empty.png`  
+**Скриншот (после):** `docs/assets/screenshots/tryon-2-stars/04-step2-upload-item_done.png`
 
 Нажмите **«Далее →»**.
 
@@ -78,8 +78,8 @@
 
 На этом шаге видно, что **стоимость генерации — 2 ⭐** (или 1 генерация по подписке).
 
-**Скриншот:** `output/playwright/prod-tryon-2stars/44-tryon-step3-zone.png`  
-**Скриншот (зона выбрана):** `output/playwright/prod-tryon-2stars/45-tryon-step3-zone-selected.png`
+**Скриншот:** `docs/assets/screenshots/tryon-2-stars/05-step3-zone_cost-2-stars.png`  
+**Скриншот (зона выбрана):** `docs/assets/screenshots/tryon-2-stars/06-step3-zone_selected-legs.png`
 
 Нажмите **«Примерить ✨»**.
 
@@ -87,7 +87,7 @@
 
 Идёт процесс примерки — обычно это занимает немного времени.
 
-**Скриншот:** `output/playwright/prod-tryon-2stars/46-tryon-generating.png`
+**Скриншот:** `docs/assets/screenshots/tryon-2-stars/07-generating.png`
 
 ### Шаг 8. Заберите результат и сохраните
 
@@ -95,7 +95,7 @@
 
 Важно: на экране результата отображается, сколько ⭐ было потрачено.
 
-**Скриншот:** `output/playwright/prod-tryon-2stars/47-tryon-result.png`
+**Скриншот:** `docs/assets/screenshots/tryon-2-stars/08-result_spent-2-stars.png`
 
 ## 5 быстрых советов, чтобы “вау‑эффект” получался чаще
 
@@ -111,4 +111,3 @@
 А когда одна попытка стоит **2 ⭐**, можно спокойно сравнить несколько вариантов и выбрать лучший.
 
 **Попробуйте прямо сейчас:** https://ai-generator.mix4.ru/
-
