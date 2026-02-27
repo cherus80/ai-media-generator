@@ -602,7 +602,7 @@ class TestBillingV5UserNotFound:
             await service.charge_generation(999)
 
         assert exc_info.value.status_code == 404
-        assert exc_info.value.detail == "User not found"
+        assert exc_info.value.detail == "Пользователь не найден"
 
 
 @pytest.mark.asyncio
