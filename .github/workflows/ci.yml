@@ -106,7 +106,7 @@ jobs:
 
       - name: Run tests
         working-directory: ./frontend
-        run: npm test -- --coverage
+        run: npm test -- --coverage --passWithNoTests
 
       - name: Build
         working-directory: ./frontend

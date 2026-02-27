@@ -464,7 +464,7 @@ export const exportConsentsCSV = async (params?: ConsentExportRequest): Promise<
   const contentDisposition = response.headers['content-disposition'];
   let filename = 'consents_export.csv';
   if (contentDisposition) {
-    const filenameMatch = contentDisposition.match(/filename=\"?(.+)\"?/);
+    const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
     if (filenameMatch) {
       filename = filenameMatch[1];
     }
