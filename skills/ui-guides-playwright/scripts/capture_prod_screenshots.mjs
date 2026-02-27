@@ -71,6 +71,10 @@ async function main() {
   const baseUrl = args['base-url'] || process.env.DOCS_BASE_URL || 'https://ai-generator.mix4.ru';
   const headed = Boolean(args.headed);
   const credsFile = args['creds-file'];
+  const userPhotoPath = args['user-photo'] || process.env.DOCS_USER_PHOTO;
+  const itemPhotoPath = args['item-photo'] || process.env.DOCS_ITEM_PHOTO;
+  const fittingZone = (args.zone || process.env.DOCS_FITTING_ZONE || 'legs').toString();
+  const doGenerate = Boolean(args.generate) || process.env.DOCS_DO_GENERATE === '1';
   const runId = args['run-id'] || isoRunId();
   const outDir = args['out-dir'] || path.join('output', 'playwright', `prod-${runId}`);
 
@@ -100,6 +104,23 @@ async function main() {
     const file = path.join(outDir, `${name}.png`);
     await page.screenshot({ path: file, fullPage: true });
     shots.push({ name, file, url: page.url() });
+  }
+
+  async function uploadInCurrentStep(filePath) {
+    if (!filePath) {
+      throw new Error('Missing file path for upload step. Provide --user-photo/--item-photo.');
+    }
+    const absolute = path.isAbsolute(filePath) ? filePath : path.resolve(process.cwd(), filePath);
+    // react-dropzone renders a hidden input[type=file]
+    const input = page.locator('input[type="file"]').first();
+    await input.setInputFiles(absolute);
+    // Wait for preview image to appear
+    await page.locator('img[alt="Предпросмотр"]').first().waitFor({ timeout: 60_000 });
+  }
+
+  async function clickByText(text) {
+    const button = page.getByRole('button', { name: text }).first();
+    await button.click();
   }
 
   // Public pages
@@ -148,11 +169,64 @@ async function main() {
     await shot(name);
   }
 
+  // Optional: full try-on flow with real generation (costs 2 ⭐)
+  if (doGenerate) {
+    await safeGoto(page, new URL('/fitting', baseUrl).toString());
+    await shot('40-tryon-step1-empty');
+
+    await uploadInCurrentStep(userPhotoPath);
+    await shot('41-tryon-step1-user-photo');
+    await clickByText('Далее →');
+    await page.getByText('Шаг 2:').first().waitFor({ timeout: 60_000 });
+    await bestEffortNetworkIdle(page);
+    await shot('42-tryon-step2-empty');
+
+    await uploadInCurrentStep(itemPhotoPath);
+    await shot('43-tryon-step2-item-photo');
+    await clickByText('Далее →');
+    await page.getByText('Шаг 3:').first().waitFor({ timeout: 60_000 });
+    await bestEffortNetworkIdle(page);
+    await shot('44-tryon-step3-zone');
+
+    // Select zone if present in UI
+    const zoneToLabel = new Map([
+      ['head', 'Голова'],
+      ['face', 'Лицо'],
+      ['neck', 'Шея'],
+      ['hands', 'Руки'],
+      ['legs', 'Ноги'],
+      ['body', 'Всё тело'],
+    ]);
+    const zoneLabel = zoneToLabel.get(fittingZone) || 'Ноги';
+    await page.getByRole('button', { name: new RegExp(zoneLabel, 'i') }).first().click();
+    await page.waitForTimeout(300);
+    await shot('45-tryon-step3-zone-selected');
+
+    await page.getByRole('button', { name: /Примерить/i }).first().click();
+    await page.waitForTimeout(500);
+    await shot('46-tryon-generating');
+
+    // Wait for result (success or failure)
+    await page
+      .getByRole('heading', { name: /Ваша примерка готова|Произошла ошибка/i })
+      .first()
+      .waitFor({ timeout: 180_000 });
+    await bestEffortNetworkIdle(page);
+    await shot('47-tryon-result');
+  }
+
   const manifest = {
     base_url: baseUrl,
     run_id: runId,
     created_at: new Date().toISOString(),
     doc_user_email: email,
+    tryon: doGenerate
+      ? {
+          user_photo: userPhotoPath || null,
+          item_photo: itemPhotoPath || null,
+          zone: fittingZone,
+        }
+      : null,
     screenshots: shots,
   };
 
@@ -167,4 +241,3 @@ main().catch((err) => {
   console.error(err);
   process.exit(1);
 });
-
