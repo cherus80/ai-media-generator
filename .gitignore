@@ -145,19 +145,6 @@ uploads/
 temp/
 tmp/
 
-# -----------------------------------------------------------------------------
-# Reference Models (local-only)
-# -----------------------------------------------------------------------------
-assets/reference_models/*
-!assets/reference_models/.gitkeep
-!assets/reference_models/README.md
-
-# -----------------------------------------------------------------------------
-# Playwright screenshot artifacts (local-only)
-# -----------------------------------------------------------------------------
-output/playwright/*
-!output/playwright/.gitkeep
-
 # Test images and temporary files
 imeg/
 

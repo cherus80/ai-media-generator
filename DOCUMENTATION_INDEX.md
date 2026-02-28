@@ -51,7 +51,6 @@
 | [docs/WEB_AUTH_IMPLEMENTATION.md](docs/WEB_AUTH_IMPLEMENTATION.md) | **Реализация веб-аутентификации** | ⭐ Новый |
 | [docs/deployment/DEPLOY.md](docs/deployment/DEPLOY.md) | Production deployment | Актуален |
 | [docs/MCP_PLAYWRIGHT_SETUP.md](docs/MCP_PLAYWRIGHT_SETUP.md) | E2E тестирование | Актуален |
-| [docs/marketing/UI_GUIDES_WORKFLOW.md](docs/marketing/UI_GUIDES_WORKFLOW.md) | Скриншоты UI + гайды/статьи (prod) | ⭐ Новый |
 
 ### Конфигурация
 
@@ -125,7 +124,6 @@
 ### Testing
 - [docs/WEB_AUTH_IMPLEMENTATION.md](docs/WEB_AUTH_IMPLEMENTATION.md) - раздел "Тестирование"
 - [docs/MCP_PLAYWRIGHT_SETUP.md](docs/MCP_PLAYWRIGHT_SETUP.md)
-- [docs/marketing/UI_GUIDES_WORKFLOW.md](docs/marketing/UI_GUIDES_WORKFLOW.md)
 
 ### Deployment
 - [docs/deployment/DEPLOY.md](docs/deployment/DEPLOY.md)
