@@ -1,6 +1,6 @@
 /**
- * Страница редактирования изображений через AI-чат
- * Интерактивный чат с AI-ассистентом для редактирования изображений
+ * Страница редактирования изображений через ИИ-чат
+ * Интерактивный чат с ИИ-ассистентом для редактирования изображений
  */
 
 import React, { useEffect } from 'react';
@@ -49,7 +49,7 @@ export const EditingPage: React.FC = () => {
   const { user } = useAuthStore();
 
   const promptAssistantModel =
-    import.meta.env.VITE_PROMPT_ASSISTANT_MODEL || 'AI-ассистент';
+    import.meta.env.VITE_PROMPT_ASSISTANT_MODEL || 'ИИ-ассистент';
   const [isUploadingImage, setIsUploadingImage] = React.useState(false);
   const [isStartingTextMode, setIsStartingTextMode] = React.useState(false);
   const [showResetConfirm, setShowResetConfirm] = React.useState(false);
@@ -122,7 +122,7 @@ export const EditingPage: React.FC = () => {
 
     try {
       await uploadAndCreateSession(file);
-      toast.success('Изображение загружено! Начните беседу с AI-ассистентом.');
+      toast.success('Изображение загружено! Начните беседу с ИИ-ассистентом.');
     } catch (err: any) {
       toast.error(err.message || 'Ошибка загрузки изображения');
     } finally {
@@ -179,8 +179,8 @@ export const EditingPage: React.FC = () => {
     openBalanceWarning({
       title: 'Недостаточно ⭐️звезд для ассистента',
       description: hasActiveSubscriptionActions
-        ? 'Для улучшения через AI нужна 1 ⭐️звезда. Генерация спишет 1 генерацию по подписке.'
-        : 'Для улучшения через AI и последующей генерации нужно 3 ⭐️звезды (1 за ассистента и 2 за генерацию).',
+        ? 'Для улучшения через ИИ нужна 1 ⭐️звезда. Генерация спишет 1 генерацию по подписке.'
+        : 'Для улучшения через ИИ и последующей генерации нужно 3 ⭐️звезды (1 за ассистента и 2 за генерацию).',
       requiredCredits,
       requiredActions: hasActiveSubscriptionActions ? 1 : undefined,
     });
@@ -227,8 +227,8 @@ export const EditingPage: React.FC = () => {
     openBalanceWarning({
       title: 'Недостаточно ⭐️звезд для ассистента',
       description: hasActiveSubscriptionActions
-        ? 'Для улучшения через AI нужна 1 ⭐️звезда. Генерация спишет 1 генерацию по подписке.'
-        : 'Для улучшения через AI и последующей генерации нужно 3 ⭐️звезды (1 за ассистента и 2 за генерацию).',
+        ? 'Для улучшения через ИИ нужна 1 ⭐️звезда. Генерация спишет 1 генерацию по подписке.'
+        : 'Для улучшения через ИИ и последующей генерации нужно 3 ⭐️звезды (1 за ассистента и 2 за генерацию).',
       requiredCredits,
       requiredActions: hasActiveSubscriptionActions ? 1 : undefined,
     });
@@ -268,7 +268,7 @@ export const EditingPage: React.FC = () => {
         content: 'Отправляю запрос как есть. Списание: 2 ⭐️звезды за генерацию.',
       });
 
-      toast.success('Промпт отправлен без AI-ассистента');
+      toast.success('Промпт отправлен без ИИ-ассистента');
       setShowPromptDecision(false);
       setPendingPrompt(null);
       setPendingAttachments([]);
@@ -301,7 +301,7 @@ export const EditingPage: React.FC = () => {
     setDecisionLoadingTarget('ai');
     try {
       await sendMessage(pendingPrompt, pendingAttachments);
-      toast.success('AI подготовил финальный промпт — отправьте на генерацию.');
+      toast.success('ИИ подготовил финальный промпт — отправьте на генерацию.');
       setShowPromptDecision(false);
       setPendingPrompt(null);
       setPendingAttachments([]);
@@ -482,9 +482,9 @@ export const EditingPage: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-base font-bold text-dark-900 mb-2">AI-ассистент</h3>
+                      <h3 className="text-base font-bold text-dark-900 mb-2">ИИ-ассистент</h3>
                       <p className="text-sm text-dark-600">
-                        Опишите задачу и при желании прикрепите референсы. Можно генерировать по тексту с нуля или редактировать загруженное фото. Промпт можно отправить как есть или улучшить через AI (рекомендуем {promptAssistantModel}, списывает 1 ⭐️звезду).
+                        Опишите задачу и при желании прикрепите референсы. Можно генерировать по тексту с нуля или редактировать загруженное фото. Промпт можно отправить как есть или улучшить через ИИ (рекомендуем {promptAssistantModel}, списывает 1 ⭐️звезду).
                       </p>
                     </div>
                   </div>
@@ -502,7 +502,7 @@ export const EditingPage: React.FC = () => {
                     <div className="flex-1">
                       <h3 className="text-base font-bold text-dark-900 mb-2">Прозрачная оплата</h3>
                       <p className="text-sm text-dark-600">
-                        1 ⭐️звезда за сообщение AI. Генерация: 1 генерация по подписке или 2 ⭐️звезды без подписки.
+                        1 ⭐️звезда за сообщение ИИ. Генерация: 1 генерация по подписке или 2 ⭐️звезды без подписки.
                       </p>
                     </div>
                   </div>
@@ -550,7 +550,7 @@ export const EditingPage: React.FC = () => {
                 showAspectRatioSelect
               />
               <p className="text-xs text-dark-400 px-4 mb-6 max-w-4xl mx-auto">
-                Сервис "AI Generator" не несёт ответственности за результаты сгенерированных изображений, так как генерация происходит на сторонних ресурсах с помощью ИИ.
+                Сервис "ИИ Генератор" не несёт ответственности за результаты сгенерированных изображений, так как генерация происходит на сторонних ресурсах с помощью ИИ.
               </p>
             </>
           )}

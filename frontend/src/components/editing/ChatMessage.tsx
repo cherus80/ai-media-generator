@@ -1,6 +1,6 @@
 /**
  * Компонент отдельного сообщения в чате
- * Отображает сообщения пользователя и AI-ассистента
+ * Отображает сообщения пользователя и ИИ-ассистента
  */
 
 import React from 'react';
@@ -63,7 +63,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
                 />
               </svg>
             </div>
-            <span className="text-xs font-bold gradient-text bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-600">AI-ассистент</span>
+            <span className="text-xs font-bold gradient-text bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-blue-600">ИИ-ассистент</span>
           </div>
         )}
 

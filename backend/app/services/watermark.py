@@ -17,7 +17,7 @@ class WatermarkService:
 
     def __init__(
         self,
-        text: str = "AI Generator - Demo",
+        text: str = "ИИ Генератор - Demo",
         position: str = "bottom-right",
         opacity: int = 128,  # 0-255 (128 = 50% прозрачности)
         font_size: int = 24,
@@ -274,7 +274,7 @@ def get_watermark_service() -> WatermarkService:
     global _watermark_service
     if _watermark_service is None:
         _watermark_service = WatermarkService(
-            text="AI Generator - Demo",
+            text="ИИ Генератор - Demo",
             position="bottom-right",
             opacity=128,
             font_size=24,

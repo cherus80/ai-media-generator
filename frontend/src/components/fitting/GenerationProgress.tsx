@@ -16,7 +16,7 @@ export const GenerationProgress: React.FC = () => {
 
     if (progress < 20) return 'Загружаем ваши фото...';
     if (progress < 40) return 'Анализируем изображения...';
-    if (progress < 60) return 'Создаём AI-композицию...';
+    if (progress < 60) return 'Создаём ИИ-композицию...';
     if (progress < 80) return 'Применяем эффекты...';
     if (progress < 100) return 'Финальная обработка...';
     return 'Готово!';

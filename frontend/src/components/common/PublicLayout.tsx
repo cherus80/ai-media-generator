@@ -24,11 +24,11 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
           <Link to="/" className="flex items-center gap-3 group">
             <img
               src="/logo.png"
-              alt="AI Generator"
+              alt="ИИ Генератор"
               className="w-12 h-12 rounded-2xl shadow-lg border border-white object-contain bg-white"
             />
             <div>
-              <p className="text-sm text-dark-600 font-semibold">AI Generator</p>
+              <p className="text-sm text-dark-600 font-semibold">ИИ Генератор</p>
               <p className="text-xs text-dark-400">Примерка и редактирование</p>
             </div>
           </Link>
@@ -82,10 +82,10 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
         <div className="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-3 gap-6 text-sm text-dark-600">
           <div>
             <div className="flex items-center gap-3 mb-3">
-              <img src="/logo.png" alt="AI Generator" className="w-10 h-10 rounded-xl border border-white shadow-sm object-contain" />
-              <p className="font-semibold text-dark-800">AI Generator</p>
+              <img src="/logo.png" alt="ИИ Генератор" className="w-10 h-10 rounded-xl border border-white shadow-sm object-contain" />
+              <p className="font-semibold text-dark-800">ИИ Генератор</p>
             </div>
-            <p>Виртуальная примерка и AI-редактирование изображений.</p>
+            <p>Виртуальная примерка и ИИ-редактирование изображений.</p>
           </div>
           <div className="space-y-1">
             <p className="font-semibold text-dark-800">Ссылки</p>

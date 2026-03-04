@@ -29,7 +29,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   baseImageUrl,
 }) => {
   const promptAssistantModel =
-    import.meta.env.VITE_PROMPT_ASSISTANT_MODEL || 'AI-ассистент';
+    import.meta.env.VITE_PROMPT_ASSISTANT_MODEL || 'ИИ-ассистент';
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
   // Автоматический scroll вниз при новых сообщениях
@@ -77,7 +77,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 />
               </div>
               <p className="mt-4 text-sm text-dark-600">
-                Опишите, что хотите изменить. При необходимости прикрепите дополнительные изображения через скрепку. После ввода можно отправить запрос сразу или попросить AI ({promptAssistantModel}) улучшить формулировку (спишет 1 ⭐️звезду) перед генерацией.
+                Опишите, что хотите изменить. При необходимости прикрепите дополнительные изображения через скрепку. После ввода можно отправить запрос сразу или попросить ИИ ({promptAssistantModel}) улучшить формулировку (спишет 1 ⭐️звезду) перед генерацией.
               </p>
             </Card>
           </motion.div>
@@ -112,7 +112,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               transition={{ delay: 0.4 }}
               className="text-2xl font-bold gradient-text mb-3"
             >
-              Начните беседу с AI-ассистентом
+              Начните беседу с ИИ-ассистентом
             </motion.h3>
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -120,7 +120,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               transition={{ delay: 0.5 }}
               className="text-dark-600 max-w-md mx-auto"
             >
-              Опишите, что хотите получить: сгенерировать новый кадр по тексту или изменить загруженное изображение. Затем выберите — отправить запрос как есть или улучшить его с AI. Например:
+              Опишите, что хотите получить: сгенерировать новый кадр по тексту или изменить загруженное изображение. Затем выберите — отправить запрос как есть или улучшить его с ИИ. Например:
               "Сгенерируй портрет в стиле watercolor", "Измени фон на закат", "Добавь эффект черно-белого фото"
             </motion.p>
           </motion.div>

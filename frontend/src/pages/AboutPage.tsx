@@ -4,7 +4,7 @@ import { Layout } from '../components/common/Layout';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 
-const APP_NAME = import.meta.env.VITE_APP_NAME || 'AI Generator';
+const APP_NAME = import.meta.env.VITE_APP_NAME || 'ИИ Генератор';
 const SUPPORT_LINK = 'https://t.me/+Fj-R8QqIEEg5OTE6';
 
 const formatBuildDate = (value: string) => {
@@ -22,12 +22,12 @@ const formatBuildDate = (value: string) => {
 const FEATURES = [
   {
     title: 'Примерка одежды',
-    description: 'Загрузите своё фото и фото одежды — AI покажет, как выглядит образ.',
+    description: 'Загрузите своё фото и фото одежды — ИИ покажет, как выглядит образ.',
     icon: '👕',
   },
   {
     title: 'Генерация и редактирование фото',
-    description: 'Запускайте генерацию по тексту или редактируйте загруженные фото в чате с референсами и AI-помощником.',
+    description: 'Запускайте генерацию по тексту или редактируйте загруженные фото в чате с референсами и ИИ-помощником.',
     icon: '🎨',
   },
   {

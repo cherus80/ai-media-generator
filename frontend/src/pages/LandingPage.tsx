@@ -9,8 +9,8 @@ const resolveImageUrl = (url: string) =>
   url.startsWith('http') ? url : `${API_BASE_URL}${url.startsWith('/') ? url : `/${url}`}`;
 
 const featureCards = [
-  { title: 'Виртуальная примерка', desc: 'AI показывает посадку и образ на вашем фото — цвет и фактура могут отличаться от оригинала, это ориентировочная визуализация.', icon: 'fa-solid fa-shirt', iconWrapperClass: 'bg-sky-500 text-white' },
-  { title: 'Генерация и редактирование фото', desc: 'Генерируйте по тексту или редактируйте фото в чате: добавляйте референсы и улучшайте промпт через AI.', icon: 'fa-solid fa-comments', iconWrapperClass: 'bg-purple-500 text-white' },
+  { title: 'Виртуальная примерка', desc: 'ИИ показывает посадку и образ на вашем фото — цвет и фактура могут отличаться от оригинала, это ориентировочная визуализация.', icon: 'fa-solid fa-shirt', iconWrapperClass: 'bg-sky-500 text-white' },
+  { title: 'Генерация и редактирование фото', desc: 'Генерируйте по тексту или редактируйте фото в чате: добавляйте референсы и улучшайте промпт через ИИ.', icon: 'fa-solid fa-comments', iconWrapperClass: 'bg-purple-500 text-white' },
   { title: 'Мастер из 3 шагов', desc: 'Загрузка → выбор генерации → результат за несколько секунд.', icon: 'fa-solid fa-shoe-prints', iconWrapperClass: 'bg-slate-800 text-white' },
   { title: 'Гибкая система оплаты', desc: 'Используйте генерации по подписке или ⭐️звезды без ограничений.', icon: 'fa-solid fa-wallet', iconWrapperClass: 'bg-orange-100 text-orange-500' },
   { title: 'Бесплатный старт', desc: '6 ⭐️звезд бесплатно сразу после регистрации.', icon: 'fa-solid fa-bolt', iconWrapperClass: 'bg-green-100 text-green-500' },
@@ -64,12 +64,12 @@ const creditPackages = [
 ];
 
 const faqs = [
-  { question: 'Насколько точна виртуальная примерка?', answer: 'Это AI-визуализация посадки. Из-за специфики моделей оттенок, фактура и детали могут отличаться от реального товара, поэтому не ждите 100% совпадения — используйте как наглядный предварительный пример.' },
+  { question: 'Насколько точна виртуальная примерка?', answer: 'Это ИИ-визуализация посадки. Из-за специфики моделей оттенок, фактура и детали могут отличаться от реального товара, поэтому не ждите 100% совпадения — используйте как наглядный предварительный пример.' },
   { question: 'Что такое генерации по подписке?', answer: 'Генерации — это количество запусков по подписке.' },
-  { question: 'Что такое ⭐️звезды?', answer: '⭐️Звезды — это внутренняя валюта для генераций и AI-ассистента.' },
+  { question: 'Что такое ⭐️звезды?', answer: '⭐️Звезды — это внутренняя валюта для генераций и ИИ-ассистента.' },
   { question: 'Сколько стоит одна генерация?', answer: '1 генерация по подписке или 2 ⭐️звезды без подписки.' },
-  { question: 'Сколько стоит AI-ассистент?', answer: '1 ⭐️звезда за одно обращение.' },
-  { question: 'Как работает генерация и редактирование фото?', answer: 'Можно загрузить фото для редактирования или сразу написать текстовый запрос для генерации с нуля. При необходимости прикрепляйте референсы и улучшайте промпт через AI перед запуском.' },
+  { question: 'Сколько стоит ИИ-ассистент?', answer: '1 ⭐️звезда за одно обращение.' },
+  { question: 'Как работает генерация и редактирование фото?', answer: 'Можно загрузить фото для редактирования или сразу написать текстовый запрос для генерации с нуля. При необходимости прикрепляйте референсы и улучшайте промпт через ИИ перед запуском.' },
   { question: 'Что выдаётся бесплатно?', answer: '6 ⭐️звезд при регистрации.' },
 ];
 
@@ -82,7 +82,7 @@ const testimonials = [
 export const LandingPage: React.FC = () => {
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://ai-generator.mix4.ru';
   const description =
-    'Виртуальная примерка одежды, генерация и AI-редактирование фото. Загружайте изображения или запускайте генерацию по тексту и получайте реалистичные результаты.';
+    'Виртуальная примерка одежды, генерация и ИИ-редактирование фото. Загружайте изображения или запускайте генерацию по тексту и получайте реалистичные результаты.';
   const [topExamples, setTopExamples] = useState<GenerationExampleItem[]>([]);
   const [topExamplesLoading, setTopExamplesLoading] = useState(true);
 
@@ -113,14 +113,14 @@ export const LandingPage: React.FC = () => {
   }, []);
 
   useSeo({
-    title: 'AI Generator — виртуальная примерка, генерация и AI-редактирование фото',
+    title: 'ИИ Генератор — виртуальная примерка, генерация и ИИ-редактирование фото',
     description,
     canonical: `${baseUrl}/`,
     image: `${baseUrl}/logo.png`,
     jsonLd: {
       '@context': 'https://schema.org',
       '@type': 'WebApplication',
-      name: 'AI Generator',
+      name: 'ИИ Генератор',
       url: `${baseUrl}/`,
       applicationCategory: 'MultimediaApplication',
       operatingSystem: 'All',
@@ -141,11 +141,11 @@ export const LandingPage: React.FC = () => {
             <Link to="/" className="flex items-center gap-2 sm:gap-3 min-w-0">
               <img
                 src="/logo.png"
-                alt="AI Generator"
+                alt="ИИ Генератор"
                 className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl shadow-md object-contain bg-white/70 p-2 border border-white flex-shrink-0"
               />
               <span className="font-bold text-lg sm:text-xl text-slate-800 tracking-tight leading-tight truncate">
-                AI Generator
+                ИИ Генератор
               </span>
             </Link>
 
@@ -198,10 +198,10 @@ export const LandingPage: React.FC = () => {
                 </div>
                 <h1 className="text-4xl lg:text-6xl font-extrabold leading-tight mb-6 text-slate-900">
                   Виртуальная примерка и{' '}
-                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-500">AI-генерация и редактирование</span>
+                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-500">ИИ-генерация и редактирование</span>
                 </h1>
                 <p className="text-xl text-slate-500 mb-6 leading-relaxed">
-                  Загружайте фото, визуализируйте одежду, улучшайте изображения — AI подбирает посадку и образ, но оттенки и детали могут отличаться от реального товара. Генерации выполняются на модели Nano Banana Pro.
+                  Загружайте фото, визуализируйте одежду, улучшайте изображения — ИИ подбирает посадку и образ, но оттенки и детали могут отличаться от реального товара. Генерации выполняются на модели Nano Banana Pro.
                 </p>
                 <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-soft mb-8 flex items-start gap-4">
                   <div className="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center shrink-0">
@@ -248,7 +248,7 @@ export const LandingPage: React.FC = () => {
                         <p className="text-white/90 font-medium">Примерьте одежду и аксессуары на своё фото</p>
                       </div>
                       <div className="p-6 sm:p-8 flex flex-col gap-3">
-                        <p className="text-slate-600">Загрузите своё фото и фото одежды — AI подготовит визуализацию посадки без гарантии точного совпадения с оригиналом</p>
+                        <p className="text-slate-600">Загрузите своё фото и фото одежды — ИИ подготовит визуализацию посадки без гарантии точного совпадения с оригиналом</p>
                         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 text-slate-700 text-sm font-semibold self-start">
                           <i className="fa-solid fa-coins text-purple-500" />
                           <span>2 ⭐️звезды за примерку</span>
@@ -271,7 +271,7 @@ export const LandingPage: React.FC = () => {
                         <p className="text-white/90 font-medium">Text-to-image и чат-редактор с референсами</p>
                       </div>
                       <div className="p-6 sm:p-8 flex flex-col gap-3">
-                        <p className="text-slate-600">Запускайте генерацию по тексту или редактируйте загруженное фото: можно прикреплять референсы и улучшать промпт с AI</p>
+                        <p className="text-slate-600">Запускайте генерацию по тексту или редактируйте загруженное фото: можно прикреплять референсы и улучшать промпт с ИИ</p>
                         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 text-slate-700 text-sm font-semibold self-start">
                           <i className="fa-solid fa-bolt text-orange-500" />
                           <span>1 ⭐️звезда за ассистента + 2 за генерацию (или 1 генерация по подписке)</span>
@@ -408,7 +408,7 @@ export const LandingPage: React.FC = () => {
                   <i className="fa-solid fa-robot text-lg" />
                 </div>
                 <div>
-                  <span className="block font-bold text-slate-800 mb-2 text-lg">AI-ассистент:</span>
+                  <span className="block font-bold text-slate-800 mb-2 text-lg">ИИ-ассистент:</span>
                   <span className="text-slate-500">1 ⭐️звезда = 1 обращение</span>
                 </div>
               </div>
@@ -477,7 +477,7 @@ export const LandingPage: React.FC = () => {
               </div>
               <div className="text-sm text-slate-500 text-right bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-sm">
                 ⭐️Звезды используются для генераций без подписки
-                <br />и для AI-ассистента.
+                <br />и для ИИ-ассистента.
               </div>
             </div>
 
@@ -512,7 +512,7 @@ export const LandingPage: React.FC = () => {
                 <div className="inline-block p-4 rounded-2xl bg-purple-100 text-purple-600 mb-8">
                   <i className="fa-solid fa-wand-magic-sparkles text-3xl" />
                 </div>
-                <h2 className="text-3xl md:text-5xl font-extrabold mb-8 text-slate-900 leading-tight">Умный AI-ассистент для идеальных результатов</h2>
+                <h2 className="text-3xl md:text-5xl font-extrabold mb-8 text-slate-900 leading-tight">Умный ИИ-ассистент для идеальных результатов</h2>
                 <p className="text-slate-500 text-lg mb-8 leading-relaxed">
                   Ассистент помогает формировать точные промпты, улучшать качество генераций и получать более аккуратные визуализации.
                 </p>
@@ -532,7 +532,7 @@ export const LandingPage: React.FC = () => {
                         <i className="fa-solid fa-wand-magic-sparkles" />
                       </div>
                       <div>
-                        <p className="font-bold text-slate-900 text-lg leading-tight">AI Генерация и редактирование</p>
+                        <p className="font-bold text-slate-900 text-lg leading-tight">ИИ Генерация и редактирование</p>
                         <p className="text-xs text-slate-400">Ассистент для text-to-image и редактирования</p>
                       </div>
                     </div>
@@ -556,7 +556,7 @@ export const LandingPage: React.FC = () => {
                           <i className="fa-solid fa-wand-magic-sparkles text-sm" />
                         </div>
                         <div>
-                          <p className="text-xs font-bold text-purple-600 uppercase">AI-ассистент</p>
+                          <p className="text-xs font-bold text-purple-600 uppercase">ИИ-ассистент</p>
                           <p className="text-[11px] text-slate-400">13:37</p>
                         </div>
                       </div>
@@ -573,7 +573,7 @@ export const LandingPage: React.FC = () => {
                       </button>
                       <div className="flex items-center gap-2 text-xs text-slate-500">
                         <i className="fa-solid fa-circle-info text-purple-600" />
-                        <span>AI-ассистент −1 кр, генерация изображения −2 кр.</span>
+                        <span>ИИ-ассистент −1 кр, генерация изображения −2 кр.</span>
                       </div>
                     </div>
 
@@ -670,12 +670,12 @@ export const LandingPage: React.FC = () => {
               <Link to="/" className="flex items-center gap-3 mb-4">
                 <img
                   src="/logo.png"
-                  alt="AI Generator"
+                  alt="ИИ Генератор"
                   className="w-16 h-16 rounded-2xl shadow-md object-contain bg-white/70 p-2 border border-white"
                 />
-                <span className="font-bold text-lg text-slate-800">AI Generator</span>
+                <span className="font-bold text-lg text-slate-800">ИИ Генератор</span>
               </Link>
-              <p className="text-slate-500 text-sm">Виртуальная примерка, AI-генерация и редактирование изображений.</p>
+              <p className="text-slate-500 text-sm">Виртуальная примерка, ИИ-генерация и редактирование изображений.</p>
             </div>
 
             <div>
@@ -700,7 +700,7 @@ export const LandingPage: React.FC = () => {
           </div>
 
           <div className="border-t border-slate-100 pt-8 text-center text-xs text-slate-400">
-            &copy; 2024 AI Generator. Все права защищены.
+            &copy; 2024 ИИ Генератор. Все права защищены.
           </div>
         </div>
       </footer>

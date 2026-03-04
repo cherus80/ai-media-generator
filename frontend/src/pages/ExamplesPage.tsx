@@ -24,7 +24,7 @@ export const ExamplesPage: React.FC = () => {
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://ai-generator.mix4.ru';
 
   useSeo({
-    title: 'Примеры генераций — AI Generator',
+    title: 'Примеры генераций — ИИ Генератор',
     description: 'Библиотека лучших примеров генераций. Выберите стиль и запустите генерацию по образцу.',
     canonical: `${baseUrl}/app/examples`,
     image: `${baseUrl}/logo.png`,

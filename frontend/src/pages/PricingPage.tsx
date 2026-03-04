@@ -12,7 +12,7 @@ export const PricingPage: React.FC = () => {
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://ai-generator.mix4.ru';
 
   useSeo({
-    title: 'Тарифы и подписки — AI Generator',
+    title: 'Тарифы и подписки — ИИ Генератор',
     description: 'Актуальные тарифы и подписки для генерации изображений и виртуальной примерки.',
     canonical: `${baseUrl}/pricing`,
     image: `${baseUrl}/logo.png`,

@@ -187,7 +187,7 @@ async def public_examples_catalog(
 
     body = f"""
 <header class="header">
-  <a class="brand" href="/">AI Generator</a>
+  <a class="brand" href="/">ИИ Генератор</a>
   <a class="top-link" href="/login">Войти</a>
 </header>
 <h1 class="title">Примеры генераций</h1>
@@ -198,15 +198,15 @@ async def public_examples_catalog(
 """
     canonical = _app_url("/examples")
     page = _render_layout(
-        title="Примеры генераций | AI Generator",
-        description="Каталог примеров AI-генерации. Откройте карточку, изучите сценарий и запустите генерацию со своими фото.",
+        title="Примеры генераций | ИИ Генератор",
+        description="Каталог примеров ИИ-генерации. Откройте карточку, изучите сценарий и запустите генерацию со своими фото.",
         canonical=canonical,
         og_image=_app_url("/logo.png"),
         body=body,
         json_ld={
             "@context": "https://schema.org",
             "@type": "CollectionPage",
-            "name": "Примеры генераций AI",
+            "name": "Примеры генераций ИИ",
             "url": canonical,
             "inLanguage": "ru-RU",
         },
@@ -249,7 +249,7 @@ async def public_example_detail(
         return HTMLResponse(
             status_code=404,
             content=_render_layout(
-                title="Пример не найден | AI Generator",
+                title="Пример не найден | ИИ Генератор",
                 description="Запрошенный пример недоступен.",
                 canonical=_app_url(f"/examples/{quote(slug)}"),
                 og_image=_app_url("/logo.png"),
@@ -257,7 +257,7 @@ async def public_example_detail(
             ),
         )
 
-    page_title = item.seo_title or f"{(item.title or 'Пример генерации').strip()} | AI Generator"
+    page_title = item.seo_title or f"{(item.title or 'Пример генерации').strip()} | ИИ Генератор"
     page_description = item.seo_description or item.description or _truncate(item.prompt, 170)
     canonical = _app_url(f"/examples/{quote(item.slug)}")
     image_url = _resolve_public_image(item.image_url)
@@ -363,7 +363,7 @@ async def public_example_detail(
 
     body = f"""
 <header class="header">
-  <a class="brand" href="/">AI Generator</a>
+  <a class="brand" href="/">ИИ Генератор</a>
   <a class="top-link" href="/examples">Все примеры</a>
 </header>
 <article class="card">
@@ -454,7 +454,7 @@ async def public_example_short_redirect(
         return HTMLResponse(
             status_code=404,
             content=_render_layout(
-                title="Пример не найден | AI Generator",
+                title="Пример не найден | ИИ Генератор",
                 description="Запрошенный пример недоступен.",
                 canonical=_app_url(f"/e/{example_id}"),
                 og_image=_app_url("/logo.png"),

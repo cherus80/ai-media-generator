@@ -54,7 +54,7 @@ export const PromptDecisionModal: React.FC<PromptDecisionModalProps> = ({
                 Как отправить промпт?
               </h3>
               <p className="text-dark-600 mt-1">
-                Выберите: отправить запрос сразу или сначала попросить AI улучшить формулировку и вернуть один финальный промпт. Улучшение тоже тратит ⭐️звезды.
+                Выберите: отправить запрос сразу или сначала попросить ИИ улучшить формулировку и вернуть один финальный промпт. Улучшение тоже тратит ⭐️звезды.
               </p>
             </div>
             <Button
@@ -125,7 +125,7 @@ export const PromptDecisionModal: React.FC<PromptDecisionModalProps> = ({
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-3">
                 <div className="flex items-center space-x-2">
                   <span className="text-2xl">🤖</span>
-                  <p className="text-lg font-bold text-dark-900">Улучшить с AI</p>
+                  <p className="text-lg font-bold text-dark-900">Улучшить с ИИ</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="primary" size="sm">Ассистент</Badge>
@@ -155,7 +155,7 @@ export const PromptDecisionModal: React.FC<PromptDecisionModalProps> = ({
                     </svg>
                   }
                 >
-                  Улучшить с AI
+                  Улучшить с ИИ
                 </Button>
                 {showAiProgress && (
                   <div className="mt-3">

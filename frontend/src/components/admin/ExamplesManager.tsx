@@ -173,7 +173,7 @@ const inferRuThemeFromPrompt = (prompt: string): string => {
   ];
 
   const found = rules.find((rule) => rule.keys.some((key) => lowered.includes(key)));
-  return found?.title || 'AI генерация по фото';
+  return found?.title || 'ИИ генерация по фото';
 };
 
 const toDateInputValue = (date: Date): string => {
@@ -202,7 +202,7 @@ const buildTitleVariantsFromPrompt = (prompt: string): [string, string, string] 
   const baseTitle = extractTitleFromPrompt(prompt);
   const variants = [
     baseTitle,
-    truncate(`${baseTitle} — сценарий AI-генерации`, 200),
+    truncate(`${baseTitle} — сценарий ИИ-генерации`, 200),
     truncate(`${baseTitle} — пример генерации по фото`, 200),
   ];
   const unique = variants.map((item, index) => {
@@ -226,12 +226,12 @@ const buildSeoDraft = (params: {
   const highlightsText = highlights.join(', ');
   const firstRuTag = params.tags.find((tag) => isMostlyRussian(tag, 0.5));
   const firstTag = firstRuTag ? `, ${firstRuTag}` : '';
-  const generatedDescription = `Пример "${baseTitle}" для AI генерации${firstTag}. ${
+  const generatedDescription = `Пример "${baseTitle}" для ИИ генерации${firstTag}. ${
     highlightsText
       ? `Ключевые детали: ${highlightsText}.`
       : 'Сценарий уже оптимизирован для быстрого старта и качественного результата.'
   } Загрузите свои фото и получите результат в этом стиле.`;
-  const generatedSeoTitle = truncate(`${baseTitle} | Пример генерации AI`, 120);
+  const generatedSeoTitle = truncate(`${baseTitle} | Пример генерации ИИ`, 120);
   const generatedSeoDescription = truncate(
     params.seoDescription.trim() ||
       `Готовый пример "${baseTitle}": загрузите исходник и получите релевантный результат в выбранном стиле.`,
@@ -295,7 +295,7 @@ const buildLocalSeoVariants = (params: {
         }`,
         400
       ),
-      seo_title: truncate(`${titleC} | AI пример для генерации`, 120),
+      seo_title: truncate(`${titleC} | ИИ пример для генерации`, 120),
       seo_description: truncate(
         `Карточка "${titleC}" с SEO-описанием и CTA для запуска генерации по вашему фото.`,
         200
@@ -325,10 +325,10 @@ const normalizeSeoVariants = (
   const normalized = source.slice(0, 3).map((variant, index) => ({
     slug: toSlug(variant.slug) || fallback[index]?.slug || `example-${index + 1}`,
     title: truncate(variant.title || fallback[index]?.title || 'Пример генерации', 200),
-    description: truncate(variant.description || fallback[index]?.description || 'Пример генерации AI.', 400),
-    seo_title: truncate(variant.seo_title || fallback[index]?.seo_title || 'Пример генерации AI', 120),
+    description: truncate(variant.description || fallback[index]?.description || 'Пример генерации ИИ.', 400),
+    seo_title: truncate(variant.seo_title || fallback[index]?.seo_title || 'Пример генерации ИИ', 120),
     seo_description: truncate(
-      variant.seo_description || fallback[index]?.seo_description || 'Пример генерации AI',
+      variant.seo_description || fallback[index]?.seo_description || 'Пример генерации ИИ',
       200
     ),
     faq: Array.isArray(variant.faq) ? variant.faq : [],

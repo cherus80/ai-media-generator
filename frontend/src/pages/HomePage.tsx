@@ -54,7 +54,7 @@ export const HomePage: React.FC = () => {
       title: 'Примерка одежды',
       icon: '👕',
       description: 'Примерьте одежду и аксессуары на своё фото',
-      details: 'Загрузите своё фото и фото одежды — AI покажет посадку и образ, но итог не гарантирует точного совпадения с оригиналом',
+      details: 'Загрузите своё фото и фото одежды — ИИ покажет посадку и образ, но итог не гарантирует точного совпадения с оригиналом',
       path: '/fitting',
       gradient: 'from-purple-500 to-blue-500',
       cost: hasActiveSubscriptionActions ? 'Включено в подписку' : '2 ⭐️звезды за примерку',
@@ -64,7 +64,7 @@ export const HomePage: React.FC = () => {
       title: 'Генерация и редактирование фото',
       icon: '🎨',
       description: 'Генерация по тексту и чат-редактор с референсами',
-      details: 'Запускайте генерацию по текстовому описанию или редактируйте загруженное фото через AI-чат',
+      details: 'Запускайте генерацию по текстовому описанию или редактируйте загруженное фото через ИИ-чат',
       path: '/editing',
       gradient: 'from-pink-500 to-orange-500',
       cost: hasActiveSubscriptionActions
@@ -76,7 +76,7 @@ export const HomePage: React.FC = () => {
   return (
     <AuthGuard>
       <Layout
-        title="AI Generator"
+        title="ИИ Генератор"
         subtitle="Примерка, генерация и редактирование фото"
         showBackButton={false}
         icon={
@@ -221,7 +221,7 @@ export const HomePage: React.FC = () => {
                     Выберите функцию
                   </h2>
                   <p className="text-dark-600 text-lg">
-                    Примерьте одежду или отредактируйте изображение с помощью AI
+                    Примерьте одежду или отредактируйте изображение с помощью ИИ
                   </p>
                 </div>
               </div>
@@ -327,7 +327,7 @@ export const HomePage: React.FC = () => {
                 </div>
                 <h4 className="font-bold text-dark-900 mb-2">Качественно</h4>
                 <p className="text-sm text-dark-600">
-                  Наглядные визуализации от AI (оттенки и детали могут отличаться)
+                  Наглядные визуализации от ИИ (оттенки и детали могут отличаться)
                 </p>
               </div>
             </Card>

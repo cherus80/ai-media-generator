@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Пользовательские упоминания бренда и термина `AI` русифицированы в UI-слое: `AI Generator` заменён на `ИИ Генератор`, а `AI-*` формулировки в интерфейсе, публичных страницах, письмах и SEO-мета переведены на `ИИ-*`. Технические идентификаторы (домен `ai-generator.mix4.ru`, e-mail, env-ключи, API-paths) сохранены без изменений.
+
 ### Added
 - В админке примеров рядом с действиями карточки добавлена кнопка «Скопировать короткую ссылку»: копирует в буфер короткий share-URL вида `/e/<id>` (с поддержкой `VITE_PUBLIC_SITE_URL`), который делает `301` на канонический `/examples/<slug>`.
 - Добавлена A/B-аналитика SEO-вариантов карточек примеров: в БД созданы `generation_example_variant_stats` и поле `generation_examples.seo_variant_index`; считаются просмотры SEO-деталки (`source=seo_detail`) и переходы в генерацию по варианту.

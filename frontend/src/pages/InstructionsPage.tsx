@@ -82,10 +82,10 @@ export const InstructionsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://ai-generator.mix4.ru';
   const description =
-    'Видео и текстовые инструкции по использованию AI Generator: как загрузить фото и получить лучший результат.';
+    'Видео и текстовые инструкции по использованию ИИ Генератор: как загрузить фото и получить лучший результат.';
 
   useSeo({
-    title: 'Инструкции по использованию — AI Generator',
+    title: 'Инструкции по использованию — ИИ Генератор',
     description,
     canonical: `${baseUrl}/app/instructions`,
     image: `${baseUrl}/logo.png`,

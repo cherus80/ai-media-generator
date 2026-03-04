@@ -111,7 +111,7 @@ export const Layout: React.FC<LayoutProps> = ({
   const defaultIcon = (
     <img
       src="/logo.png"
-      alt="AI Generator"
+      alt="ИИ Генератор"
       className="w-10 h-10 rounded-lg object-contain bg-white shadow-lg border border-white"
     />
   );
@@ -238,7 +238,7 @@ export const Layout: React.FC<LayoutProps> = ({
 
       <footer className="bg-white/80 border-t border-white/60">
         <div className="max-w-6xl mx-auto px-4 py-4 text-xs text-dark-600 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <span>© AI Generator</span>
+          <span>© ИИ Генератор</span>
           <div className="flex flex-wrap items-center gap-3">
             <a href="/oferta" className="hover:text-primary-700 underline-offset-2 hover:underline">Оферта</a>
             <a href="/privacy" className="hover:text-primary-700 underline-offset-2 hover:underline">Политика ПДн</a>

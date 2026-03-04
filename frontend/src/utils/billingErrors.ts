@@ -53,7 +53,7 @@ export const getGenerationErrorMessage = (
   const code = extractErrorCode(error);
 
   if (code === 'NOT_ENOUGH_CREDITS_FOR_ASSISTANT') {
-    return 'Недостаточно ⭐️звезд для AI-ассистента. Пополните баланс или оформите подписку.';
+    return 'Недостаточно ⭐️звезд для ИИ-ассистента. Пополните баланс или оформите подписку.';
   }
 
   if (code === 'NOT_ENOUGH_BALANCE' || code === 'NOT_ENOUGH_CREDITS') {

@@ -44,7 +44,7 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({ message }) => {
       const resultType = await shareGeneratedImage({
         imageUrl: message.image_url!,
         fileBaseName: `edited-image-${Date.now()}`,
-        title: 'AI Generator',
+        title: 'ИИ Генератор',
         message: 'Посмотри на мое отредактированное фото',
       });
 
@@ -101,7 +101,7 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({ message }) => {
                 />
               </svg>
             </div>
-            <span className="text-xs font-semibold text-gray-600">AI-ассистент</span>
+            <span className="text-xs font-semibold text-gray-600">ИИ-ассистент</span>
           </div>
 
           {/* Текст сообщения */}

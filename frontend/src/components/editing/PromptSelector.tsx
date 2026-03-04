@@ -1,5 +1,5 @@
 /**
- * Компонент подтверждения/редактирования промпта, предложенного AI (1 или несколько вариантов)
+ * Компонент подтверждения/редактирования промпта, предложенного ИИ (1 или несколько вариантов)
  */
 
 import React from 'react';
@@ -24,7 +24,7 @@ export const PromptSelector: React.FC<PromptSelectorProps> = ({
   const [editingPrompt, setEditingPrompt] = React.useState<string | null>(null);
   const [customPrompt, setCustomPrompt] = React.useState<string>('');
   const promptAssistantModel =
-    import.meta.env.VITE_PROMPT_ASSISTANT_MODEL || 'AI-ассистент';
+    import.meta.env.VITE_PROMPT_ASSISTANT_MODEL || 'ИИ-ассистент';
   const isSinglePrompt = prompts.length === 1;
   const customPromptLength = customPrompt.trim().length;
   const isCustomPromptTooLong = customPromptLength > MAX_PROMPT_LENGTH;
@@ -239,7 +239,7 @@ export const PromptSelector: React.FC<PromptSelectorProps> = ({
             </div>
             <div className="flex-1">
               <p className="text-sm text-dark-700 leading-relaxed">
-                <span className="font-semibold">Генерация изображения списывает 2 ⭐️звезды.</span> AI-ассистент уже списал 1 ⭐️звезду за улучшение промпта — подтвердите или подредактируйте перед стартом.
+                <span className="font-semibold">Генерация изображения списывает 2 ⭐️звезды.</span> ИИ-ассистент уже списал 1 ⭐️звезду за улучшение промпта — подтвердите или подредактируйте перед стартом.
               </p>
             </div>
           </div>

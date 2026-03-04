@@ -683,7 +683,7 @@ export const ProfilePage: React.FC = () => {
                     onClick={async () => {
                       await shareReferralLink(
                         referralStats.referral_link,
-                        'Присоединяйся к AI Generator и получай бонусы за создание изображений!'
+                        'Присоединяйся к ИИ Генератор и получай бонусы за создание изображений!'
                       );
                     }}
                     icon={

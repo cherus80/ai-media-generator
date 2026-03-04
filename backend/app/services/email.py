@@ -53,14 +53,14 @@ class EmailService:
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-        <h1 style="color: white; margin: 0; font-size: 28px;">AI Generator</h1>
+        <h1 style="color: white; margin: 0; font-size: 28px;">ИИ Генератор</h1>
         <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">Подтверждение Email</p>
     </div>
 
     <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px;">
         <h2 style="color: #333; margin-top: 0;">Здравствуйте{', ' + user_name if user_name else ''}!</h2>
 
-        <p>Спасибо за регистрацию в AI Generator. Для завершения регистрации и активации вашего аккаунта, пожалуйста, подтвердите ваш email-адрес.</p>
+        <p>Спасибо за регистрацию в ИИ Генератор. Для завершения регистрации и активации вашего аккаунта, пожалуйста, подтвердите ваш email-адрес.</p>
 
         <div style="text-align: center; margin: 30px 0;">
             <a href="{verification_link}"
@@ -112,7 +112,7 @@ class EmailService:
         return f"""
 {greeting}
 
-Спасибо за регистрацию в AI Generator.
+Спасибо за регистрацию в ИИ Генератор.
 
 Для завершения регистрации и активации вашего аккаунта, пожалуйста, подтвердите ваш email-адрес, перейдя по ссылке:
 
@@ -125,7 +125,7 @@ class EmailService:
 Если у вас есть вопросы, свяжитесь с нами: ai-generator@mix4.ru
 
 ---
-AI Generator
+ИИ Генератор
 """
 
     @staticmethod
@@ -158,7 +158,7 @@ AI Generator
 
         # Создаем письмо
         msg = MIMEMultipart("alternative")
-        msg["Subject"] = "Подтверждение Email — AI Generator"
+        msg["Subject"] = "Подтверждение Email — ИИ Генератор"
         msg["From"] = f"{settings.EMAIL_FROM_NAME} <{settings.EMAIL_FROM or settings.SMTP_USER}>"
         msg["To"] = to_email
 
@@ -220,7 +220,7 @@ AI Generator
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-        <h1 style="color: white; margin: 0; font-size: 28px;">AI Generator</h1>
+        <h1 style="color: white; margin: 0; font-size: 28px;">ИИ Генератор</h1>
         <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0;">Сброс пароля</p>
     </div>
 
@@ -281,7 +281,7 @@ AI Generator
 Если у вас есть вопросы, свяжитесь с нами: ai-generator@mix4.ru
 
 ---
-AI Generator
+ИИ Генератор
 """
 
     @staticmethod
@@ -297,7 +297,7 @@ AI Generator
         reset_link = f"{settings.FRONTEND_URL}/reset-password?token={reset_token}"
 
         msg = MIMEMultipart("alternative")
-        msg["Subject"] = "Сброс пароля — AI Generator"
+        msg["Subject"] = "Сброс пароля — ИИ Генератор"
         msg["From"] = f"{settings.EMAIL_FROM_NAME} <{settings.EMAIL_FROM or settings.SMTP_USER}>"
         msg["To"] = to_email
 
