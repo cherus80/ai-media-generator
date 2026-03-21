@@ -4,7 +4,6 @@ import { useAuth, useAuthStore } from '../store/authStore';
 import { GoogleSignInButton } from '../components/auth/GoogleSignInButton';
 import { VKSignInButton } from '../components/auth/VKSignInButton';
 import { YandexSignInButton } from '../components/auth/YandexSignInButton';
-import { TelegramSignInButton } from '../components/auth/TelegramSignInButton';
 import { validateLoginForm } from '../utils/passwordValidation';
 import { PD_CONSENT_VERSION } from '../constants/pdConsent';
 import { MAX_SUPPORT_URL } from '../constants/supportLinks';
@@ -133,12 +132,6 @@ export function LoginPage() {
               className={oauthButtonClass}
               disabled={!pdConsent}
               nextPath={nextPath}
-            />
-            <TelegramSignInButton
-              onSuccess={handleAuthSuccess}
-              onError={(err) => console.error(err)}
-              className={oauthButtonClass}
-              disabled={!pdConsent}
             />
           </div>
 
