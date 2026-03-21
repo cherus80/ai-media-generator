@@ -44,7 +44,6 @@ jobs:
           file: ./backend/Dockerfile
           push: true
           tags: |
-            ${{ env.BACKEND_IMAGE }}:latest
             ${{ env.BACKEND_IMAGE }}:sha-${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -56,7 +55,6 @@ jobs:
           file: ./frontend/Dockerfile.prod
           push: true
           tags: |
-            ${{ env.FRONTEND_IMAGE }}:latest
             ${{ env.FRONTEND_IMAGE }}:sha-${{ github.sha }}
           build-args: |
             VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL }}
@@ -94,8 +92,7 @@ jobs:
             git checkout master
             git pull --ff-only origin master
             export IMAGE_TAG="sha-${{ github.sha }}"
-            export GHCR_BACKEND_IMAGE="${{ env.BACKEND_IMAGE }}"
-            export GHCR_FRONTEND_IMAGE="${{ env.FRONTEND_IMAGE }}"
+            : "${IMAGE_TAG:?IMAGE_TAG is required}"
             echo "${{ secrets.VPS_GHCR_READ_TOKEN }}" | docker login ghcr.io -u "${{ secrets.VPS_GHCR_USERNAME }}" --password-stdin
             compose -f docker-compose.prod.yml pull backend celery_worker celery_beat frontend
             # Avoid recreating DB/Redis (and unrelated services) during app deploy.

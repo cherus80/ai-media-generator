@@ -50,12 +50,7 @@ services:
 
   # FastAPI Backend
   backend:
-    image: "${GHCR_BACKEND_IMAGE:-ghcr.io/cherus80/ai-media-generator-backend}:${IMAGE_TAG:-latest}"
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-      args:
-        - ENVIRONMENT=production
+    image: "ghcr.io/cherus80/ai-media-generator-backend:${IMAGE_TAG:?IMAGE_TAG is required}"
     container_name: ai_image_generator_backend_prod
     restart: always
     env_file:
@@ -94,12 +89,7 @@ services:
 
   # Celery Worker для async задач
   celery_worker:
-    image: "${GHCR_BACKEND_IMAGE:-ghcr.io/cherus80/ai-media-generator-backend}:${IMAGE_TAG:-latest}"
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-      args:
-        - ENVIRONMENT=production
+    image: "ghcr.io/cherus80/ai-media-generator-backend:${IMAGE_TAG:?IMAGE_TAG is required}"
     container_name: ai_image_generator_celery_worker_prod
     restart: always
     env_file:
@@ -136,12 +126,7 @@ services:
 
   # Celery Beat для периодических задач
   celery_beat:
-    image: "${GHCR_BACKEND_IMAGE:-ghcr.io/cherus80/ai-media-generator-backend}:${IMAGE_TAG:-latest}"
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-      args:
-        - ENVIRONMENT=production
+    image: "ghcr.io/cherus80/ai-media-generator-backend:${IMAGE_TAG:?IMAGE_TAG is required}"
     container_name: ai_image_generator_celery_beat_prod
     restart: always
     env_file:
@@ -169,22 +154,7 @@ services:
 
   # Frontend (Production build с nginx)
   frontend:
-    image: "${GHCR_FRONTEND_IMAGE:-ghcr.io/cherus80/ai-media-generator-frontend}:${IMAGE_TAG:-latest}"
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile.prod
-      args:
-        - VITE_API_BASE_URL=${VITE_API_BASE_URL}
-        - VITE_APP_NAME=${VITE_APP_NAME}
-        - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
-        - VITE_VK_APP_ID=${VITE_VK_APP_ID}
-        - VITE_VK_REDIRECT_URI=${VITE_VK_REDIRECT_URI}
-        - VITE_VK_AUTH_URL=${VITE_VK_AUTH_URL:-https://id.vk.com/authorize}
-        - VITE_YANDEX_CLIENT_ID=${VITE_YANDEX_CLIENT_ID}
-        - VITE_YANDEX_REDIRECT_URI=${VITE_YANDEX_REDIRECT_URI}
-        - VITE_TELEGRAM_BOT_NAME=${VITE_TELEGRAM_BOT_NAME}
-        - VITE_YANDEX_METRIKA_ID=${VITE_YANDEX_METRIKA_ID}
-        - VITE_ENV=production
+    image: "ghcr.io/cherus80/ai-media-generator-frontend:${IMAGE_TAG:?IMAGE_TAG is required}"
     container_name: ai_image_generator_frontend_prod
     restart: always
     ports:
