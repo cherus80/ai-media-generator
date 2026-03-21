@@ -13,6 +13,8 @@ import type { AspectRatio } from '../types/generation';
 import { InsufficientBalanceModal } from '../components/payment/InsufficientBalanceModal';
 import { getGenerationErrorMessage, isInsufficientBalanceError } from '../utils/billingErrors';
 import { getGenerationExampleBySlug, incrementExampleUse } from '../api/content';
+import { trackActivationEvent } from '../api/activation';
+import { getActivationBasePayload, setActivationEntryContext } from '../utils/activationTracking';
 
 export const ExampleGenerationPage: React.FC = () => {
   const navigate = useNavigate();
@@ -60,6 +62,13 @@ export const ExampleGenerationPage: React.FC = () => {
       reset();
     };
   }, [reset]);
+
+  useEffect(() => {
+    setActivationEntryContext({
+      route: '/app/examples/generate',
+      entry_source: trackingSource || 'app_examples',
+    });
+  }, [trackingSource]);
 
   useEffect(() => {
     let cancelled = false;
@@ -125,6 +134,16 @@ export const ExampleGenerationPage: React.FC = () => {
         return;
       }
 
+      await Promise.resolve(
+        trackActivationEvent(
+          getActivationBasePayload({
+            event_name: 'first_generate_click',
+            route: '/app/examples/generate',
+            entry_source: trackingSource || 'app_examples',
+          })
+        )
+      ).catch(() => undefined);
+
       await startGeneration(message, attachments || [], aspectRatio);
     } catch (err: any) {
       if (isInsufficientBalanceError(err)) {
@@ -138,6 +157,18 @@ export const ExampleGenerationPage: React.FC = () => {
       toast.error(getGenerationErrorMessage(err));
     }
   };
+
+  const handleAttachmentUploadSuccess = React.useCallback(() => {
+    void Promise.resolve(
+      trackActivationEvent(
+        getActivationBasePayload({
+          event_name: 'first_upload_success',
+          route: '/app/examples/generate',
+          entry_source: trackingSource || 'app_examples',
+        })
+      )
+    ).catch(() => undefined);
+  }, [trackingSource]);
 
   const handleBackToExamples = () => {
     reset();
@@ -180,6 +211,7 @@ export const ExampleGenerationPage: React.FC = () => {
               </div>
               <ChatInput
                 onSend={handleSend}
+                onAttachmentUploadSuccess={handleAttachmentUploadSuccess}
                 disabled={isGenerating || !prompt || loadingExample}
                 placeholder="Опишите желаемый результат..."
                 prefillMessage={prompt}

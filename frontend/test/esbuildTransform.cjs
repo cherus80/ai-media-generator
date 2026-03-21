@@ -21,6 +21,8 @@ module.exports = {
       sourcefile: sourcePath,
       define: {
         'import.meta.env.VITE_API_BASE_URL': JSON.stringify('https://api.example.test'),
+        'import.meta.env.VITE_PUBLIC_BACKEND_URL': JSON.stringify('https://api.example.test'),
+        'import.meta.env.VITE_ACTIVATION_ONBOARDING_V1': JSON.stringify('true'),
         'import.meta.env.VITE_APP_NAME': JSON.stringify('ИИ Генератор'),
         '__APP_VERSION__': JSON.stringify('test-version'),
         '__APP_BUILD_DATE__': JSON.stringify('2026-03-21T00:00:00.000Z'),

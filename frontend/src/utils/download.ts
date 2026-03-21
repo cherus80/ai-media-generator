@@ -2,11 +2,19 @@
  * Утилиты для скачивания изображений без открытия нового окна.
  */
 
-const PUBLIC_BASE_URL = (
-  import.meta.env.VITE_PUBLIC_BACKEND_URL ||
-  import.meta.env.VITE_API_BASE_URL ||
-  (typeof window !== 'undefined' ? window.location.origin : '')
-).replace(/\/$/, '');
+const getPublicBaseUrl = (): string => {
+  try {
+    return (
+      import.meta.env?.VITE_PUBLIC_BACKEND_URL ||
+      import.meta.env?.VITE_API_BASE_URL ||
+      (typeof window !== 'undefined' ? window.location.origin : '')
+    ).replace(/\/$/, '');
+  } catch {
+    return (typeof window !== 'undefined' ? window.location.origin : '').replace(/\/$/, '');
+  }
+};
+
+const PUBLIC_BASE_URL = getPublicBaseUrl();
 
 const DEFAULT_APP_URL = 'https://ai-generator.mix4.ru';
 

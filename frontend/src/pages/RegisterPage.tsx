@@ -10,6 +10,7 @@ import { PD_CONSENT_VERSION } from '../constants/pdConsent';
 import { rememberAuthNextPath, resolveSafeNextPath } from '../utils/safeRedirect';
 import { useSeo } from '../hooks/useSeo';
 import { getSiteOrigin, resolveRouteSeo } from '../seo/routeSeo';
+import { setActivationEntryContext } from '../utils/activationTracking';
 
 export function RegisterPage() {
   useSeo(resolveRouteSeo('/register', getSiteOrigin()));
@@ -62,6 +63,13 @@ export function RegisterPage() {
       setPdConsent(true);
     }
   }, [pdConsentVersionAccepted]);
+
+  useEffect(() => {
+    setActivationEntryContext({
+      route: '/register',
+      entry_source: 'register',
+    });
+  }, []);
 
   useEffect(() => {
     rememberAuthNextPath(nextPath, '/app');

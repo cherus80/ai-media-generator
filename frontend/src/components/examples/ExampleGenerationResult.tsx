@@ -176,18 +176,18 @@ export const ExampleGenerationResult: React.FC<ExampleGenerationResultProps> = (
             Скачать
           </button>
           <button
-            onClick={handleShare}
-            className="px-4 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+            onClick={onBackToExamples}
+            className="px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all flex items-center justify-center gap-2"
           >
-            Поделиться
+            Сделать ещё одну генерацию
           </button>
         </div>
 
         <button
-          onClick={onBackToExamples}
-          className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg"
+          onClick={handleShare}
+          className="w-full px-4 py-3 bg-white border border-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-colors"
         >
-          Сгенерировать по другому образцу ✨
+          Поделиться
         </button>
       </motion.div>
 

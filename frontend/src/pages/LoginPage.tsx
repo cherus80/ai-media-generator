@@ -11,6 +11,7 @@ import { MAX_SUPPORT_URL } from '../constants/supportLinks';
 import { rememberAuthNextPath, resolveSafeNextPath } from '../utils/safeRedirect';
 import { useSeo } from '../hooks/useSeo';
 import { getSiteOrigin, resolveRouteSeo } from '../seo/routeSeo';
+import { setActivationEntryContext } from '../utils/activationTracking';
 
 export function LoginPage() {
   useSeo(resolveRouteSeo('/login', getSiteOrigin()));
@@ -37,6 +38,13 @@ export function LoginPage() {
       setPdConsent(true);
     }
   }, [pdConsentVersionAccepted]);
+
+  useEffect(() => {
+    setActivationEntryContext({
+      route: '/login',
+      entry_source: 'login',
+    });
+  }, []);
 
   useEffect(() => {
     rememberAuthNextPath(nextPath, '/app');

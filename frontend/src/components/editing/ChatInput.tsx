@@ -17,6 +17,7 @@ import type { AspectRatio } from '../../types/generation';
 
 interface ChatInputProps {
   onSend: (message: string, attachments?: ChatAttachment[]) => void;
+  onAttachmentUploadSuccess?: (attachment: ChatAttachment) => void;
   disabled?: boolean;
   placeholder?: string;
   prefillMessage?: string;
@@ -30,6 +31,7 @@ interface ChatInputProps {
 
 export const ChatInput: React.FC<ChatInputProps> = ({
   onSend,
+  onAttachmentUploadSuccess,
   disabled = false,
   placeholder = 'Опишите, как хотите изменить изображение...',
   prefillMessage,
@@ -176,6 +178,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         ...prev,
         [uploaded.id]: URL.createObjectURL(uploadFile),
       }));
+      onAttachmentUploadSuccess?.(uploaded);
       toast.success('Файл прикреплён');
     } catch (err: any) {
       toast.error(

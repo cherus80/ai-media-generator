@@ -5,6 +5,7 @@
  */
 
 import client from './client';
+import { buildActivationHeaders } from '../utils/activationTracking';
 import type {
   RegisterRequest,
   LoginRequest,
@@ -28,7 +29,9 @@ import type {
  * Register a new user with email and password
  */
 export async function registerWithEmail(data: RegisterRequest): Promise<LoginResponse> {
-  const response = await client.post<LoginResponse>('/api/v1/auth-web/register', data);
+  const response = await client.post<LoginResponse>('/api/v1/auth-web/register', data, {
+    headers: buildActivationHeaders(),
+  });
   return response.data;
 }
 
@@ -36,7 +39,9 @@ export async function registerWithEmail(data: RegisterRequest): Promise<LoginRes
  * Login with email and password
  */
 export async function loginWithEmail(data: LoginRequest): Promise<LoginResponse> {
-  const response = await client.post<LoginResponse>('/api/v1/auth-web/login', data);
+  const response = await client.post<LoginResponse>('/api/v1/auth-web/login', data, {
+    headers: buildActivationHeaders(),
+  });
   return response.data;
 }
 
@@ -45,7 +50,9 @@ export async function loginWithEmail(data: LoginRequest): Promise<LoginResponse>
  */
 export async function loginWithGoogle(idToken: string, consentVersion?: string): Promise<GoogleOAuthResponse> {
   const data: GoogleOAuthRequest = { id_token: idToken, consent_version: consentVersion };
-  const response = await client.post<GoogleOAuthResponse>('/api/v1/auth-web/google', data);
+  const response = await client.post<GoogleOAuthResponse>('/api/v1/auth-web/google', data, {
+    headers: buildActivationHeaders(),
+  });
   return response.data;
 }
 
@@ -54,7 +61,9 @@ export async function loginWithGoogle(idToken: string, consentVersion?: string):
  */
 export async function loginWithVK(token: string, uuid: string, consentVersion?: string): Promise<VKOAuthResponse> {
   const data: VKOAuthRequest = { token, uuid, consent_version: consentVersion };
-  const response = await client.post<VKOAuthResponse>('/api/v1/auth-web/vk', data);
+  const response = await client.post<VKOAuthResponse>('/api/v1/auth-web/vk', data, {
+    headers: buildActivationHeaders(),
+  });
   return response.data;
 }
 
@@ -62,7 +71,9 @@ export async function loginWithVK(token: string, uuid: string, consentVersion?: 
  * Login or register with VK OAuth 2.1 (PKCE)
  */
 export async function loginWithVKPKCE(payload: VKOAuthPKCERequest): Promise<VKOAuthResponse> {
-  const response = await client.post<VKOAuthResponse>('/api/v1/auth-web/vk/pkce', payload);
+  const response = await client.post<VKOAuthResponse>('/api/v1/auth-web/vk/pkce', payload, {
+    headers: buildActivationHeaders(),
+  });
   return response.data;
 }
 
@@ -71,7 +82,9 @@ export async function loginWithVKPKCE(payload: VKOAuthPKCERequest): Promise<VKOA
  */
 export async function loginWithYandex(code: string, consentVersion?: string): Promise<YandexOAuthResponse> {
   const data: YandexOAuthRequest = { code, consent_version: consentVersion };
-  const response = await client.post<YandexOAuthResponse>('/api/v1/auth-web/yandex', data);
+  const response = await client.post<YandexOAuthResponse>('/api/v1/auth-web/yandex', data, {
+    headers: buildActivationHeaders(),
+  });
   return response.data;
 }
 
@@ -84,6 +97,9 @@ export async function loginWithTelegramWidget(user: TelegramUser, consentVersion
     {
       ...user,
       consent_version: consentVersion,
+    },
+    {
+      headers: buildActivationHeaders(),
     }
   );
   return response.data;
