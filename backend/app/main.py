@@ -303,6 +303,7 @@ async def health_check():
 from app.api.v1.endpoints import (
     auth,
     auth_web,
+    activation,
     fitting,
     editing,
     payments,
@@ -324,6 +325,11 @@ app.include_router(
 # Web auth (Email/Password + Google OAuth)
 app.include_router(
     auth_web.router,
+    prefix=settings.API_V1_PREFIX,
+)
+
+app.include_router(
+    activation.router,
     prefix=settings.API_V1_PREFIX,
 )
 

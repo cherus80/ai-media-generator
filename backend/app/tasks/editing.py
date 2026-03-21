@@ -43,6 +43,7 @@ from app.utils.image_utils import (
     normalize_image_bytes,
 )
 from app.utils.runtime_config import get_generation_providers_for_worker
+from app.services.activation_events import record_first_generate_success
 
 logger = logging.getLogger(__name__)
 USER_ERROR_MESSAGE = "Произошла ошибка, повторите запрос еще раз или зайдите позже"
@@ -730,6 +731,15 @@ def generate_editing_task(
                 except Exception as credit_error:
                     logger.error(f"Failed to charge credits for generation {generation_id}: {credit_error}", exc_info=True)
                     # НЕ прерываем выполнение — изображение уже сгенерировано
+
+                generation_record = await session.get(Generation, generation_id)
+                if generation_record:
+                    event_recorded = await record_first_generate_success(
+                        session,
+                        generation=generation_record,
+                    )
+                    if event_recorded:
+                        await session.commit()
 
                 return {
                     "status": "completed",

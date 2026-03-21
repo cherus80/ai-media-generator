@@ -33,6 +33,10 @@ class Settings(BaseSettings):
         default="v1",
         description="Текущая версия текста согласия на обработку ПДн",
     )
+    ACTIVATION_ONBOARDING_V1: bool = Field(
+        default=False,
+        description="Включить onboarding-first entry для новых пользователей",
+    )
 
     # База данных PostgreSQL
     POSTGRES_USER: str = Field(default="postgres")

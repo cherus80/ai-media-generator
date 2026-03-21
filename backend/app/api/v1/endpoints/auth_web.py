@@ -68,6 +68,7 @@ from app.services.email import email_service
 from app.models.email_verification import EmailVerificationToken
 from app.models.password_reset import PasswordResetToken
 from app.utils.client_meta import update_user_login_metadata
+from app.services.activation_events import extract_activation_context_from_request, record_activation_event
 
 router = APIRouter(prefix="/auth-web", tags=["Web Authentication"])
 # In-memory rate limit for registrations
@@ -338,6 +339,25 @@ async def register_with_email(
         source="register",
         request=request,
     )
+
+    activation_context = extract_activation_context_from_request(request)
+    await record_activation_event(
+        db,
+        event_name="register_success",
+        user_id=user.id,
+        session_id=activation_context.get("session_id"),
+        flow_id=activation_context.get("flow_id"),
+        route=activation_context.get("route"),
+        entry_source=activation_context.get("entry_source") or "register",
+        anonymous_id=activation_context.get("anonymous_id"),
+        utm_source=activation_context.get("utm_source"),
+        utm_medium=activation_context.get("utm_medium"),
+        utm_campaign=activation_context.get("utm_campaign"),
+        utm_content=activation_context.get("utm_content"),
+        utm_term=activation_context.get("utm_term"),
+        referral_code=activation_context.get("referral_code"),
+    )
+    await db.commit()
 
     # Формируем ответ
     return LoginResponse(
@@ -706,6 +726,26 @@ async def login_with_google(
         request=raw_request,
     )
 
+    if is_new_user:
+        activation_context = extract_activation_context_from_request(raw_request)
+        await record_activation_event(
+            db,
+            event_name="register_success",
+            user_id=user.id,
+            session_id=activation_context.get("session_id"),
+            flow_id=activation_context.get("flow_id"),
+            route=activation_context.get("route"),
+            entry_source=activation_context.get("entry_source") or "google",
+            anonymous_id=activation_context.get("anonymous_id"),
+            utm_source=activation_context.get("utm_source"),
+            utm_medium=activation_context.get("utm_medium"),
+            utm_campaign=activation_context.get("utm_campaign"),
+            utm_content=activation_context.get("utm_content"),
+            utm_term=activation_context.get("utm_term"),
+            referral_code=activation_context.get("referral_code"),
+        )
+        await db.commit()
+
     # Формируем ответ
     return GoogleOAuthResponse(
         access_token=access_token,
@@ -928,6 +968,26 @@ async def login_with_vk_pkce(
         request=raw_request,
     )
 
+    if is_new_user:
+        activation_context = extract_activation_context_from_request(raw_request)
+        await record_activation_event(
+            db,
+            event_name="register_success",
+            user_id=user.id,
+            session_id=activation_context.get("session_id"),
+            flow_id=activation_context.get("flow_id"),
+            route=activation_context.get("route"),
+            entry_source=activation_context.get("entry_source") or "vk_pkce",
+            anonymous_id=activation_context.get("anonymous_id"),
+            utm_source=activation_context.get("utm_source"),
+            utm_medium=activation_context.get("utm_medium"),
+            utm_campaign=activation_context.get("utm_campaign"),
+            utm_content=activation_context.get("utm_content"),
+            utm_term=activation_context.get("utm_term"),
+            referral_code=activation_context.get("referral_code"),
+        )
+        await db.commit()
+
     return VKOAuthResponse(
         access_token=access_token_jwt,
         token_type="bearer",
@@ -1106,6 +1166,26 @@ async def login_with_vk(
         request=raw_request,
     )
 
+    if is_new_user:
+        activation_context = extract_activation_context_from_request(raw_request)
+        await record_activation_event(
+            db,
+            event_name="register_success",
+            user_id=user.id,
+            session_id=activation_context.get("session_id"),
+            flow_id=activation_context.get("flow_id"),
+            route=activation_context.get("route"),
+            entry_source=activation_context.get("entry_source") or "vk",
+            anonymous_id=activation_context.get("anonymous_id"),
+            utm_source=activation_context.get("utm_source"),
+            utm_medium=activation_context.get("utm_medium"),
+            utm_campaign=activation_context.get("utm_campaign"),
+            utm_content=activation_context.get("utm_content"),
+            utm_term=activation_context.get("utm_term"),
+            referral_code=activation_context.get("referral_code"),
+        )
+        await db.commit()
+
     # Формируем ответ
     return VKOAuthResponse(
         access_token=access_token,
@@ -1259,6 +1339,26 @@ async def login_with_yandex(
         request=raw_request,
     )
 
+    if is_new_user:
+        activation_context = extract_activation_context_from_request(raw_request)
+        await record_activation_event(
+            db,
+            event_name="register_success",
+            user_id=user.id,
+            session_id=activation_context.get("session_id"),
+            flow_id=activation_context.get("flow_id"),
+            route=activation_context.get("route"),
+            entry_source=activation_context.get("entry_source") or "yandex",
+            anonymous_id=activation_context.get("anonymous_id"),
+            utm_source=activation_context.get("utm_source"),
+            utm_medium=activation_context.get("utm_medium"),
+            utm_campaign=activation_context.get("utm_campaign"),
+            utm_content=activation_context.get("utm_content"),
+            utm_term=activation_context.get("utm_term"),
+            referral_code=activation_context.get("referral_code"),
+        )
+        await db.commit()
+
     return YandexOAuthResponse(
         access_token=access_token,
         token_type="bearer",
@@ -1374,6 +1474,26 @@ async def login_with_telegram_widget(
         source="telegram_widget",
         request=raw_request,
     )
+
+    if is_new_user:
+        activation_context = extract_activation_context_from_request(raw_request)
+        await record_activation_event(
+            db,
+            event_name="register_success",
+            user_id=user.id,
+            session_id=activation_context.get("session_id"),
+            flow_id=activation_context.get("flow_id"),
+            route=activation_context.get("route"),
+            entry_source=activation_context.get("entry_source") or "telegram_widget",
+            anonymous_id=activation_context.get("anonymous_id"),
+            utm_source=activation_context.get("utm_source"),
+            utm_medium=activation_context.get("utm_medium"),
+            utm_campaign=activation_context.get("utm_campaign"),
+            utm_content=activation_context.get("utm_content"),
+            utm_term=activation_context.get("utm_term"),
+            referral_code=activation_context.get("referral_code"),
+        )
+        await db.commit()
 
     return TelegramWidgetResponse(
         access_token=access_token,

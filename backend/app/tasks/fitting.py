@@ -42,6 +42,7 @@ from app.utils.image_utils import (
 )
 from app.utils.runtime_config import get_generation_providers_for_worker
 from app.services.fitting_prompts import get_prompt_for_zone
+from app.services.activation_events import record_first_generate_success
 
 logger = logging.getLogger(__name__)
 USER_ERROR_MESSAGE = "Произошла ошибка, повторите запрос еще раз или зайдите позже"
@@ -484,6 +485,15 @@ def generate_fitting_task(
                             generation_record.credits_spent = credits_cost
                             await session.commit()
                         logger.info(f"Credits deducted after successful generation: {credits_cost}")
+
+                generation_record = await session.get(Generation, generation_id)
+                if generation_record:
+                    event_recorded = await record_first_generate_success(
+                        session,
+                        generation=generation_record,
+                    )
+                    if event_recorded:
+                        await session.commit()
 
                 await update_generation_status(session, generation_id, "completed", progress=100)
 

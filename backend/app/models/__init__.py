@@ -23,6 +23,7 @@ from app.models.generation_example import (
     GenerationExampleVariantEvent,
 )
 from app.models.notification import Notification
+from app.models.activation_event import ActivationEvent
 
 __all__ = [
     "User",
@@ -50,4 +51,5 @@ __all__ = [
     "GenerationExampleVariantStat",
     "GenerationExampleVariantEvent",
     "Notification",
+    "ActivationEvent",
 ]
