@@ -105,13 +105,33 @@ Bundle:
 ### Before
 
 ```text
-Pending deploy confirmation.
+label=prod-before
+url=https://ai-generator.mix4.ru/api/v1/content/examples?sort=popular&limit=20&view=card
+runs=12
+response_bytes=54560
+ttfb_p50_ms=2333.85
+ttfb_p95_ms=2760.96
+total_p50_ms=2711.53
+total_p95_ms=3150.85
+
+route /      entry=/assets/index.DJy_2YC9.js  entry_content_length=1232356
+route /login entry=/assets/index.DJy_2YC9.js  entry_content_length=1232356
 ```
 
 ### After
 
 ```text
-Pending deploy confirmation.
+label=prod-after
+url=https://ai-generator.mix4.ru/api/v1/content/examples?sort=popular&limit=20&view=card
+runs=12
+response_bytes=14959
+ttfb_p50_ms=1325.86
+ttfb_p95_ms=2021.64
+total_p50_ms=1502.61
+total_p95_ms=2189.41
+
+route /      entry=/assets/index.Bj9_Ie5V.js  entry_content_length=184990  initial_js_bytes=460333
+route /login entry=/assets/index.Bj9_Ie5V.js  entry_content_length=184990  initial_js_bytes=434482
 ```
 
 ## Summary Table
@@ -154,3 +174,33 @@ assets/authRoutes.DtqTV1C9.js    43,841 B
 - JSON compression was already enabled in infra and re-verified:
   - [nginx/ai-image-bot.conf](/Users/ruslancernov/Documents/Боты%20на%20Python/ai-media-generator_1/ai-image-generator_antigravity/nginx/ai-image-bot.conf)
   - [frontend/nginx.conf](/Users/ruslancernov/Documents/Боты%20на%20Python/ai-media-generator_1/ai-image-generator_antigravity/frontend/nginx.conf)
+
+## Production Smoke
+
+```text
+login:
+- title: "Вход в аккаунт — ИИ Генератор"
+- doc-user login succeeded
+- landed on https://ai-generator.mix4.ru/app
+
+examples catalog:
+- opened https://ai-generator.mix4.ru/app/examples
+- h1 = "Примеры генераций"
+- first CTA button visible
+
+example generation screen:
+- opened https://ai-generator.mix4.ru/app/examples/generate?example=krasnaya-studiynaya-fotostsena-variant-3&source=app_examples&v=2
+- textarea present
+- file input present
+- buttons present
+- API call 200: /api/v1/content/examples/by-slug/krasnaya-studiynaya-fotostsena-variant-3
+
+pricing:
+- opened https://ai-generator.mix4.ru/pricing
+- title = "Тарифы на виртуальную примерку и генерацию фото — ИИ Генератор"
+- tariff content visible
+
+non-blocking request failures observed in browser:
+- external analytics/3rd-party requests (telegram widget, play.google.com, yandex webvisor) may timeout/abort in headless mode
+- no application page errors captured
+```
