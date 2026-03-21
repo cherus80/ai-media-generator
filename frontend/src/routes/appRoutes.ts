@@ -1,0 +1,10 @@
+export { HomePage } from '../pages/HomePage';
+export { InstructionsPage } from '../pages/InstructionsPage';
+export { ExamplesPage } from '../pages/ExamplesPage';
+export { ExampleGenerationPage } from '../pages/ExampleGenerationPage';
+export { AboutPage } from '../pages/AboutPage';
+export { FittingPage } from '../pages/FittingPage';
+export { EditingPage } from '../pages/EditingPage';
+export { ProfilePage } from '../pages/ProfilePage';
+export { HistoryPage } from '../pages/HistoryPage';
+export { NotificationsPage } from '../pages/NotificationsPage';

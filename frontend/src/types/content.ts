@@ -50,23 +50,27 @@ export interface InstructionUploadResponse {
   file_size: number;
 }
 
-export interface GenerationExampleItem {
+export interface GenerationExampleCardItem {
   id: number;
   slug: string;
   seo_variant_index: number;
   title?: string | null;
   description?: string | null;
-  prompt: string;
   image_url: string;
-  seo_title?: string | null;
-  seo_description?: string | null;
+  thumbnail_url?: string | null;
   uses_count: number;
   tags: string[];
 }
 
 export interface GenerationExampleListResponse {
-  items: GenerationExampleItem[];
+  items: GenerationExampleCardItem[];
   total: number;
+}
+
+export interface GenerationExampleItem extends GenerationExampleCardItem {
+  prompt: string;
+  seo_title?: string | null;
+  seo_description?: string | null;
 }
 
 export interface GenerationExampleAdminItem extends GenerationExampleItem {

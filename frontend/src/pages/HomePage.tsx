@@ -10,9 +10,11 @@ import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { AuthGuard } from '../components/auth/AuthGuard';
 import { Layout } from '../components/common/Layout';
+import { ExampleCard } from '../components/examples/ExampleCard';
+import { ExampleCardsSkeleton } from '../components/examples/ExampleCardsSkeleton';
 import { useAuthStore } from '../store/authStore';
 import { getGenerationExamples } from '../api/content';
-import type { GenerationExampleItem } from '../types/content';
+import type { GenerationExampleCardItem } from '../types/content';
 import { useSeo } from '../hooks/useSeo';
 import { getSiteOrigin, resolveRouteSeo } from '../seo/routeSeo';
 
@@ -24,7 +26,7 @@ export const HomePage: React.FC = () => {
   useSeo(resolveRouteSeo('/app', getSiteOrigin()));
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const [topExamples, setTopExamples] = React.useState<GenerationExampleItem[]>([]);
+  const [topExamples, setTopExamples] = React.useState<GenerationExampleCardItem[]>([]);
   const [loadingTop, setLoadingTop] = React.useState(true);
 
   // Проверка активной подписки (есть ли доступные действия)
@@ -40,7 +42,11 @@ export const HomePage: React.FC = () => {
     const loadTop = async () => {
       setLoadingTop(true);
       try {
-        const response = await getGenerationExamples({ sort: 'popular', limit: 6 });
+        const response = await getGenerationExamples({
+          sort: 'popular',
+          page: 1,
+          pageSize: 6,
+        });
         setTopExamples(response.items);
       } catch {
         setTopExamples([]);
@@ -144,9 +150,7 @@ export const HomePage: React.FC = () => {
             </div>
 
             {loadingTop ? (
-              <div className="bg-white rounded-2xl shadow p-8 text-center text-slate-500">
-                Загружаем примеры...
-              </div>
+              <ExampleCardsSkeleton cardCount={6} />
             ) : topExamples.length === 0 ? (
               <div className="bg-white rounded-2xl shadow p-8 text-center text-slate-500">
                 Пока нет опубликованных примеров.
@@ -154,39 +158,18 @@ export const HomePage: React.FC = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 justify-items-center">
                 {topExamples.map((example) => (
-                  <Card
+                  <ExampleCard
                     key={example.id}
-                    variant="glass"
-                    hover
-                    padding="none"
+                    item={example}
+                    onUse={() => {
+                      navigate(
+                        `/app/examples/generate?example=${encodeURIComponent(example.slug)}&source=app_home&v=${example.seo_variant_index ?? 0}`
+                      );
+                    }}
+                    resolveImageUrl={resolveImageUrl}
+                    imageClassName="w-full h-56 object-contain bg-slate-50"
                     className="overflow-hidden border border-white/40 max-w-[360px] w-full"
-                  >
-                    <div className="relative">
-                      <img
-                        src={resolveImageUrl(example.image_url)}
-                        alt={example.title || 'Пример генерации'}
-                        className="w-full h-56 object-contain bg-slate-50"
-                      />
-                      <div className="absolute top-3 right-3 bg-white/90 text-slate-700 text-xs font-semibold px-3 py-1 rounded-full shadow">
-                        {example.uses_count} запусков
-                      </div>
-                    </div>
-                    <div className="p-5 flex flex-col gap-3">
-                      <h3 className="text-lg font-bold text-dark-900">
-                        {example.title || 'Без названия'}
-                      </h3>
-                      <button
-                        onClick={() => {
-                          navigate(
-                            `/app/examples/generate?example=${encodeURIComponent(example.slug)}&source=app_home&v=${example.seo_variant_index ?? 0}`
-                          );
-                        }}
-                        className="mt-auto px-4 py-2 rounded-lg bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-semibold text-sm hover:shadow-lg transition"
-                      >
-                        Сгенерировать по этому образцу
-                      </button>
-                    </div>
-                  </Card>
+                  />
                 ))}
               </div>
             )}

@@ -24,6 +24,8 @@ export const getGenerationExamples = async (params?: {
   tags?: string[];
   sort?: 'popular' | 'newest';
   limit?: number;
+  page?: number;
+  pageSize?: number;
 }): Promise<GenerationExampleListResponse> => {
   const queryParams: Record<string, string | number | undefined> = {};
   if (params?.tags && params.tags.length > 0) {
@@ -35,6 +37,13 @@ export const getGenerationExamples = async (params?: {
   if (params?.limit) {
     queryParams.limit = params.limit;
   }
+  if (params?.page) {
+    queryParams.page = params.page;
+  }
+  if (params?.pageSize) {
+    queryParams.page_size = params.pageSize;
+  }
+  queryParams.view = 'card';
   const response = await apiClient.get<GenerationExampleListResponse>('/api/v1/content/examples', {
     params: queryParams,
   });

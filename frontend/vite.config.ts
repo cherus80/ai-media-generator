@@ -43,6 +43,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
+    manifest: true,
     // Cache busting: добавляем hash к именам файлов
     rollupOptions: {
       output: {

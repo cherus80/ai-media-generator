@@ -80,8 +80,25 @@ class GenerationExamplePublicItem(BaseModel):
     tags: list[str] = Field(default_factory=list)
 
 
+class GenerationExamplePublicCardItem(BaseModel):
+    id: int
+    slug: str
+    seo_variant_index: int = Field(default=0, ge=0)
+    title: Optional[str] = None
+    description: Optional[str] = None
+    image_url: str
+    thumbnail_url: Optional[str] = None
+    uses_count: int
+    tags: list[str] = Field(default_factory=list)
+
+
 class GenerationExamplePublicListResponse(BaseModel):
     items: list[GenerationExamplePublicItem]
+    total: int
+
+
+class GenerationExamplePublicCardListResponse(BaseModel):
+    items: list[GenerationExamplePublicCardItem]
     total: int
 
 

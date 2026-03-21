@@ -246,6 +246,7 @@ async def upload_example_image(
             file,
             user_id=admin.id if admin else 0,
             convert_to_webp=True,
+            generate_thumbnail=True,
         )
     except Exception as exc:
         raise HTTPException(

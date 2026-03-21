@@ -184,6 +184,40 @@ def convert_image_bytes_to_webp(
         return image_bytes, (fallback_ext or "png").lower()
 
 
+def build_thumbnail_webp_bytes(
+    image_bytes: bytes,
+    fallback_ext: Optional[str] = None,
+    max_side: int = 480,
+    quality: int = 80,
+) -> bytes:
+    """
+    Создаёт thumbnail в формате WebP с сохранением пропорций.
+
+    Raises:
+        ValueError: если thumbnail не удалось построить.
+    """
+    try:
+        with Image.open(BytesIO(image_bytes)) as im:
+            oriented = ImageOps.exif_transpose(im)
+            if oriented.mode not in ("RGB", "RGBA"):
+                oriented = oriented.convert("RGBA")
+
+            thumbnail = oriented.copy()
+            thumbnail.thumbnail((max_side, max_side), Image.LANCZOS)
+
+            buf = BytesIO()
+            thumbnail.save(
+                buf,
+                format="WEBP",
+                quality=quality,
+                method=6,
+            )
+            return buf.getvalue()
+    except Exception as err:
+        logger.warning("Failed to build thumbnail image bytes: %s", err)
+        raise ValueError(f"Cannot build thumbnail: {err}") from err
+
+
 def pad_image_to_match_reference(
     reference_path: str | Path,
     image_path: str | Path,

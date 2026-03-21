@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSeo } from '../hooks/useSeo';
 import { getGenerationExamples } from '../api/content';
-import type { GenerationExampleItem } from '../types/content';
+import type { GenerationExampleCardItem } from '../types/content';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 const resolveImageUrl = (url: string) =>
@@ -83,7 +83,7 @@ export const LandingPage: React.FC = () => {
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://ai-generator.mix4.ru';
   const description =
     'Виртуальная примерка одежды, генерация и ИИ-редактирование фото. Загружайте изображения или запускайте генерацию по тексту и получайте реалистичные результаты.';
-  const [topExamples, setTopExamples] = useState<GenerationExampleItem[]>([]);
+  const [topExamples, setTopExamples] = useState<GenerationExampleCardItem[]>([]);
   const [topExamplesLoading, setTopExamplesLoading] = useState(true);
 
   useEffect(() => {
@@ -91,7 +91,11 @@ export const LandingPage: React.FC = () => {
     const loadTopExamples = async () => {
       setTopExamplesLoading(true);
       try {
-        const response = await getGenerationExamples({ sort: 'popular', limit: 6 });
+        const response = await getGenerationExamples({
+          sort: 'popular',
+          page: 1,
+          pageSize: 6,
+        });
         if (isMounted) {
           setTopExamples(response.items);
         }
@@ -325,9 +329,20 @@ export const LandingPage: React.FC = () => {
                   <div key={item.id} className="bg-white rounded-2xl shadow-soft border border-slate-100 overflow-hidden flex flex-col max-w-[360px] w-full">
                     <div className="relative">
                       <img
-                        src={resolveImageUrl(item.image_url)}
+                        src={resolveImageUrl(item.thumbnail_url || item.image_url)}
                         alt={item.title || 'Пример генерации'}
                         className="w-full h-56 object-contain bg-slate-50"
+                        loading="lazy"
+                        decoding="async"
+                        width={720}
+                        height={720}
+                        onError={(event) => {
+                          const target = event.currentTarget;
+                          const fallbackUrl = resolveImageUrl(item.image_url);
+                          if (target.src !== fallbackUrl) {
+                            target.src = fallbackUrl;
+                          }
+                        }}
                       />
                       <div className="absolute top-3 right-3 bg-white/90 text-slate-700 text-xs font-semibold px-3 py-1 rounded-full shadow">
                         {item.uses_count} запусков

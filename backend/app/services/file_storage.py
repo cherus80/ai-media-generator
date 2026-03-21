@@ -16,7 +16,11 @@ from fastapi import UploadFile, HTTPException, status
 
 from app.core.config import settings
 from app.services.file_validator import get_file_extension
-from app.utils.image_utils import normalize_image_bytes, convert_image_bytes_to_webp
+from app.utils.image_utils import (
+    normalize_image_bytes,
+    convert_image_bytes_to_webp,
+    build_thumbnail_webp_bytes,
+)
 
 
 class FileStorageError(Exception):
@@ -97,10 +101,49 @@ def _get_file_path(file_id: UUID, extension: str) -> Path:
     return upload_dir / filename
 
 
+def _get_thumbnail_path(file_id: UUID) -> Path:
+    upload_dir = _ensure_upload_dir_exists()
+    return upload_dir / f"{file_id}.thumb.webp"
+
+
+def build_thumbnail_url(file_url: str) -> str | None:
+    if not file_url.startswith("/uploads/"):
+        return None
+    stem, dot, extension = file_url.rpartition(".")
+    if not dot or not extension:
+        return None
+    return f"{stem}.thumb.webp"
+
+
+def resolve_thumbnail_url(file_url: str) -> str | None:
+    thumbnail_url = build_thumbnail_url(file_url)
+    if not thumbnail_url:
+        return None
+
+    thumbnail_path = _ensure_upload_dir_exists() / thumbnail_url.removeprefix("/uploads/")
+    if thumbnail_path.exists():
+        return thumbnail_url
+    return None
+
+
+def _store_thumbnail_file(
+    *,
+    file_id: UUID,
+    image_bytes: bytes,
+    upload_dir: Path,
+) -> None:
+    thumbnail_bytes = build_thumbnail_webp_bytes(image_bytes)
+    thumbnail_path = _get_thumbnail_path(file_id)
+    with open(thumbnail_path, "wb") as fh:
+        fh.write(thumbnail_bytes)
+    _apply_upload_permissions(thumbnail_path, upload_dir)
+
+
 async def save_upload_file(
     file: UploadFile,
     user_id: int,
     convert_to_webp: bool = False,
+    generate_thumbnail: bool = False,
 ) -> tuple[UUID, str, int]:
     """
     Сохранить загруженный файл.
@@ -152,6 +195,16 @@ async def save_upload_file(
 
         # Получение размера файла
         file_size = file_path.stat().st_size
+
+        if generate_thumbnail:
+            try:
+                _store_thumbnail_file(
+                    file_id=file_id,
+                    image_bytes=content,
+                    upload_dir=upload_dir,
+                )
+            except Exception:
+                pass
 
         # Формирование URL для доступа к файлу
         file_url = f"/uploads/{file_id}.{extension}"
@@ -211,7 +264,8 @@ async def save_upload_file_by_content(
     content: bytes,
     user_id: int,
     content_type: Optional[str] = None,
-    filename: Optional[str] = None
+    filename: Optional[str] = None,
+    generate_thumbnail: bool = False,
 ) -> tuple[UUID, str, int]:
     """
     Сохранить файл из байтов (например, для результата генерации).
@@ -273,6 +327,16 @@ async def save_upload_file_by_content(
 
         # Формирование URL для доступа к файлу
         file_url = f"/uploads/{file_id}.{extension}"
+
+        if generate_thumbnail:
+            try:
+                _store_thumbnail_file(
+                    file_id=file_id,
+                    image_bytes=content,
+                    upload_dir=upload_dir,
+                )
+            except Exception:
+                pass
 
         return file_id, file_url, file_size
 
