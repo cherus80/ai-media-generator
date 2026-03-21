@@ -5,6 +5,7 @@ import { Layout } from '../components/common/Layout';
 import { getGenerationExamples, getExampleTags } from '../api/content';
 import type { GenerationExampleItem, ExampleTagItem } from '../types/content';
 import { useSeo } from '../hooks/useSeo';
+import { getSiteOrigin, resolveRouteSeo } from '../seo/routeSeo';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 
@@ -21,15 +22,7 @@ export const ExamplesPage: React.FC = () => {
   const [sortBy, setSortBy] = useState<'popular' | 'newest'>('popular');
   const [loading, setLoading] = useState(true);
   const [loadingFilters, setLoadingFilters] = useState(true);
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://ai-generator.mix4.ru';
-
-  useSeo({
-    title: 'Примеры генераций — ИИ Генератор',
-    description: 'Библиотека лучших примеров генераций. Выберите стиль и запустите генерацию по образцу.',
-    canonical: `${baseUrl}/app/examples`,
-    image: `${baseUrl}/logo.png`,
-    noIndex: true,
-  });
+  useSeo(resolveRouteSeo('/app/examples', getSiteOrigin()));
 
   useEffect(() => {
     const load = async () => {

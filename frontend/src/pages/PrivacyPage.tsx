@@ -2,16 +2,10 @@ import React from 'react';
 import { Layout } from '../components/common/Layout';
 import { Card } from '../components/ui/Card';
 import { useSeo } from '../hooks/useSeo';
+import { getSiteOrigin, resolveRouteSeo } from '../seo/routeSeo';
 
 export const PrivacyPage: React.FC = () => {
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://ai-generator.mix4.ru';
-
-  useSeo({
-    title: 'Политика конфиденциальности — ИИ Генератор',
-    description: 'Правила обработки персональных данных и конфиденциальности в ИИ Генератор.',
-    canonical: `${baseUrl}/privacy`,
-    image: `${baseUrl}/logo.png`,
-  });
+  useSeo(resolveRouteSeo('/privacy', getSiteOrigin()));
 
   return (
     <Layout

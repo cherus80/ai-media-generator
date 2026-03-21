@@ -5,6 +5,7 @@ import { Layout } from '../components/common/Layout';
 import { getInstructions } from '../api/content';
 import type { InstructionItem, InstructionType } from '../types/content';
 import { useSeo } from '../hooks/useSeo';
+import { getSiteOrigin, resolveRouteSeo } from '../seo/routeSeo';
 
 const TYPE_LABELS: Record<InstructionType, string> = {
   video: 'Видео-Инструкции',
@@ -80,16 +81,9 @@ export const InstructionsPage: React.FC = () => {
   const activeTab: InstructionType = tabParam === 'text' ? 'text' : 'video';
   const [items, setItems] = useState<InstructionItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://ai-generator.mix4.ru';
-  const description =
-    'Видео и текстовые инструкции по использованию ИИ Генератор: как загрузить фото и получить лучший результат.';
+  const baseUrl = getSiteOrigin();
 
-  useSeo({
-    title: 'Инструкции по использованию — ИИ Генератор',
-    description,
-    canonical: `${baseUrl}/app/instructions`,
-    image: `${baseUrl}/logo.png`,
-  });
+  useSeo(resolveRouteSeo('/app/instructions', baseUrl));
 
   useEffect(() => {
     const load = async () => {

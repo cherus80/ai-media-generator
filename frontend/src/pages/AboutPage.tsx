@@ -3,6 +3,8 @@ import { AuthGuard } from '../components/auth/AuthGuard';
 import { Layout } from '../components/common/Layout';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
+import { useSeo } from '../hooks/useSeo';
+import { getSiteOrigin, resolveRouteSeo } from '../seo/routeSeo';
 
 const APP_NAME = import.meta.env.VITE_APP_NAME || 'ИИ Генератор';
 const SUPPORT_LINK = 'https://t.me/+Fj-R8QqIEEg5OTE6';
@@ -38,6 +40,7 @@ const FEATURES = [
 ];
 
 export const AboutPage: React.FC = () => {
+  useSeo(resolveRouteSeo('/app/about', getSiteOrigin()));
   const versionLabel = __APP_VERSION__ ? `v${__APP_VERSION__}` : '—';
   const updatedAt = formatBuildDate(__APP_BUILD_DATE__);
 

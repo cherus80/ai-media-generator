@@ -4,19 +4,13 @@ import { getTariffs } from '../api/payment';
 import type { TariffsListResponse, BackendTariff } from '../types/payment';
 import { Link } from 'react-router-dom';
 import { useSeo } from '../hooks/useSeo';
+import { getSiteOrigin, resolveRouteSeo } from '../seo/routeSeo';
 
 export const PricingPage: React.FC = () => {
   const [data, setData] = useState<TariffsListResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://ai-generator.mix4.ru';
-
-  useSeo({
-    title: 'Тарифы и подписки — ИИ Генератор',
-    description: 'Актуальные тарифы и подписки для генерации изображений и виртуальной примерки.',
-    canonical: `${baseUrl}/pricing`,
-    image: `${baseUrl}/logo.png`,
-  });
+  useSeo(resolveRouteSeo('/pricing', getSiteOrigin()));
 
   useEffect(() => {
     const load = async () => {

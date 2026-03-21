@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- SEO и индексация SPA-роутов приведены в порядок: `/login`, `/register`, `/forgot-password`, `/app`, `/app/about`, `/app/examples`, `/app/instructions` теперь отдают `robots=noindex,follow`; для `/pricing`, `/privacy`, `/contacts` заданы уникальные `title`/`description`/`canonical`, а contract покрыт frontend-тестом `test/seo-routes.test.ts`.
 - Пользовательские упоминания бренда и термина `AI` русифицированы в UI-слое: `AI Generator` заменён на `ИИ Генератор`, а `AI-*` формулировки в интерфейсе, публичных страницах, письмах и SEO-мета переведены на `ИИ-*`. Технические идентификаторы (домен `ai-generator.mix4.ru`, e-mail, env-ключи, API-paths) сохранены без изменений.
 
 ### Added

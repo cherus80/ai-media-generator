@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-interface SeoOptions {
+export interface SeoOptions {
   title: string;
   description: string;
   canonical?: string;
@@ -9,6 +9,12 @@ interface SeoOptions {
   noIndex?: boolean;
   jsonLd?: Record<string, unknown>;
 }
+
+export const INDEX_FOLLOW_ROBOTS = 'index, follow';
+export const NOINDEX_FOLLOW_ROBOTS = 'noindex,follow';
+
+export const getRobotsContent = (noIndex: boolean) =>
+  noIndex ? NOINDEX_FOLLOW_ROBOTS : INDEX_FOLLOW_ROBOTS;
 
 const ensureMeta = (key: string, content: string, attr: 'name' | 'property' = 'name') => {
   const selector = `meta[${attr}="${key}"]`;
@@ -48,7 +54,7 @@ export const useSeo = ({
 
     document.title = title;
     ensureMeta('description', description);
-    ensureMeta('robots', noIndex ? 'noindex, nofollow' : 'index, follow');
+    ensureMeta('robots', getRobotsContent(noIndex));
 
     ensureMeta('og:title', title, 'property');
     ensureMeta('og:description', description, 'property');

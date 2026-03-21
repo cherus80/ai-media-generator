@@ -13,12 +13,15 @@ import { Layout } from '../components/common/Layout';
 import { useAuthStore } from '../store/authStore';
 import { getGenerationExamples } from '../api/content';
 import type { GenerationExampleItem } from '../types/content';
+import { useSeo } from '../hooks/useSeo';
+import { getSiteOrigin, resolveRouteSeo } from '../seo/routeSeo';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 const resolveImageUrl = (url: string) =>
   url.startsWith('http') ? url : `${API_BASE_URL}${url.startsWith('/') ? url : `/${url}`}`;
 
 export const HomePage: React.FC = () => {
+  useSeo(resolveRouteSeo('/app', getSiteOrigin()));
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const [topExamples, setTopExamples] = React.useState<GenerationExampleItem[]>([]);

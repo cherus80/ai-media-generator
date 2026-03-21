@@ -9,8 +9,11 @@ import { validateLoginForm } from '../utils/passwordValidation';
 import { PD_CONSENT_VERSION } from '../constants/pdConsent';
 import { MAX_SUPPORT_URL } from '../constants/supportLinks';
 import { rememberAuthNextPath, resolveSafeNextPath } from '../utils/safeRedirect';
+import { useSeo } from '../hooks/useSeo';
+import { getSiteOrigin, resolveRouteSeo } from '../seo/routeSeo';
 
 export function LoginPage() {
+  useSeo(resolveRouteSeo('/login', getSiteOrigin()));
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { loginWithEmail, isLoading, error, clearError } = useAuth();

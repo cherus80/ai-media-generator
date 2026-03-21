@@ -8,8 +8,11 @@ import { getStoredReferralCode, storeReferralCode } from '../utils/referralStora
 import { registerPendingReferral } from '../utils/referralRegistration';
 import { PD_CONSENT_VERSION } from '../constants/pdConsent';
 import { rememberAuthNextPath, resolveSafeNextPath } from '../utils/safeRedirect';
+import { useSeo } from '../hooks/useSeo';
+import { getSiteOrigin, resolveRouteSeo } from '../seo/routeSeo';
 
 export function RegisterPage() {
+  useSeo(resolveRouteSeo('/register', getSiteOrigin()));
   const navigate = useNavigate();
   const { registerWithEmail, isLoading, error, clearError, isAuthenticated } = useAuth();
   const [searchParams] = useSearchParams();

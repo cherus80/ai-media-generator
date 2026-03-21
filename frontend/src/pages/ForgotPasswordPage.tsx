@@ -2,8 +2,11 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { requestPasswordReset } from '../api/authWeb';
 import { isValidEmail } from '../utils/passwordValidation';
+import { useSeo } from '../hooks/useSeo';
+import { getSiteOrigin, resolveRouteSeo } from '../seo/routeSeo';
 
 export function ForgotPasswordPage() {
+  useSeo(resolveRouteSeo('/forgot-password', getSiteOrigin()));
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);

@@ -1,16 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useSeo } from '../hooks/useSeo';
+import { getSiteOrigin, resolveRouteSeo } from '../seo/routeSeo';
 
 export const ContactsPage: React.FC = () => {
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://ai-generator.mix4.ru';
-
-  useSeo({
-    title: 'Контакты — ИИ Генератор',
-    description: 'Контакты, реквизиты и способы связи с ИИ Генератор.',
-    canonical: `${baseUrl}/contacts`,
-    image: `${baseUrl}/logo.png`,
-  });
+  useSeo(resolveRouteSeo('/contacts', getSiteOrigin()));
 
   return (
     <div className="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
