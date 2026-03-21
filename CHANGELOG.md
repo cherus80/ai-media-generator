@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- В login form оставшиеся OAuth-кнопки после временного скрытия Telegram перестроены в вертикальный стек, чтобы не оставалось пустой ячейки двухколоночной сетки.
 - На frontend login form временно скрыта кнопка авторизации через Telegram; backend Telegram auth и связанные endpoint'ы не изменялись.
 - Production deploy закреплён на pinned image tags: в `docker-compose.prod.yml` для `backend`, `celery_worker`, `celery_beat`, `frontend` убран fallback на `latest`, `IMAGE_TAG` теперь обязателен, а GitHub Actions deploy больше не публикует и не использует `latest` для production rollout.
 - Для SPA-маршрутов внедрён production prerender/head injection без runtime SSR: после `vite build` генерируются route-specific HTML-файлы с raw `title/description/robots/canonical` для `/login`, `/register`, `/forgot-password`, `/app`, `/app/about`, `/app/examples`, `/app/instructions`, `/pricing`, `/privacy`, `/contacts`; frontend nginx сначала ищет `/$uri/index.html`, поэтому `curl` видит корректный `<head>` до выполнения JS.
