@@ -19,6 +19,9 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+SUCCESS_STATES = {"success", "succeeded", "completed", "done"}
+FAILURE_STATES = {"fail", "failed", "error", "errored", "timeout", "timed_out", "cancelled", "canceled"}
+
 
 class KieAIError(Exception):
     """Base exception for kie.ai API errors."""
@@ -276,7 +279,18 @@ class KieAIClient:
                     continue
 
                 # Согласно документации API kie.ai, используем только поле "state"
-                state = data.get("state")
+                raw_state = data.get("state") or data.get("status")
+                state = str(raw_state).strip().lower() if raw_state else None
+                fail_code = data.get("failCode") or data.get("fail_code") or data.get("errorCode")
+                fail_msg = (
+                    data.get("failMsg")
+                    or data.get("fail_msg")
+                    or data.get("errorMessage")
+                    or data.get("error")
+                    or data.get("message")
+                    or data.get("msg")
+                )
+                has_failure_details = bool(fail_code or fail_msg)
 
                 logger.info(
                     "Task %s polling (poll %s/%s): state=%s, elapsed=%.1fs",
@@ -302,8 +316,8 @@ class KieAIClient:
                     except Exception as e:
                         logger.warning("Progress callback error: %s", e)
 
-                # Проверка завершения: только state == "success"
-                if state == "success":
+                # Проверка завершения
+                if state in SUCCESS_STATES:
                     logger.info(
                         "Task %s completed successfully after %s polls (%.1fs)",
                         task_id,
@@ -312,16 +326,9 @@ class KieAIClient:
                     )
                     return data
 
-                # Проверка ошибки: state == "fail"
-                if state == "fail":
-                    fail_code = data.get("failCode", "unknown")
-                    fail_msg = (
-                        data.get("failMsg")
-                        or data.get("message")
-                        or data.get("msg")
-                        or "Task failed"
-                    )
-                    error_msg = f"kie.ai task failed (code: {fail_code}): {fail_msg}"
+                # Проверка ошибки: kie.ai может присылать несколько terminal error-state.
+                if state in FAILURE_STATES or (has_failure_details and state not in SUCCESS_STATES):
+                    error_msg = f"kie.ai task failed (code: {fail_code or 'unknown'}): {fail_msg or 'Task failed'}"
                     logger.error(error_msg)
                     raise KieAITaskFailedError(error_msg)
 
