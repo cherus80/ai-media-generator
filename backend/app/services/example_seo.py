@@ -21,6 +21,8 @@ from app.utils.slug import slugify
 
 logger = logging.getLogger(__name__)
 
+SEO_SUGGESTIONS_MAX_TOKENS = 3000
+
 
 def _truncate(value: str, max_len: int) -> str:
     normalized = " ".join((value or "").split()).strip()
@@ -908,7 +910,7 @@ async def generate_example_seo_suggestions(
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
                 ],
-                "max_tokens": 1000,
+                "max_tokens": SEO_SUGGESTIONS_MAX_TOKENS,
                 "temperature": 0.15,
                 "response_format": {"type": "json_object"},
             },
@@ -930,12 +932,34 @@ async def generate_example_seo_suggestions(
             )
 
         data = response.json()
-        content = data.get("choices", [{}])[0].get("message", {}).get("content")
+        choice = data.get("choices", [{}])[0]
+        finish_reason = choice.get("finish_reason")
+        content = choice.get("message", {}).get("content")
+        if finish_reason == "length":
+            logger.warning(
+                "SEO suggestions OpenRouter response was truncated model=%s content_length=%s",
+                model_name,
+                len(content) if isinstance(content, str) else 0,
+            )
+            return fallback.model_copy(
+                update={"warning": "OpenRouter обрезал SEO-ответ: применён локальный SEO-шаблон."}
+            )
         if not content:
             return fallback.model_copy(
                 update={"warning": "OpenRouter вернул пустой ответ: применён локальный SEO-шаблон."}
             )
-        raw = json.loads(content) if isinstance(content, str) else content
+        try:
+            raw = json.loads(content) if isinstance(content, str) else content
+        except json.JSONDecodeError as exc:
+            logger.warning(
+                "SEO suggestions OpenRouter returned invalid JSON model=%s content_length=%s error=%s",
+                model_name,
+                len(content) if isinstance(content, str) else 0,
+                exc,
+            )
+            return fallback.model_copy(
+                update={"warning": "OpenRouter вернул невалидный JSON: применён локальный SEO-шаблон."}
+            )
         if not isinstance(raw, dict):
             return fallback.model_copy(
                 update={"warning": "OpenRouter вернул невалидный JSON: применён локальный SEO-шаблон."}
