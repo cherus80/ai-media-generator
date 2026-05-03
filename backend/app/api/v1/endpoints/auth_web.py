@@ -246,14 +246,6 @@ async def register_with_email(
             detail="Электронная почта уже зарегистрирована",
         )
 
-    # Дополнительная проверка силы пароля (уже есть в схеме, но на всякий случай)
-    is_valid, error_msg = is_strong_password(request_body.password)
-    if not is_valid:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=error_msg,
-        )
-
     # Хешируем пароль
     password_hash = hash_password(request_body.password)
 
