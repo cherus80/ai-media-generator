@@ -110,10 +110,10 @@ class RegisterRequest(BaseModel):
 
     password: str = Field(
         ...,
-        min_length=8,
+        min_length=1,
         max_length=100,
-        description="Password (min 8 characters, must contain uppercase, lowercase, digit, special char)",
-        example="MySecurePass123!"
+        description="Password",
+        example="mypassword"
     )
 
     consent_version: Optional[str] = Field(
@@ -122,18 +122,6 @@ class RegisterRequest(BaseModel):
         description="Версия формы согласия на обработку ПДн",
         example="v1",
     )
-
-    @field_validator('password')
-    @classmethod
-    def validate_password_strength(cls, v: str) -> str:
-        """Validate password strength on client side as well"""
-        from app.utils.password import is_strong_password
-
-        is_valid, error_msg = is_strong_password(v)
-        if not is_valid:
-            raise ValueError(error_msg)
-        return v
-
 
 class LoginRequest(BaseModel):
     """Запрос на вход через Email/Password"""

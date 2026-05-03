@@ -196,11 +196,6 @@ export function validateRegisterForm(
 
   if (!password) {
     errors.password = 'Введите пароль';
-  } else {
-    const passwordValidation = validatePassword(password);
-    if (!passwordValidation.isValid) {
-      errors.password = passwordValidation.error;
-    }
   }
 
   if (!confirmPassword) {

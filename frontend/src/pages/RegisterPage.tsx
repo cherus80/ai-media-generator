@@ -3,7 +3,7 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth, useAuthStore } from '../store/authStore';
 import { GoogleSignInButton } from '../components/auth/GoogleSignInButton';
 import { VKSignInButton } from '../components/auth/VKSignInButton';
-import { validateRegisterForm, checkPasswordStrength, getPasswordStrengthLabel, getPasswordStrengthColor } from '../utils/passwordValidation';
+import { validateRegisterForm } from '../utils/passwordValidation';
 import { getStoredReferralCode, storeReferralCode } from '../utils/referralStorage';
 import { registerPendingReferral } from '../utils/referralRegistration';
 import { PD_CONSENT_VERSION } from '../constants/pdConsent';
@@ -31,8 +31,6 @@ export function RegisterPage() {
   const oauthButtonClass =
     'rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-200';
   const { pdConsentVersionAccepted, setPdConsentAccepted } = useAuth();
-
-  const passwordStrength = checkPasswordStrength(formData.password);
 
   // Извлечь реферальный код из URL при монтировании компонента
   useEffect(() => {
@@ -220,22 +218,9 @@ export function RegisterPage() {
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               />
-              {formData.password && (
-                <div className="mt-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-gray-600">Надежность пароля:</span>
-                    <span className={`text-xs font-medium ${passwordStrength.score >= 3 ? 'text-green-600' : 'text-orange-600'}`}>
-                      {getPasswordStrengthLabel(passwordStrength.score)}
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full ${getPasswordStrengthColor(passwordStrength.score)} transition-all duration-300`}
-                      style={{ width: `${(passwordStrength.score / 4) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              )}
+              <p className="mt-2 text-xs text-gray-500">
+                Подойдёт любой пароль, который вам удобно запомнить.
+              </p>
               {formErrors.password && <p className="mt-1 text-sm text-red-600">{formErrors.password}</p>}
             </div>
 
