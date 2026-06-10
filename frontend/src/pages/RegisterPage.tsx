@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth, useAuthStore } from '../store/authStore';
-import { GoogleSignInButton } from '../components/auth/GoogleSignInButton';
 import { VKSignInButton } from '../components/auth/VKSignInButton';
 import { validateRegisterForm } from '../utils/passwordValidation';
 import { getStoredReferralCode, storeReferralCode } from '../utils/referralStorage';
@@ -109,19 +108,6 @@ export function RegisterPage() {
     }
   };
 
-  const handleAuthSuccess = async () => {
-    const nextUser = useAuthStore.getState().user;
-    if (
-      nextUser?.email &&
-      !nextUser.email_verified &&
-      nextUser.auth_provider === 'email'
-    ) {
-      navigate('/verify-required', { replace: true });
-    } else {
-      navigate(nextPath, { replace: true });
-    }
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12">
       <div className="max-w-md w-full space-y-8">
@@ -150,16 +136,7 @@ export function RegisterPage() {
 
         <div className="mt-8 space-y-6">
           {/* OAuth Buttons */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <GoogleSignInButton
-              onSuccess={handleAuthSuccess}
-              onError={(err) => console.error(err)}
-              text="signup_with"
-              size="large"
-              className={oauthButtonClass}
-              disabled={!pdConsent}
-              consentVersion={PD_CONSENT_VERSION}
-            />
+          <div className="grid grid-cols-1 gap-3">
             <VKSignInButton
               onError={(err) => console.error(err)}
               className={oauthButtonClass}
@@ -169,7 +146,7 @@ export function RegisterPage() {
           </div>
           {!pdConsent && (
             <p className="text-sm font-semibold text-red-600">
-              Отметьте согласие на обработку ПДн, чтобы активировать регистрацию через Google или VK.
+              Отметьте согласие на обработку ПДн, чтобы активировать регистрацию через VK.
             </p>
           )}
 

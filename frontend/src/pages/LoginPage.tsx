@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth, useAuthStore } from '../store/authStore';
-import { GoogleSignInButton } from '../components/auth/GoogleSignInButton';
 import { VKSignInButton } from '../components/auth/VKSignInButton';
 import { YandexSignInButton } from '../components/auth/YandexSignInButton';
 import { validateLoginForm } from '../utils/passwordValidation';
@@ -81,19 +80,6 @@ export function LoginPage() {
     }
   };
 
-  const handleAuthSuccess = () => {
-    const nextUser = useAuthStore.getState().user;
-    if (
-      nextUser?.email &&
-      !nextUser.email_verified &&
-      nextUser.auth_provider === 'email'
-    ) {
-      navigate('/verify-required', { replace: true });
-    } else {
-      navigate(nextPath, { replace: true });
-    }
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-secondary-50 px-4 py-10">
       <div className="max-w-xl w-full bg-white rounded-3xl border border-white/70 shadow-2xl p-8 space-y-8">
@@ -113,15 +99,6 @@ export function LoginPage() {
         <div className="space-y-6">
           {/* OAuth Buttons */}
           <div className="grid grid-cols-1 gap-3">
-            <GoogleSignInButton
-              onSuccess={handleAuthSuccess}
-              onError={(err) => console.error(err)}
-              text="signin_with"
-              size="large"
-              className={oauthButtonClass}
-              disabled={!pdConsent}
-              consentVersion={PD_CONSENT_VERSION}
-            />
             <VKSignInButton
               onError={(err) => console.error(err)}
               className={oauthButtonClass}
